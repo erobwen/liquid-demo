@@ -21,8 +21,53 @@
 	// }
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
+	
+	var Fiber = require('fibers');
+	
+	function createLiquidInstance(configuration) {		
+		pagesMap = {};
+		sessionsMap = {};
 
-	function createLiquidInstance(configuration) {
+		include('./liquid/server/liquidServer.js');
+
+		function generatePageId() {
+			return liquid.generateUniqueKey(liquid.pagesMap);
+		};
+		
+		function generateUniqueKey(keysMap) {
+			var newKey = null;
+			while(newKey == null) {
+				var newKey = Number.MAX_SAFE_INTEGER * Math.random();
+				if (typeof(keysMap[newKey]) !== 'undefined') {
+					newKey = null;
+				}
+			}
+			return newKey;
+		};
+		
+		// function createOrGetSessionObject(req) {
+			// var hardToGuessSessionId = req.session.id;
+		function createOrGetSessionObject(hardToGuessSessionId) {
+			if (typeof(liquid.sessionsMap[hardToGuessSessionId]) === 'undefined') {
+				// TODO: createPersistent instead
+				liquid.sessionsMap[hardToGuessSessionId] = create('LiquidSession', {hardToGuessSessionId: hardToGuessSessionId});
+			}
+			return liquid.sessionsMap[hardToGuessSessionId];
+		};
+			
+		function addToSelection = function(selection, object) {
+				if (object !== null && typeof(selection[object._id]) === 'undefined' && liquid.allowRead(object)) {
+					trace('selection', "Added: ", object);
+					selection[object._id] = true;
+					return true;
+				} else {
+					trace('selection', "Nothing to add!");
+					// console.log("Nothing to add!");
+					return false;
+				}
+			};
+		};		
+		
 		return require("./eternity.js")(configuration.eternityConfiguration);
 	}
 
