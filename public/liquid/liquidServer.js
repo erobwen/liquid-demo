@@ -594,7 +594,7 @@ liquid.pushDataDownstream = function() {
 
 		if (typeof(page._socket) !== 'undefined' && page._socket !== null) {
 			while(page._pendingUpdates.length > 0) {
-				page._socket.emit('pushSubscriptionChanges', page._pendingUpdates.shift());
+				page._socket.emit('pushChangesFromUpstream', page._pendingUpdates.shift());
 			}
 			delete liquid.dirtyPageSubscritiptions[id];
 		} else {
