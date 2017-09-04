@@ -18,19 +18,14 @@
     <script src="/external/babel/browser.min.js"></script>
     <script src="/external/socket.io-client/socket.io.js"></script>
 
-    <script src="/js/liquid/common/utility.js"></script>
-    <script src="/js/liquid/common/trace.js"></script>
-    <script src="/js/liquid/common/core.js"></script>
-    <script src="/js/liquid/common/shape.js"></script>
-    <script src="/js/liquid/common/member.js"></script>
-    <script src="/js/liquid/common/entity.js"></script>
-    <script src="/js/liquid/common/userPageAndSession.js"></script>
-    <script src="/js/liquid/common/selection.js"></script>
-    <script src="/js/liquid/common/reactive.js"></script>
-    <script src="/js/liquid/client/serializeAndServerCall.js"></script>
+    <script src="/liquid/liquid.js"></script>
+    <script src="/liquid/causality.js"></script>
+    <script src="/liquid/eternity.js"></script>
     <script src="/js/liquid/client/start.js"></script>
-    <script src="/js/liquid/client/reactIntegration.js"></script>
 
+    <script src="/js/liquid/client/reactIntegration.js"></script>
+    <script src="/js/liquid/client/setupSocketIo.js"></script><!-- last? after setup data? -->
+	
     <!-- Application scripts TODO: make it load all in these directories as default -->
     <script src="/js/liquid/application/model/referenceService.js"></script>
     <script type="text/babel" src="/js/liquid/application/view/reactComponents.jsx"></script>
@@ -39,7 +34,6 @@
     <script>liquid.initialize();</script>
     <script>var data = <%- data %></script>
     <script src="/js/liquid/client/setupData.js"></script>
-    <script src="/js/liquid/client/setupSocketIo.js"></script>
 
     <!-- Custom script (mostly for debugging and trying out stuff) -->
     <!-- script src="/js/liquid/application/clientConfiguration.js"></script-->

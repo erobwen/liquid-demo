@@ -1,7 +1,7 @@
 
 require('./include');
 
-let liquid = require("./liquid.js")();
+let liquid = require("./liquid/liquid.js")();
 // liquid.initialize();
 
 // Liquid server and model libraries.

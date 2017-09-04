@@ -4,10 +4,6 @@
  *---------------------------------------*/
 
 var addLiquidSerializeAndServerCallFunctionality = function(liquid) {
-    
-    
-    
-    
     // consolidateIds : function(temporaryEntityIdToEntityIdMap) {
     // 	// console.groupCollapsed("Consolidating ids");
     // 	if (!isArray(temporaryEntityIdToEntityIdMap)) {

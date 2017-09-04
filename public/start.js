@@ -2,11 +2,13 @@
  * General setup
  */
 
-var liquid = {
-	onServer : false,
-	onClient: true
-};
+// var liquid = {
+	// onServer : false,
+	// onClient: true
+// };
 
+
+window.liquid
 addCommonLiquidFunctionality(liquid);
 addLiquidShapeFunctionality(liquid);
 addLiquidObjectMemberFunctionality(liquid);

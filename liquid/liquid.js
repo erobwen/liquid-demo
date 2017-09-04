@@ -5,9 +5,15 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-        root.eternity = factory(); // Support browser global
+		if (typeof(root.require) === 'undefined') {
+			root.require = function(library) {
+				return root[library];
+			}
+		}
+        root.liquid = factory(); // Support browser global
     }
 }(this, function () {
+	//...
 		// Helper
 	let argumentsToArray = function(arguments) {
 		return Array.prototype.slice.call(arguments);
@@ -31,6 +37,13 @@
 		include('./liquid/server/liquidServer.js');
 
 		
+
+		/***************************************************************
+		 *
+		 *  Server oriented code
+		 *
+		 ***************************************************************/
+			
 		/**--------------------------------------------------------------
 		 *              Page and session setup
 		 *----------------------------------------------------------------*/
@@ -509,6 +522,14 @@
 			});			
 		}
 			
+			
+
+		/***************************************************************
+		 *
+		 *  Client oriented code
+		 *  
+		 *
+		 ***************************************************************/
 			
 		/**--------------------------------------------------------------
 		 *              Call on server
