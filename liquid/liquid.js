@@ -5,11 +5,6 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-		if (typeof(root.require) === 'undefined') {
-			root.require = function(moduleName) {
-				return root[moduleName.replace(/^.*[\\\/]/, '').replace(/\.\w*/, '')];
-			}			
-		}
         root.liquid = factory(); // Support browser global
     }
 }(this, function () {
@@ -34,9 +29,14 @@
 		pagesMap = {};
 		sessionsMap = {};
 
-		include('./liquid/server/liquidServer.js');
+		// include('./liquid/server/liquidServer.js');
 
-		
+		let liquid;
+		if (configuration.usePersistency) {
+			liquid = require("./eternity.js")(configuration.eternityConfiguration);
+		} else {
+			liquid = require("./causality.js")(configuration.causalityConfiguration);
+		}
 
 		/***************************************************************
 		 *
@@ -850,7 +850,7 @@
 			liquid.turnOffShapeCheck--;
 		}
 		
-		return require("./eternity.js")(configuration.eternityConfiguration);
+		return liquid;
 	}
 
 	function sortedKeys(object) {

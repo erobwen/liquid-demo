@@ -10,7 +10,7 @@ function defaultInitializer(data) {
 	}
 }
 
-// TODO: improve to the following: 
+// TODO: support class filter for incoming: 
 // return liquid.getSingleIncomingReference(this, "session");
 // return liquid.getSingleIncomingReference(this, "Page", "session");
 
@@ -249,82 +249,82 @@ PageService.prototype.allowCallOnServer = function(page) {
     return page === this.getPage();
 }
 
-PageService.prototype.allowCallOnServer = function(page) {
-    return page === this.getPage();
-}
-
 PageService.prototype.encryptPassword = function(password) {
 	return password + " [encrypted]";
 }
 
-//var filename = fullPath.replace(/^.*[\\\/]/, '')
+PageService.prototype.tryLogin = function(loginName, liquidPassword) {
+	// Use SHA and similar here!
+	// alert('try login');
+	this.callOnServer('tryLoginOnServer', loginName, this.encryptPassword(liquidPassword));
+}
+
+PageService.prototype.logout = function(loginName, liquidPassword) {
+	// Use SHA and similar here!
+	this.callOnServer('logoutOnServer');
+}
+
+PageService.prototype.logout = function(loginName, liquidPassword) {
+	// Use SHA and similar here!
+	this.callOnServer('logoutOnServer');
+}
+
+PageService.prototype.tryLoginOnServer = function(loginName, clientEncryptedPassword) {
+	// console.log("Here");
+	// console.log(loginName);
+	// console.log(clientEncryptedPassword);
+	var serverEncryptedPassword = this.encryptPassword(clientEncryptedPassword);
+	var user = liquid.findLocalEntity({name: loginName});
+	if (user != null && user.getEncryptedPassword() === serverEncryptedPassword) {
+		this.getPage().setActiveUser(user);
+	}
+}
+
+PageService.prototype.logoutOnServer = function(loginName, liquidPassword) {
+	this.getPage().setActiveUser(null);
+}
 
 
-// x.substring(0, x.indexOf('.jpg')
+/*---------------------------------------
+ *     Subscription (simple list?) 
+ *--------------------------------------*/
+
+ // liquid.registerClass({
+	// name: 'Subscription',  _extends: 'Entity',
+
+	// addPropertiesAndRelations : function(object) {
+		// // Basics
+		// object.addProperty('selector', 'all'); //TODO: write once semantics.
+		// object.addRelation('TargetObject','toOne'); //TODO: write once semantics
+
+		// // Relations
+		// object.addReverseRelationTo('LiquidPage_Subscriptions','Page', 'toOne');
+
+		// object.addRelation('ChildSubscription', 'toMany');
+		// object.addReverseRelationTo('Subscription_ChildSubscription', 'Parent', 'toOne');
+	// },
+
+	// addMethods : function(object) {
+		// // Properties
+		// object.overrideMethod('init', function(parent, initData) {
+			// // parent(initData); // Should not be needed, has no data visible inside liquid.
+			// this.setSelector(undefinedAsNull(initData.selector));
+			// this.setTargetObject(initData.object);
+			// this._previousSelection = {};
+			// this._idToDownstreamIdMap = null;  // This is set in pulses where this page pushes data upstream.
+		// });
+	// }
+// });
+
+		
+
+/*---------------------------------------
+ *      User 
+ *--------------------------------------*/
+
+		
 var addUserPageAndSessions = function(liquid) {
     liquid.addUserPageAndSessionClasses = function() {
-
-        liquid.registerClass({
-            name: 'LiquidPageService', _extends: 'Entity',
-
-
-            addMethods : function(object) {
-
-                object.addMethod('tryLogin', function(loginName, liquidPassword) {
-                    // Use SHA and similar here!
-                    // alert('try login');
-                    this.callOnServer('tryLoginOnServer', loginName, this.encryptPassword(liquidPassword));
-                });
-
-                object.addMethod('logout', function() {
-                    // Use SHA and similar here!
-                    this.callOnServer('logoutOnServer');
-                });
-
-                object.addMethod('tryLoginOnServer', function(loginName, clientEncryptedPassword) {
-                    // console.log("Here");
-                    // console.log(loginName);
-                    // console.log(clientEncryptedPassword);
-                    var serverEncryptedPassword = this.encryptPassword(clientEncryptedPassword);
-                    var user = liquid.findLocalEntity({name: loginName});
-                    if (user != null && user.getEncryptedPassword() === serverEncryptedPassword) {
-                        this.getPage().setActiveUser(user);
-                    }
-                });
-
-                object.addMethod('logoutOnServer', function() {
-                    this.getPage().setActiveUser(null);
-                });
-            }
-        });
-
-        liquid.registerClass({
-            name: 'Subscription',  _extends: 'Entity',
-
-            addPropertiesAndRelations : function(object) {
-                // Basics
-                object.addProperty('selector', 'all'); //TODO: write once semantics.
-                object.addRelation('TargetObject','toOne'); //TODO: write once semantics
-
-                // Relations
-                object.addReverseRelationTo('LiquidPage_Subscriptions','Page', 'toOne');
-
-                object.addRelation('ChildSubscription', 'toMany');
-                object.addReverseRelationTo('Subscription_ChildSubscription', 'Parent', 'toOne');
-            },
-
-            addMethods : function(object) {
-                // Properties
-                object.overrideMethod('init', function(parent, initData) {
-                    // parent(initData); // Should not be needed, has no data visible inside liquid.
-                    this.setSelector(undefinedAsNull(initData.selector));
-                    this.setTargetObject(initData.object);
-                    this._previousSelection = {};
-                    this._idToDownstreamIdMap = null;  // This is set in pulses where this page pushes data upstream.
-                });
-            }
-        });
-
         liquid.registerClass({
             name: 'LiquidUser', _extends: 'Entity',
 
@@ -380,10 +380,3 @@ var addUserPageAndSessions = function(liquid) {
         });
     };
 };
-
-
-if (typeof(module) !== 'undefined' && typeof(module.exports) !== 'undefined') {
-    module.exports.addUserPageAndSessions = addUserPageAndSessions;
-} else {
-
-}
