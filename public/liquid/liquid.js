@@ -854,6 +854,19 @@
 			liquid.turnOffShapeCheck--;
 		}
 		
+		liquid.addModels(models) {
+			models.injectLiquid(liquid);
+			liquid.addClasses(models);
+		}
+		
+		liquid.addClasses(classes) {
+			Object.assign(liquid.classRegistry, classes); 
+		};
+		
+		liquid.setClassNamesTo(object) {
+			Object.assign(object, liquid.classRegistry);
+		}
+		
 		return liquid;
 	}
 

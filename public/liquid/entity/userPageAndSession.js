@@ -5,10 +5,7 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-        let userPageAndSession = factory(); // Support browser global
-		for (property in userPageAndSession) {
-			root[property] = userPageAndSession[property];
-		}
+		root.userPageAndSession = factory();
     }
 }(this, function () {
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
@@ -112,7 +109,7 @@
 		
 		this.session = null;
 		// this.service = null;
-		this.receivedSubscriptions = [];
+		this.receivedSubscriptions = []; // Do not do in constructor... besides, it needs a create. 
 		this.pageService = null;
 	}   
 

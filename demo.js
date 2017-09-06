@@ -1,12 +1,12 @@
 
 require('./include');
-
-let liquid = require("./liquid/liquid.js")();
+let liquid = require("./pulblic/liquid/liquid.js")();
 // liquid.initialize();
 
-// Liquid server and model libraries.
-includeFolderOnce('./public/js/liquid/application/model');
-
+liquid.addModels(require("./pulblic/liquid/entity.js"));
+liquid.addModels(require("./pulblic/liquid/userPageAndSession.js"));
+liquid.addModels(require("./pulblic/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
+liquid.setClassNamesTo(global); // Make all class names global
 
 var Fiber = require('fibers');
 
@@ -19,13 +19,12 @@ var Fiber = require('fibers');
 
 if (!liquid.persistent.demoInitialized) {
 	liquid.pulse('local', function() {
-			
-		/***
-		 * Setup some test data
-		 */
-
+		// Create a simple user index. (no advanced index).
+		liquid.persistent.users = create({});
+		
+		// Create user and add to index.
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
-		liquid.addToLocalRegistry(user);
+		liquid.persistent.users[user.email] = user; // Add to user index. 
 
 		var favourite = create('Category', {name: 'Favourite', description: '', owner: user});
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
@@ -52,6 +51,7 @@ if (!liquid.persistent.demoInitialized) {
 			});
 		}, 10000);
 
+		// liquid.addToLocalRegistry(user); //????
 		// Create References
 		var created = 0;
 		while (created++ < 3) {

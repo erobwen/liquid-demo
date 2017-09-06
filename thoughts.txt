@@ -1,6 +1,13 @@
-
-
-
 isLoaded(object, selector).... should it perhaps use a selection locally to see if everything is loaded?... or should it depend on loading tags?.... 
 
 isSubscribed(object, selector) ... stronger... is part of subscription...
+
+
+
+Does and donts when programming liquid:
+
+1. Keep your constructors empty! Ever since the idea of constructors, the idea has been to initialize and build things inside a constructor. While this works fine in a non-reactive world, it becomes an anti pattern in the reactive world, where objects needs to be constructed as a consequence of beeing loaded from database or server. So, what to do instead? Simply follow the convention of placing all initialization in a special initialize method for each class! Simple as that! Just remember it!
+
+2. Never write code that updates things! If you have a need to update some data, it is a sign you are leaving the reactive world, or have a hybrid system that is both reactive and impreative. There are many valid situations where this is perfectly fine, typically when liquid is beeing integrated with some other system in a framework. However, as a general rule of thumb, application code should never do it.  
+
+ 

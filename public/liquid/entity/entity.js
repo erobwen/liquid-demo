@@ -5,7 +5,12 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-        root.LiquidEntity = factory(); // Support browser global
+		root.entity = factory();
+		// // Special behavior: Add all module names in global space
+        // let module = factory(); 
+		// for (property in module) {
+			// root[property] = module[property];
+		// }
     }
 }(this, function () {
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
