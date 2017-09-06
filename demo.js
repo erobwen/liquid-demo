@@ -1,20 +1,16 @@
 
-require('./include');
-let liquid = require("./pulblic/liquid/liquid.js")();
-// liquid.initialize();
+// Setup liquid and add models to it
+let liquid = require("./public/liquid/liquid.js")();
+liquid.addModels(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
+liquid.setClassNamesTo(global); // Optional: Make all class names global
 
-liquid.addModels(require("./pulblic/liquid/entity.js"));
-liquid.addModels(require("./pulblic/liquid/userPageAndSession.js"));
-liquid.addModels(require("./pulblic/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
-liquid.setClassNamesTo(global); // Make all class names global
-
-var Fiber = require('fibers');
 
 /**--------------------------------------------------------------
  *                 Custom setup script
  *----------------------------------------------------------------*/
 
 // Custom setup server script
+// require('./include');
 // include('./liquid/application/serverConfiguration.js');
 
 if (!liquid.persistent.demoInitialized) {
@@ -26,7 +22,7 @@ if (!liquid.persistent.demoInitialized) {
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
 		liquid.persistent.users[user.email] = user; // Add to user index. 
 
-		var favourite = create('Category', {name: 'Favourite', description: '', owner: user});
+		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		var politics = create('Category', {name: 'Politics', description: '', owner: user});
 		var georgism = create('Category', {name: 'Georgism', description: '', owner: user});
@@ -102,6 +98,8 @@ function createControllerFromClassName(className) {
 		return liquid.createPage(className, req);
 	});
 }
+
+var Fiber = require('fibers');
 
 function createControllerFromFunction(controllerFunction) {
 	// console.debug("createControllerFromFunction");

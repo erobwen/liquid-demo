@@ -36,11 +36,9 @@
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
-		}
-		
-		let entity = require("./entity.js");
-		entity.injectLiquid(liquid);
-		
+		}		
+		liquid.addModels(require("./entity.js"));
+		liquid.addModels(require("./userPageAndSession.js"));
 
 		/***************************************************************
 		 *
@@ -852,19 +850,6 @@
 			}
 			liquid.allUnlocked--;
 			liquid.turnOffShapeCheck--;
-		}
-		
-		liquid.addModels(models) {
-			models.injectLiquid(liquid);
-			liquid.addClasses(models);
-		}
-		
-		liquid.addClasses(classes) {
-			Object.assign(liquid.classRegistry, classes); 
-		};
-		
-		liquid.setClassNamesTo(object) {
-			Object.assign(object, liquid.classRegistry);
 		}
 		
 		return liquid;
