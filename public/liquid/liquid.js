@@ -37,6 +37,10 @@
 		} else {
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
 		}
+		
+		let entity = require("./entity.js");
+		entity.injectLiquid(liquid);
+		
 
 		/***************************************************************
 		 *
