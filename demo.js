@@ -60,9 +60,22 @@ if (!liquid.persistent.demoInitialized) {
 
 
 
-/* ----------------------------
- *    Initialize http server 
- * ---------------------------- */
+/* ------------------------------------------
+ *    Initialize http server using express
+ * ------------------------------------------ */
+
+ let liquidControllers = {
+	'' : "LiquidPage"
+	'index': 'LiquidPage',
+	'demo': function(req) { // Note: req follows express conventions.
+		var session = liquid.createOrGetSessionObject(req.session.token);
+		var page = create('LiquidPage', {Session: session});
+		page.getPageService().addOrderedSubscription(create('Subscription', {object: user, selector:'all'})); //object: user,
+		return page;
+	},
+	'someurl/:someargument' : 'PageWithArgument'
+}
+ 
 
 // Setup express server
 var express = require('express');
@@ -73,21 +86,10 @@ var session = require('express-session');
 liquidHttpServer.use(cookieParser());
 liquidHttpServer.use(session({secret: '12345QWER67890TY'}));
 // liquidHttpServer.get('/fie', function(req, res) {res.send("Found me!");}); // Test server alive...
+var expressControllers = createExpressControllers(liquidControllers);
 
-var controllers = createControllers({
-	'' : "LiquidPage"
-	'index': 'LiquidPage',
-	'demo': function(req) {
-		var session = liquid.createOrGetSessionObject(req.session.token);
-		var page = create('LiquidPage', {Session: session});
-		page.getPageService().addOrderedSubscription(create('Subscription', {object: user, selector:'all'})); //object: user,
-		return page;
-	},
-	'someurl/:someargument' : 'PageWithArgument'
-});
-
-for (controllerName in controllers) {
-	liquidHttpServer.get('/' + controllerName, controllers[controllerName]);
+for (controllerName in expressControllers) {
+	liquidHttpServer.get('/' + controllerName, expressControllers[controllerName]);
 }
 
 liquidHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
@@ -96,9 +98,24 @@ liquidHttpServer.listen(4000, function () {
   console.log('Liquid is now listening on port 4000!');
 });
 
+function createExpressControllers(liquidControllers) {
+	var controllers = {};
+	for (url in liquidControllers) {
+		var controllerDefinition = liquidControllers[url];
+		if (typeof(controllerDefinition) === 'string') {
+			// console.debug("Create controller: " + url + " -> " + controllerDefinition);
+			controllers[url] = createControllerFromClassName(controllerDefinition);
+		} else {
+			// console.debug("Create controller: " + url + " -> [function]");
+			controllers[url] = createControllerFromPageCreatorFunction(controllerDefinition);
+		}
+	}
+	// controllers['foo'] = function(req, res) {  res.send('made it'); };
+	return controllers;
+}
 
-function createControllerFromClassName(className) {
-	return createControllerFromPageCreatorFunction(function(req) {
+function createExpressControllerFromClassName(className) {
+	return createExpressControllerFromPageCreatorFunction(function(req) {
 		var session = liquid.createOrGetSessionObject(req.session.token);
 	
 		// Setup page object TODO: persistent page object?
@@ -106,8 +123,7 @@ function createControllerFromClassName(className) {
 	});
 }
 
-
-function createControllerFromPageCreatorFunction(pageCreatorFunction) {
+function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
 		liquid.pulse(function() {
 			// Setup session object (that we know is the same object identity on each page request)
@@ -123,35 +139,6 @@ function createControllerFromPageCreatorFunction(pageCreatorFunction) {
 		});
 	}
 }
-
-function createControllers(liquidControllers) {
-	var controllers = {};
-	for (url in liquidControllers) {
-		var controllerDefinition = liquidControllers[url];
-		if (typeof(controllerDefinition) === 'string') {
-			// console.debug("Create controller: " + url + " -> " + controllerDefinition);
-			controllers[url] = createControllerFromClassName(controllerDefinition);
-		} else {
-			// console.debug("Create controller: " + url + " -> [function]");
-			controllers[url] = createControllerFromPageCreatorFunction(controllerDefinition);
-		}
-	}
-	// console.debug(controllers);
-	// controllers['foo'] = function(req, res) {  res.send('made it'); };
-	return controllers;
-}
-
-
-
-
-//http://krasimirtsonev.com/blog/article/deep-dive-into-client-side-routing-navigo-pushstate-hash
-
-
-
-
-
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
 
 
 /* ----------------------------
