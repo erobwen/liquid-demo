@@ -18,30 +18,24 @@
     <script src="/external/babel/browser.min.js"></script>
     <script src="/external/socket.io-client/socket.io.js"></script>
 
+	<!-- Liquid framework -->
     <script src="/liquid/reallyDumRequire.js"></script>
     <script src="/liquid/objectlog.js"></script>
     <script src="/liquid/causality.js"></script>
-    <!--<script src="/liquid/eternity.js"></script>-->
+    <script src="/liquid/liquidEntity.js"></script>
     <script src="/liquid/liquid.js"></script>
-    <script src="/liquid/instantiateLiquid.js"></script>
-
-    <script src="/js/liquid/client/reactIntegration.js"></script>
-    <script src="/js/liquid/client/setupSocketIo.js"></script><!-- last? after setup data? -->
 	
-    <!-- Application scripts TODO: make it load all in these directories as default -->
-    <script src="/js/liquid/application/model/referenceService.js"></script>
-    <script type="text/babel" src="/js/liquid/application/view/reactComponents.jsx"></script>
-
-    <!-- Initialize & setup data and socket io -->
-    <script>liquid.initialize();</script>
+	<!-- Integration with other frameworks -->
+    <script src="/reactLiquidIntegration.js"></script>
+	
+	<!-- Application -->
+    <script src="/application/model.js"></script>
+    <script type="text/babel" src="/application/reactComponents.jsx"></script>
     <script>var data = <%- data %></script>
-    <script src="/js/liquid/client/setupData.js"></script>
-
-    <!-- Custom script (mostly for debugging and trying out stuff) -->
-    <!-- script src="/js/liquid/application/clientConfiguration.js"></script-->
-
-    <!-- Render page -->
-    <script type="text/babel" src="/js/liquid/client/render.js"></script>
+    
+	<!-- Start -->
+	<script src="/demo.js"></script>
+    <script type="text/babel" src="/demoUI.jsx"></script>
 </head>
 
 <body>

@@ -37,15 +37,24 @@
 		} else {
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
 		}		
-		liquid.addModels(require("./entity.js"));
-		liquid.addModels(require("./userPageAndSession.js"));
+		liquid.addModels(require("./liquidEntity.js"));
 
 		/***************************************************************
 		 *
 		 *  Server oriented code
 		 *
 		 ***************************************************************/
-			
+		
+		if (configuration.usePersistency) {
+			var Fiber = require('fibers');   // consider, remove fiber when not using rest api?    // change to httpRequest pulse  ?
+				
+			let originalPulse = liquid.pulse;
+			liqud.pulse = function(action) {
+				Fiber(function() {
+					originalPulse(action);
+				}).run();
+			}
+		}
 
 		// /**--------------------------------------------------------------
 		// *                 Sessions
@@ -551,6 +560,31 @@
 		 *
 		 ***************************************************************/
 
+		function receiveInitialDataFromUpstream(serializedData) {
+			liquid.unserializeObjectsFromUpstream(serializedData.subscriptionInfo.addedSerialized)
+			liquid.instancePage = liquid.getUpstreamEntity(serializedData.pageUpstreamId);			
+		}
+
+	
+
+		function unserializeObjectsFromUpstream(serializedObjects) {
+			liquid.pulse('upstream', function() {
+				liquid.unserializeFromUpstream(serializedObjects);
+			});			
+		}
+		
+		
+		
+		// This was done on client... wierd... I think that active subscriptions should be updated by server and pushed in same pulse as newly loaded... 
+		// liquid.instancePage.setReceivedSubscriptions(liquid.instancePage.getPageService().getOrderedSubscriptions());
+		// liquid.instancePage.getReceivedSubscriptions().forEach(function(subscription) {
+			// trace('setup', "Received Subscription ", subscription, " : ", subscription.getTargetObject(), ".", subscription.getSelector(), "()");
+		// });
+		// // Setup user
+		// // window.displayedUser = liquid.findLocalEntity({className: 'User'})
+
+
+	
 			// consolidateIds : function(temporaryEntityIdToEntityIdMap) {
     // 	// console.groupCollapsed("Consolidating ids");
     // 	if (!isArray(temporaryEntityIdToEntityIdMap)) {

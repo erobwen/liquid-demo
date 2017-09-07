@@ -1,6 +1,6 @@
 
 // Setup liquid and add models to it
-let liquid = require("./public/liquid/liquid.js")();
+let liquid = require("./public/liquid/liquid.js")({usePersistency: true, databaseFileName: "demoDb.mongoDb"});
 liquid.addModels(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
 liquid.setClassNamesTo(global); // Optional: Make all class names global
 
@@ -72,57 +72,55 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 liquidHttpServer.use(cookieParser());
 liquidHttpServer.use(session({secret: '12345QWER67890TY'}));
+// liquidHttpServer.get('/fie', function(req, res) {res.send("Found me!");}); // Test server alive...
 
-
-//--------------------------------------------------------------------------------------
-// var controllers = require('./expressControllers.js');
-
-let controllersSetup = {
+var controllers = createControllers({
+	'' : "LiquidPage"
 	'index': 'LiquidPage',
-	'test': createTestPage,
-	// 'test': create,
+	'demo': function(req) {
+		var session = liquid.createOrGetSessionObject(req.session.token);
+		var page = create('LiquidPage', {Session: session});
+		page.getPageService().addOrderedSubscription(create('Subscription', {object: user, selector:'all'})); //object: user,
+		return page;
+	},
 	'someurl/:someargument' : 'PageWithArgument'
-};
+});
 
-
-function createTestPage(req) {
-	var session = liquid.createOrGetSessionObject(req);
-	// session.setUser(user);
-	var page = create('LiquidPage', {Session: session});
-	page.getPageService().addOrderedSubscription(create('Subscription', {object: user, selector:'all'})); //object: user,
-	return page;
+for (controllerName in controllers) {
+	liquidHttpServer.get('/' + controllerName, controllers[controllerName]);
 }
 
+liquidHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
+
+liquidHttpServer.listen(4000, function () {
+  console.log('Liquid is now listening on port 4000!');
+});
+
+
 function createControllerFromClassName(className) {
-	return createControllerFromFunction(function(req) {
-		return liquid.createPage(className, req);
+	return createControllerFromPageCreatorFunction(function(req) {
+		var session = liquid.createOrGetSessionObject(req.session.token);
+	
+		// Setup page object TODO: persistent page object?
+		return create(className, { token: liquid.getPageId(), Session : session });
 	});
 }
 
-var Fiber = require('fibers');
 
-function createControllerFromFunction(controllerFunction) {
-	// console.debug("createControllerFromFunction");
+function createControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
-		// console.debug("in controller created by func");
-		Fiber(function() {
-			liquid.pulse('httpRequest', function() {  // consider, remove fiber when not using rest api?    // change to httpRequest pulse  ?
-				// console.debug("in controller created by func");
-				// Setup session object (that we know is the same object identity on each page request)
-				var page = controllerFunction(req)
-				// var selection = {};
-				// page.selectAll(selection);
-	
-				var data = {
-					// serialized : liquid.serializeSelection(selection),
-					pageUpstreamId : page._id,
-					subscriptionInfo : liquid.getSubscriptionUpdate(page)
-				};
-				res.render('layout',{
-					data: JSON.stringify(data)
-				});
+		liquid.pulse(function() {
+			// Setup session object (that we know is the same object identity on each page request)
+			var page = pageCreatorFunction(req)
+			var data = {
+				// serialized : liquid.serializeSelection(selection),
+				pageUpstreamId : page._id,
+				subscriptionInfo : liquid.getSubscriptionUpdate(page)
+			};
+			res.render('layout',{
+				data: JSON.stringify(data)
 			});
-		}).run();
+		});
 	}
 }
 
@@ -135,29 +133,14 @@ function createControllers(liquidControllers) {
 			controllers[url] = createControllerFromClassName(controllerDefinition);
 		} else {
 			// console.debug("Create controller: " + url + " -> [function]");
-			controllers[url] = createControllerFromFunction(controllerDefinition);
+			controllers[url] = createControllerFromPageCreatorFunction(controllerDefinition);
 		}
 	}
 	// console.debug(controllers);
-	controllers['foo'] = function(req, res) {  res.send('made it'); };
+	// controllers['foo'] = function(req, res) {  res.send('made it'); };
 	return controllers;
 }
 
-
-
-
-function createPage(pageClassName, req) {
-	var session = liquid.createOrGetSessionObject(req);
-	
-	// Setup page object TODO: persistent page object?
-	return create(pageClassName, { hardToGuessPageId: liquid.getPageId(), Session : session });
-}
-
-
-var controllers = createControllers(controllersSetup);
-if (typeof(controllers['index']) === 'undefined') {
-	controllers['index'] = createControllerFromClassName('LiquidPage');
-}
 
 
 
@@ -169,24 +152,6 @@ if (typeof(controllers['index']) === 'undefined') {
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
-
-for (controllerName in controllers) {
-	liquidHttpServer.get('/' + controllerName, controllers[controllerName]);
-}
-
-// Set defualt path
-var mainController = 'test';
-if (typeof(controllers[mainController]) !== 'undefined') {
-	liquidHttpServer.get('/', controllers[mainController]);
-}
-
-liquidHttpServer.get('/fie', function(req, res) {res.send("Found me!");});
-
-liquidHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
-
-liquidHttpServer.listen(4000, function () {
-  console.log('Liquid is now listening on port 4000!');
-});
 
 
 /* ----------------------------
