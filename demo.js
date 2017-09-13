@@ -6,7 +6,7 @@ liquid.setClassNamesTo(global); // Optional: Make all class names global
 
 
 /**--------------------------------------------------------------
- *                 Custom setup script
+ *            Initialize database if necessary
  *----------------------------------------------------------------*/
 
 // Custom setup server script
@@ -27,7 +27,6 @@ if (!liquid.persistent.demoInitialized) {
 		var politics = create('Category', {name: 'Politics', description: '', owner: user});
 		var georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		politics.addSubCategory(georgism);
-
 
 		setTimeout(function() {
 			liquid.pulse('local', function() {
@@ -75,7 +74,6 @@ if (!liquid.persistent.demoInitialized) {
 	},
 	'someurl/:someargument' : 'PageWithArgument'
 }
- 
 
 // Setup express server
 var express = require('express');
@@ -159,43 +157,35 @@ var liquidSocket = socketIo.sockets;
 liquidSocket.on('connection', function (socket) {
 	trace('serialize', 'Connected a socket!');
 	
-	socket.on('registerPageId', function(hardToGuessPageId) {
-		Fiber(function() {
-			trace('serialize', "Register page connection:" + hardToGuessPageId);
-			trace('serialize', hardToGuessPageId);
-			if (typeof(hardToGuessPageId) !== 'undefined' && hardToGuessPageId !== null && typeof(liquid.pagesMap[hardToGuessPageId]) !== 'undefined') {
-				var page = liquid.pagesMap[hardToGuessPageId];
-				page._socket = socket;
-				liquid.pushDataDownstream(); // In case this page had subscription updates that never got pushed. 
-				trace('serialize', "Made an association between socket and hardToGuessPageId");
-				//trace('serialize', page._socket);
-			}
-		}).run();
+	socket.on('registerPageId', function(pageToken) {
+		let page = liquid.getPage(pageToken);
+		if (typeof(page) !== 'undefined') {
+			page.const._socket = socket;
+			// liquid.pushDataDownstream(); // In case this page had subscription updates that never got pushed. ???
+		} else {
+			socket.emit('invalidPageToken'); // TODO: Consider create new page?			
+		}
 	});
 
-	socket.on('pushDownstreamPulse', function(hardToGuessPageId, pulseData) {
-		Fiber(function() {
-			if (typeof(liquid.pagesMap[hardToGuessPageId]) !== 'undefined') {
-				var page = liquid.pagesMap[hardToGuessPageId];
-				liquid.pulse(page, function() {
-					liquid.unserializeDownstreamPulse(pulseData);
-				});
-			} else {
-				socket.emit('disconnectedDueToInactivityOrServerFault'); // TODO: Consider create new page?
-			}
-		}).run();
+	socket.on('pushDownstreamPulse', function(pageToken, pulseData) {
+		let page = liquid.getPage(pageToken);
+		if (typeof(page) !== 'undefined') {
+			liquid.pushDownstreamPulse(page, pulseData);
+		} else {
+			socket.emit('invalidPageToken'); // TODO: Consider create new page?			
+		}
 	});
 
 	liquid.callOnServer = false;
-	socket.on('makeCallOnServer', function(hardToGuessPageId, callInfo) {
+	socket.on('makeCallOnServer', function(pageToken, callInfo) {
 		liquid.callOnServer = true;
 		// trace('serialize', "Make call on server");
-		// trace('serialize', hardToGuessPageId);
+		// trace('serialize', pageToken);
 		// trace('serialize', callInfo);
 		Fiber(function() {
 			// trace('serialize', Object.keys(liquid.pagesMap));
-			if (typeof(liquid.pagesMap[hardToGuessPageId]) !== 'undefined') {
-				var page = liquid.pagesMap[hardToGuessPageId];
+			if (typeof(liquid.pagesMap[pageToken]) !== 'undefined') {
+				var page = liquid.pagesMap[pageToken];
 				trace('serialize', "Make call on server ", page);
 
 				liquid.pulse(page, function() {
@@ -220,15 +210,15 @@ liquidSocket.on('connection', function (socket) {
 		liquid.callOnServer = false;
 	});
 
-	socket.on('disconnect', function(hardToGuessPageId) {
+	socket.on('disconnect', function(pageToken) {
 		Fiber(function() {
-			// hardToGuessPageId
-			// var page = liquid.pagesMap[hardToGuessPageId];
-			// delete liquid.pagesMap[hardToGuessPageId];
+			// pageToken
+			// var page = liquid.pagesMap[pageToken];
+			// delete liquid.pagesMap[pageToken];
 			// page.setSession(null);
 			// // TODO: unpersist page
 			trace('serialize', 'Disconnected'); 
-			trace('serialize', hardToGuessPageId);
+			trace('serialize', pageToken);
 		}).run();
 	});
 });

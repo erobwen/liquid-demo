@@ -551,7 +551,28 @@
 			});			
 		}
 			
+			Fiber(function() {
+ 		
+		function getPage(pageToken) {
+				trace('serialize', "Register page connection:" + pageToken);
+				trace('serialize', pageToken);
+				if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(liquid.pagesMap[pageToken]) !== 'undefined') {
+					return liquid.pagesMap[pageToken];
+				}
+		}
+
 			
+		let pushingDownstreamData = false;
+		function pushDownstreamPulse(page, pulseData) {
+			pushingDownstreamData = true; // What happens on asynchronous wait?? 
+			Fiber(function() {
+				liquid.pulse(function() {
+					liquid.unserializeDownstreamPulse(pulseData);
+				});
+			}).run();
+			pushingDownstreamData = false;
+		}
+
 
 		/***************************************************************
 		 *
