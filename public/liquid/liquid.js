@@ -71,7 +71,52 @@
 			// liquid.sessions[connection] = {};
 			// return liquid.sessions[connection];
 		// }
+		liquid.callOnServer = false;
+		function makeCallOnServer(pageToken, callInfo) {
+			// trace('serialize', "Make call on server");
+			// trace('serialize', pageToken);
+			// trace('serialize', callInfo);
+			liquid.callOnServer = true;
+			Fiber(function() {
+				// trace('serialize', Object.keys(liquid.pagesMap));
+				if (typeof(liquid.pagesMap[pageToken]) !== 'undefined') {
+					var page = liquid.pagesMap[pageToken];
+					trace('serialize', "Make call on server ", page);
 
+					liquid.pulse(page, function() {
+						var object = getEntity(callInfo.objectId);
+						var methodName = callInfo.methodName;
+						var argumentList = callInfo.argumentList; // TODO: Convert to
+						trace('serialize', "Call: ", methodName);
+						trace('serialize', "Call: ", argumentList);
+
+						// traceTags.event = true;
+						if (object.allowCallOnServer(page)) {
+							liquid.unlockAll(function() {
+								object[methodName].apply(object, argumentList);
+							});
+						}
+						// delete traceTags.event;
+
+						trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
+					});
+				}
+			}).run();
+			liquid.callOnServer = false;
+		}
+		
+		
+		function disconnect() {
+			Fiber(function() {
+				// pageToken
+				// var page = liquid.pagesMap[pageToken];
+				// delete liquid.pagesMap[pageToken];
+				// page.setSession(null);
+				// // TODO: unpersist page
+				trace('serialize', 'Disconnected'); 
+				trace('serialize', pageToken);
+			}).run();
+		}
 
 		/**--------------------------------------------------------------
 		 *              Page and session setup
@@ -91,7 +136,7 @@
 			}
 			return newKey;
 		};
-		
+
 		// function createOrGetSessionObject(req) {
 			// var hardToGuessSessionId = req.session.id;
 		function createOrGetSessionObject(hardToGuessSessionId) {
@@ -102,6 +147,24 @@
 			return liquid.sessionsMap[hardToGuessSessionId];
 		};
 		
+		function registerPageTokenTurnaround(pageToken) {
+			return new Promise((resolve, reject) => {						
+				let page = liquid.getPage(pageToken);
+				if (typeof(page) !== 'undefined') {
+				} else {
+				}
+				const xhr = new XMLHttpRequest();
+				xhr.open("GET", url);
+				xhr.onload = () => resolve(xhr.responseText);
+				xhr.onerror = () => reject(xhr.statusText);
+				xhr.send();
+			});
+		}
+		
+		let pushMessageDownstreamCallback = null;
+		function setPushMessageDownstreamCallback(callback) {
+			pushMessageDownstreamCallback = callback;
+		}
 		
 		/**--------------------------------------------------------------
 		 *              Selection
@@ -348,19 +411,19 @@
 				var page = liquid.dirtyPageSubscritiptions[id];
 				var update = liquid.getSubscriptionUpdate(page);
 				// console.log(update);
-				if (typeof(page._pendingUpdates) === 'undefined') {
-					page._pendingUpdates = [];
+				if (typeof(page.const._pendingUpdates) === 'undefined') {
+					page.const._pendingUpdates = [];
 				}
-				page._pendingUpdates.push(update);
+				page.const._pendingUpdates.push(update);
 
-				if (typeof(page._socket) !== 'undefined' && page._socket !== null) {
-					while(page._pendingUpdates.length > 0) {
-						page._socket.emit('pushChangesFromUpstream', page._pendingUpdates.shift());
+				// TODO: refactor this part to the other layer... 
+				while(page.const._pendingUpdates.length > 0) {
+					if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', page.const._pendingUpdates.shift())) {
+						delete liquid.dirtyPageSubscritiptions[id];
+					} else {
+						// An update occured before the page has gotten to register its socket id.
+						trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
 					}
-					delete liquid.dirtyPageSubscritiptions[id];
-				} else {
-					trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
-					// An update occured before the page has gotten to register its socket id.
 				}
 			}
 		};
@@ -561,16 +624,25 @@
 				}
 		}
 
-			
+
+		
 		let pushingDownstreamData = false;
-		function pushDownstreamPulse(page, pulseData) {
-			pushingDownstreamData = true; // What happens on asynchronous wait?? 
-			Fiber(function() {
-				liquid.pulse(function() {
-					liquid.unserializeDownstreamPulse(pulseData);
-				});
-			}).run();
-			pushingDownstreamData = false;
+		function pushDownstreamPulse(pageToken, pulseData) {
+			new Promise((resolve, reject) => {
+				let page = liquid.getPage(pageToken);
+				if (typeof(page) !== 'undefined') {
+					pushingDownstreamData = true; // What happens on asynchronous wait?? 
+					Fiber(function() {
+						liquid.pulse(function() {
+							liquid.unserializeDownstreamPulse(pulseData);
+						});
+					}).run();
+					pushingDownstreamData = false;
+					resolve();
+				} else {
+					reject();
+				}
+			})
 		}
 
 

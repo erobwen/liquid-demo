@@ -1463,19 +1463,6 @@
 		 *  Create
 		 *
 		 ***************************************************************/
-		
-		function addModels(models) {
-			models.injectLiquid(liquid);
-			liquid.addClasses(models);
-		}
-		
-		function addClasses(classes) {
-			Object.assign(liquid.classRegistry, classes); 
-		};
-		
-		function setClassNamesTo(object) {
-			Object.assign(object, liquid.classRegistry);
-		}
 		 
 		function createImmutable(initial) {
 			inPulse++;
@@ -3161,8 +3148,6 @@
 			create : create,
 			c : create,
 			isObject: isObject,
-			addModels : addModels,
-			setClassNamesTo : setClassNamesTo,
 			
 			// Reactive primitives
 			uponChangeDo : uponChangeDo,

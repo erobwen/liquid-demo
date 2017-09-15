@@ -57,8 +57,6 @@ if (!liquid.persistent.demoInitialized) {
 	});
 }
 
-
-
 /* ------------------------------------------
  *    Initialize http server using express
  * ------------------------------------------ */
@@ -157,69 +155,31 @@ var liquidSocket = socketIo.sockets;
 liquidSocket.on('connection', function (socket) {
 	trace('serialize', 'Connected a socket!');
 	
-	socket.on('registerPageId', function(pageToken) {
-		let page = liquid.getPage(pageToken);
-		if (typeof(page) !== 'undefined') {
+	socket.on('registerPageTokenTurnaround', function(pageToken) {
+		liquid.registerPageTokenTurnaround(pageToken).then(function(page) {
 			page.const._socket = socket;
 			// liquid.pushDataDownstream(); // In case this page had subscription updates that never got pushed. ???
-		} else {
-			socket.emit('invalidPageToken'); // TODO: Consider create new page?			
-		}
+		}).catch(function() {
+			socket.emit('invalidPageToken'); // TODO: Consider create new page?
+		});
 	});
 
 	socket.on('pushDownstreamPulse', function(pageToken, pulseData) {
-		let page = liquid.getPage(pageToken);
-		if (typeof(page) !== 'undefined') {
-			liquid.pushDownstreamPulse(page, pulseData);
-		} else {
+		liquid.pushDownstreamPulse(pageToken, pulseData).catch(function() {
 			socket.emit('invalidPageToken'); // TODO: Consider create new page?			
-		}
+		});
 	});
 
-	liquid.callOnServer = false;
 	socket.on('makeCallOnServer', function(pageToken, callInfo) {
-		liquid.callOnServer = true;
-		// trace('serialize', "Make call on server");
-		// trace('serialize', pageToken);
-		// trace('serialize', callInfo);
-		Fiber(function() {
-			// trace('serialize', Object.keys(liquid.pagesMap));
-			if (typeof(liquid.pagesMap[pageToken]) !== 'undefined') {
-				var page = liquid.pagesMap[pageToken];
-				trace('serialize', "Make call on server ", page);
-
-				liquid.pulse(page, function() {
-					var object = getEntity(callInfo.objectId);
-					var methodName = callInfo.methodName;
-					var argumentList = callInfo.argumentList; // TODO: Convert to
-					trace('serialize', "Call: ", methodName);
-					trace('serialize', "Call: ", argumentList);
-
-					// traceTags.event = true;
-					if (object.allowCallOnServer(page)) {
-						liquid.unlockAll(function() {
-							object[methodName].apply(object, argumentList);
-						});
-					}
-					// delete traceTags.event;
-
-					trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
-				});
-			}
-		}).run();
-		liquid.callOnServer = false;
+		liquid.makeCallOnServer(pageToken, callInfo);
 	});
 
 	socket.on('disconnect', function(pageToken) {
-		Fiber(function() {
-			// pageToken
-			// var page = liquid.pagesMap[pageToken];
-			// delete liquid.pagesMap[pageToken];
-			// page.setSession(null);
-			// // TODO: unpersist page
-			trace('serialize', 'Disconnected'); 
-			trace('serialize', pageToken);
-		}).run();
+		liquid.disconnect(pageToken);
 	});
 });
+
+liquid.setPushMessageDownstreamCallback(function(page, messageType, data) {
+	page.const._socket.emit(messageType, data);	
+});		
 
