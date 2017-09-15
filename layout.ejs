@@ -3,20 +3,8 @@
 <head>
     <title>Reference Service</title>
 
-    <!--link rel="stylesheet" href="/external/bower/bootstrap/dist/css/bootstrap.css"-->
-
     <!-- TODO <script src="/js/liquid/dependencies/sails.io.js"></script>-->
     <link rel="stylesheet" href="/external/font-awsome/css/font-awesome.min.css">
-
-    <!-- Liquid scripts -->
-    <!--script src="/external/react/react.js"></script-->
-    <script src="/external/react-0.14.7/build/react.js"></script>
-    <script src="/external/react-0.14.7/build/react-with-addons.js"></script>
-    <script src="/external/react-0.14.7/build/react-dom.js"></script>
-    <!--script src="/external/babel-core/browser.min.js"></script-->
-    <!--script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>-->
-    <script src="/external/babel/browser.min.js"></script>
-    <script src="/external/socket.io-client/socket.io.js"></script>
 
 	<!-- Liquid framework -->
     <script src="/liquid/reallyDumRequire.js"></script>
@@ -25,15 +13,20 @@
     <script src="/liquid/liquidEntity.js"></script>
     <script src="/liquid/liquid.js"></script>
 	
-	<!-- Integration with other frameworks -->
+	<!-- Integration with react -->
+	<script src="/external/babel/browser.min.js"></script>
+	<script src="/external/react-0.14.7/build/react.js"></script>
+    <script src="/external/react-0.14.7/build/react-with-addons.js"></script>
+    <script src="/external/react-0.14.7/build/react-dom.js"></script>
     <script src="/reactLiquidIntegration.js"></script>
 	
-	<!-- Application -->
+	<!-- Application code -->
     <script src="/application/model.js"></script>
     <script type="text/babel" src="/application/reactComponents.jsx"></script>
-    <script>var data = <%- data %></script>
-    
-	<!-- Start -->
+	    
+	<!-- Start demo application -->
+    <script>var data = <%- data %></script>	
+    <script src="/external/socket.io-client/socket.io.js"></script>
 	<script src="/demo.js"></script>
     <script type="text/babel" src="/demoUI.jsx"></script>
 </head>
@@ -42,4 +35,13 @@
 <div id="ReactRootDiv">
 </div>
 </body>
+    <!--link rel="stylesheet" href="/external/bower/bootstrap/dist/css/bootstrap.css"-->
+
+    <!-- Liquid scripts -->
+    <!--script src="/external/react/react.js"></script-->
+
+    <!--script src="/external/babel-core/browser.min.js"></script-->
+    <!--script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>-->
 </html>
+
+

@@ -16,6 +16,7 @@
 	
 	
 	function createCausalityInstance(configuration) {
+		let causalityInstance = {};
 		
 		let state = { 
 			useIncomingStructures : configuration.useIncomingStructures,
@@ -1463,6 +1464,21 @@
 		 *  Create
 		 *
 		 ***************************************************************/
+		
+		state.classRegistry = {};
+		
+		function addModels(models) {
+			models.injectLiquid(causalityInstance);
+			addClasses(models);
+		}
+		
+		function addClasses(classes) {
+			Object.assign(state.classRegistry, classes); 
+		};
+		
+		function setClassNamesTo(object) {
+			Object.assign(object, state.classRegistry);
+		}
 		 
 		function createImmutable(initial) {
 			inPulse++;
@@ -3150,6 +3166,8 @@
 			create : create,
 			c : create,
 			isObject: isObject,
+			addModels : addModels,
+			setClassNamesTo : setClassNamesTo,
 			
 			// Reactive primitives
 			uponChangeDo : uponChangeDo,
@@ -3200,7 +3218,7 @@
 		}
 
 		
-		let causalityInstance = {
+		Object.assign(causalityInstance, {
 			state : state,
 			
 			// Install causality to global scope. 
@@ -3228,7 +3246,7 @@
 			getActivityListPrevious : getActivityListPrevious,
 			pokeObject : pokeObject,
 			removeFromActivityList : removeFromActivityList
-		}
+		});
 		Object.assign(causalityInstance, languageExtensions);
 		Object.assign(causalityInstance, debuggingAndTesting);
 		return causalityInstance;

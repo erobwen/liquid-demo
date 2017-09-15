@@ -62,7 +62,7 @@ if (!liquid.persistent.demoInitialized) {
  * ------------------------------------------ */
 
  let liquidControllers = {
-	'' : "LiquidPage"
+	'' : "LiquidPage",
 	'index': 'LiquidPage',
 	'demo': function(req) { // Note: req follows express conventions.
 		var session = liquid.createOrGetSessionObject(req.session.token);

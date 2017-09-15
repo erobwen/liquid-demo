@@ -203,6 +203,7 @@
 		addMethods : function (object) {}
 	});	
 	return {
+		injectLiquid : injectLiquid,
 		User : User,
 		Category : Category,
 	}	

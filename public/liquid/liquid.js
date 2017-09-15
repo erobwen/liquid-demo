@@ -23,7 +23,6 @@
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
 	
-	var Fiber = require('fibers');
 	
 	function createLiquidInstance(configuration) {		
 		pagesMap = {};
@@ -45,8 +44,17 @@
 		 *
 		 ***************************************************************/
 		
+		// Mock that shit
+		let Fiber = function(action) {
+			return {
+				run : function() {
+					action();
+				}
+			}
+		};
+		
 		if (configuration.usePersistency) {
-			var Fiber = require('fibers');   // consider, remove fiber when not using rest api?    // change to httpRequest pulse  ?
+			// Fiber = require('fibers');   // consider, remove fiber when not using rest api?    // change to httpRequest pulse  ?
 				
 			let originalPulse = liquid.pulse;
 			liqud.pulse = function(action) {
@@ -124,7 +132,7 @@
 		 
 		function generatePageId() {
 			return liquid.generateUniqueKey(liquid.pagesMap);
-		};
+		}
 		
 		function generateUniqueKey(keysMap) {
 			var newKey = null;
@@ -135,7 +143,7 @@
 				}
 			}
 			return newKey;
-		};
+		}
 
 		// function createOrGetSessionObject(req) {
 			// var hardToGuessSessionId = req.session.id;
@@ -145,7 +153,7 @@
 				liquid.sessionsMap[hardToGuessSessionId] = create('LiquidSession', {hardToGuessSessionId: hardToGuessSessionId});
 			}
 			return liquid.sessionsMap[hardToGuessSessionId];
-		};
+		}
 		
 		function registerPageTokenTurnaround(pageToken) {
 			return new Promise((resolve, reject) => {						
@@ -170,18 +178,17 @@
 		 *              Selection
 		 *----------------------------------------------------------------*/
 
-		function addToSelection = function(selection, object) {
-				if (object !== null && typeof(selection[object._id]) === 'undefined' && liquid.allowRead(object)) {
-					trace('selection', "Added: ", object);
-					selection[object._id] = true;
-					return true;
-				} else {
-					trace('selection', "Nothing to add!");
-					// console.log("Nothing to add!");
-					return false;
-				}
-			};
-		};
+		function addToSelection(selection, object) {
+			if (object !== null && typeof(selection[object._id]) === 'undefined' && liquid.allowRead(object)) {
+				trace('selection', "Added: ", object);
+				selection[object._id] = true;
+				return true;
+			} else {
+				trace('selection', "Nothing to add!");
+				// console.log("Nothing to add!");
+				return false;
+			}
+		}
 		
 
 		/**----------------------------------------------------------------
@@ -614,7 +621,6 @@
 			});			
 		}
 			
-			Fiber(function() {
  		
 		function getPage(pageToken) {
 				trace('serialize', "Register page connection:" + pageToken);
@@ -642,7 +648,7 @@
 				} else {
 					reject();
 				}
-			})
+			});
 		}
 
 
@@ -723,7 +729,7 @@
 		
 		var callId = 0;
 		
-		function addCallOnServer = function(object) {
+		function addCallOnServer(object) {
 			if (liquid.onClient) {
 				object['callOnServer'] = function() {
 					// Split arguments
@@ -828,7 +834,7 @@
 		 * idToUpstreamId
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
-		function pushDataUpstream = function() {
+		function pushDataUpstream() {
 			// console.log("Not yet!");
 			// return;
 			if (typeof(liquid.upstreamSocket) !== undefined) {

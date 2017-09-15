@@ -43,6 +43,10 @@
 		return result;
 	}
 
+	var capitaliseFirstLetter = function(string){
+		return string.substr(0, 1).toUpperCase() + string.slice(1);
+	};
+
 	function createIncomingProperty(object, name, incomingProperty) {
 		object["get" + capitaliseFirstLetter(name)] = function() {
 			return getSingleIncomingReference(this, incomingProperty);
@@ -498,12 +502,13 @@
 	};
 	
 	return {
+		injectLiquid : injectLiquid,
 		LiquidEntity : LiquidEntity,
 		LiquidSession : LiquidSession,
 		LiquidPage : LiquidPage,
 		LiquidPageService : LiquidPageService,
-		LiquidUser : LiquidUser,
-		LiquidUserPasswordVault : LiquidUserPasswordVault
+		LiquidUser : LiquidUser
+		// LiquidUserPasswordVault : LiquidUserPasswordVault
 	}	
 }));
 
