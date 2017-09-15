@@ -1698,10 +1698,11 @@
 		 
 		function canWrite(object) {
 			if (postPulseProcess > 0) {
-				log("CANNOT WRITE IN POST PULSE");
-				throw new Error("CANNOT WRITE IN POST PULSE");
-				return false;
+				return true;
 			}
+			// log("CANNOT WRITE IN POST PULSE");
+				// return false;
+			// }
 			if (writeRestriction !== null && typeof(writeRestriction[object.const.id]) === 'undefined') {
 				return false;
 			}
@@ -3140,7 +3141,8 @@
 		 *
 		 *  Module installation and configuration
 		 *
-		 ************************************************************************/		 
+		 ************************************************************************/
+
 		
 		// Language extensions
 		let languageExtensions = {
