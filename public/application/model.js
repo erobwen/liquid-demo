@@ -16,6 +16,10 @@
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
 	// This has to follow the injected dependency pattern to avoid circular package dependencies. This is since reallyDumbRequire cannot deal with circularity, dumb as it is...
 
+	let liquidEntity = require("../liquid/liquidEntity.js");
+	let LiquidUser = liquidEntity.LiquidUser;
+	let LiquidEntity = liquidEntity.LiquidEntity;
+	
 	let liquid; 
 	function injectLiquid(injectedLiquid) {
 		liquid = injectedLiquid;
@@ -37,70 +41,71 @@
 		}
 	};
 
-	registerClass({
-		name: 'User', _extends: 'LiquidUser',
-		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('name', '');
-			object.addProperty('email', '');
-					
-			// Relations
-			object.addRelation('AddedReference', 'toMany');
-			object.addRelation('OwnedCategory', 'toMany');
-		},
-		
-		addMethods : function (object) {
-			object.addMethod('selectAllCategories', function(selection) {
-				liquid.addToSelection(selection, this);
-				this.getOwnedCategories().forEach(function(category) {
-					liquid.addToSelection(selection, category);
-				});
-			});
-			
-			object.addMethod('getRootCategories', function() {
-				var result = [];
-				this.getOwnedCategories().forEach(function(category) {
-					if (category.getParents().length === 0) {
-						result.push(category);
-					}
-				});
-				return result;
-			})
+	class User extends LiquidUser {
+		constructor() {} // Always leave empty
+
+		function initialize(data) {
+			super(data);
+			this.name = '';
+			this.email = '';
+			this.addedReferences = liquid.create([]);
+			this.ownedCategories = liquid.create([]);
 		}
-	});	
-
-
-	registerClass({
-		name: 'Category', _extends: 'Entity',
 		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('name', '');
-			object.addProperty('description', '');
-				
-			// Relations
-			object.addRelation('SubCategory', 'toMany', {shape: 'acyclic'});
-			object.addRelation('Reference', 'toMany');
-			object.addReverseRelationTo('User_OwnedCategory', 'Owner', 'toOne');
-			object.addReverseRelationTo('Category_SubCategory', 'Parent', 'toMany');
-		},
+		function selectAllCategories(selection) {
+			this.ownedCategories.forEach(function(category) {
+				liquid.addToSelection(selection, category);
+			});
+		}
 		
-		addMethods : function (object) {
-			object.overrideMethod('init', function(parent, initialData) {
-				parent(initialData);
-				if (typeof(initialData.user) !== 'undefined') {
-					this.setOwner(initialData.user);
+		function getRootCategories() {
+			let result = [];
+			this.ownedCategories.forEach(function(category) {
+				if (liquid.countIncoming("subCategory", category) === 0) {
+					result.push(category);
 				}
 			});
+			return result;
+		}		
+	}
+
+	class Category extends LiquidEntity {
+		function initialize(data) {
+			this.name = '';
+			this.description = '';
+			
+			this.subCategories = liquid.create([]);
+			this.references = liquid.create([]);
+			if (typeof(data.user) !== 'undefined') {
+				data.user.ownedCategories.push(this);
+			} 
+		}
+		
+		function getOwner() {
+			return liquid.getSingleIncoming(this, "ownedCategories");
+		}
+
+		function getParent() {
+			return liquid.getSingleIncoming(this, "subCategories");
+		}
+		
+		function __() {
+			// Old:
+			// return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";
+
+			// New: TODO: Create a without observation syntax?
+			
+			// var unloadedOrName = this._propertyInstances['name'].data; //this.getName(); //+ liquid.onClient && !liquid. ?;
+			// return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";			
+		}
+	}
+	
+	registerClass({
+		
+		addMethods : function (object) {
+			
 			
 			object.overrideMethod('__', function(parent) {
-				// Old:
-				// return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";
-
-				// New: TODO: Create a without observation syntax?
-				var unloadedOrName = this._propertyInstances['name'].data; //this.getName(); //+ liquid.onClient && !liquid. ?;
-				return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";
 			});
 
 			object.overrideMethod('accessLevel', function(parent, page) {  // Return values, "noAccess", "readOnly", "readAndWrite".

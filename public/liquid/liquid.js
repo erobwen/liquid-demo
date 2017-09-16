@@ -57,7 +57,7 @@
 			// Fiber = require('fibers');   // consider, remove fiber when not using rest api?    // change to httpRequest pulse  ?
 				
 			let originalPulse = liquid.pulse;
-			liqud.pulse = function(action) {
+			liquid.pulse = function(action) {
 				Fiber(function() {
 					originalPulse(action);
 				}).run();
