@@ -29,19 +29,7 @@
 	// return liquid.getSingleIncomingReference(this, "session");
 	// return liquid.getSingleIncomingReference(this, "Page", "session");
 
-	function getSingleIncomingReference(object, property) {	
-		let result = null;
-		if (typeof(this.incoming.session) !== 'undefined') {
-			let incomingContents = this.incoming.session.contents;
-			let keys = Object.keys(incomingContents);
-			if (keys.length === 1) {
-				result = incomingContents[keys[0]];
-			} else if (Object.keys(incomingContents) > 1) {
-				throw new Error("More than one incoming reference with property " + keys[0]);
-			}
-		}
-		return result;
-	}
+
 
 	var capitaliseFirstLetter = function(string){
 		return string.substr(0, 1).toUpperCase() + string.slice(1);
@@ -76,98 +64,241 @@
 	// }();
 
 	
+		/** --------------------------
+		*       Helpers
+		------------------------------*/
+		
+		function createIdMap(arrayOfObjects) {
+			let idMap = {};
+			arrayOfObjects.forEach(function(object) {
+				idMap[liquid.idExpression(object.const.id)] = object;
+			});
+			return idMap;
+		}
+
+		var capitaliseFirstLetter = function(string){
+			return string.substr(0, 1).toUpperCase() + string.slice(1);
+		};
+
+		/** ---------------------------------
+		*       Create incoming properties
+		-------------------------------------*/
+		
+		// TODO: use javascript getters/setters.
+		// (function(i) {
+            // Object.defineProperty(self, i, {
+                // // Create a new getter for the property
+                // get: function () {
+                    // return properties[i];
+                // },
+                // // Create a new setter for the property
+                // set: function (val) {
+                    // properties[i] = val;
+                // }
+            // })
+        // })(i);
+
+		
+		function createIncomingProperty(object, name, incomingProperty, filter) {
+			let getterName = "get" + capitaliseFirstLetter(name);
+			object[getterName] = function() {
+				return getSingleIncomingReference(this, incomingProperty, filter);
+			}
+
+			let setterName = "set" + capitaliseFirstLetter(name);
+			object[setterName] = function(newObject) {
+				let previousObject = object[getterName];
+				if (newObject !== previousObject && filter(newObject)) {
+					if (previousObject[incomingProperty] instanceof LiquidIndex) {
+						previousObject[incomingProperty].remove(object);
+					} else {
+						previousObject[incomingProperty] = null; // Or delete by choice? 
+					}
+				}
+				this[incomingProperty] = this;
+			}	
+		}
+
+		
+		function createIncomingSetProperty(object, name, incomingClassFilter, incomingProperty, sorter) {
+			let filter = function(object) {
+				return (object instanceof incomingClassFilter);
+			}
+			
+			// filter, sorter
+			let getterName = "get" + capitaliseFirstLetter(name);
+			object[getterName] = function() {
+				let objects = getIncomingReferences(this, incomingProperty, filter);
+				if (typeof(sorter) !== 'undefined') {
+					objects.sort(sorter);
+				}
+				return objects;
+			}
+
+			let setterName = "set" + capitaliseFirstLetter(name);
+			object[setterName] = function(newObjects) {
+				let newObjectsIdMap = createIdMap(newObjects);
+				let previousObjectsIdMap = getIncomingReferencesMap(object, incomingProperty, filter);
+				
+				for(id in previousObjectsIdMap) {
+					let previousObject = previousObjectsIdMap[id];
+					if (!newObjectsIdMap[id]) {
+						// if (previousObject.references instanceof LiquidIndex)
+						if (previousObject[incomingProperty] instanceof LiquidIndex) {
+							previousObject[incomingProperty].remove(object);
+						} else {
+							previousObject[incomingProperty] = null; // Or delete by choice? 
+						}					
+					}
+				}
+				
+				for(id in newObjectsIdMap) {
+					let newCategory = newObjectsIdMap[id];
+					if (!previousObjectsIdMap[newCategory]) {
+						if (newCategory[incomingProperty] instanceof LiquidIndex) {
+							newCategory[incomingProperty].add(object);
+						} else {
+							newCategory[incomingProperty] = object;
+						}
+					}
+				}
+			}	
+		}
+		
 	/*---------------------------
 	 *         Entity 
 	 *---------------------------*/
 
-	
-	var LiquidEntity = function() {
-		if (liquid.configuration.onClient) {
+	class LiquidEntity {
+		constructor() {
 			// Client only (reactive) properties:
-			this.isPlaceholderObject = false;
-			this.isLockedObject = false;
+			if (liquid.configuration.onClient) {
+				this.isPlaceholderObject = false;
+				this.isLockedObject = false;			
+			}
 		}
-	}
 
-	LiquidEntity.prototype.initialize = function(data) {
-		for(property in data) {
-			this[property] = data[property];
+		initialize(data) {
+			for(property in data) {
+				this[property] = data[property];
+			}
 		}
-	}
+
+		// // This is the signum function, useful for debugging and tracing.
+		__() {
+			return "(" + this.className() + "." + this.idString() + ")";
+		};
 
 
-	LiquidEntity.prototype.isLoaded = function() {
-		// if (liquid.onClient) {
-			// if (arguments.length == 1) {
-				// var selector = arguments[0];
-				// if (typeof(liquid.instancePage) !== 'undefined' && liquid.instancePage !== null) {
-					// return (typeof(liquid.instancePage.getLoadedSelectionsFor(this)[selector]) !== undefined);
-				// } else {
-					// return true;
-				// }
-			// } else {
-				// return !this.getIsPlaceholderObject();
+		idString() {
+			// var idString = "";
+			// if (this._globalId !== null) {
+			//     idString = "¤." + this._globalId;
+			// } else if (this._persistentId !== null){
+			//     idString = "#." + this._persistsentId;
+			// } else if (this._id !== null) {
+			//     idString = "id." + this._id;
 			// }
-		// } else {
-			// return true;
-		// }
-	}
+			// return idString;
+			function removeNull(value) {
+				return (value === null) ? 'x' : value;
+			}
+			return this._id + "." + removeNull(this._upstreamId) + "." + removeNull(this._persistentId) + "." + removeNull(this._globalId);
+		};
 
-	LiquidEntity.prototype.accessLevel = function(page) {
-		return "readAndWrite";
-	}
-
-	LiquidEntity.prototype.allowCallOnServer = function(page) {
-		return false;
-	}
-
-	LiquidEntity.prototype.readable = function() {
-		return liquid.allowRead(this);
-	}
-
-	LiquidEntity.prototype.writeable = function() {
-		return liquid.allowWrite(this);
-	}
-
-	// should use instanceof instead.
-	// LiquidEntity.prototype.is = function(data) {
-		// return typeof(this.classNames[className]) !== 'undefined';
-	// }
-
-	// object._idString = function() {
-		// // var idString = "";
-		// // if (this._globalId !== null) {
-		// //     idString = "¤." + this._globalId;
-		// // } else if (this._persistentId !== null){
-		// //     idString = "#." + this._persistsentId;
-		// // } else if (this._id !== null) {
-		// //     idString = "id." + this._id;
-		// // }
-		// // return idString;
-		// function removeNull(value) {
-			// return (value === null) ? 'x' : value;
-		// }
-		// return this._id + "." + removeNull(this._upstreamId) + "." + removeNull(this._persistentId) + "." + removeNull(this._globalId);
-	// };
-
-	// // This is the signum function, useful for debugging and tracing.
-	// object.__ = function() {
-		// return "(" + this.className + "." + this._idString() + ")";
-	// };
-
-	LiquidEntity.prototype.selectAll = function(selection) {
-		trace('selection', liquid.allowRead(this));
-		if (typeof(selection[this.const.id]) === 'undefined' && liquid.allowRead(this)) {
-			// console.log("Selecting " + this.__());
-			selection[this.const.id] = true;
-			for (property in this) {
-				let value = this[property];
-				if (value instanceof LiquidEntity) { //liquid.isObject(value)
-					value.selectAll();
+		className(object) {
+			return Object.getPrototypeOf(object).constructor.name;
+		}
+		
+		cached() {
+			let argumentsList = argumentsToArray(arguments);
+			let functionName = argumentsList.shift();
+			
+			return liquid.callAndCacheForUniqueArgumentLists(
+				liquid.getObjectAttatchedCache(this, "_cachedCalls", functionName), 
+				argumentsList,
+				function() {
+					return this[functionName].apply(this, argumentsList);
+				}.bind(this)
+			);
+		}
+					
+		selectAll = function(selection) {
+			trace('selection', liquid.allowRead(this));
+			if (typeof(selection[this.const.id]) === 'undefined' && liquid.allowRead(this)) {
+				// console.log("Selecting " + this.__());
+				selection[this.const.id] = true;
+				for (property in this) {
+					let value = this[property];
+					if (value instanceof LiquidEntity) { //liquid.isObject(value)
+						value.selectAll(selection);
+					}
 				}
 			}
 		}
+		
+		isLoaded() {
+			// if (liquid.onClient) {
+				// if (arguments.length == 1) {
+					// var selector = arguments[0];
+					// if (typeof(liquid.instancePage) !== 'undefined' && liquid.instancePage !== null) {
+						// return (typeof(liquid.instancePage.getLoadedSelectionsFor(this)[selector]) !== undefined);
+					// } else {
+						// return true;
+					// }
+				// } else {
+					// return !this.getIsPlaceholderObject();
+				// }
+			// } else {
+				// return true;
+			// }
+		}
+		
+		pageAccessLevel(page) {
+			return this.accessLevel(page.getActiveUser());
+		}
+		
+		accessLevel(user) {
+			return "readAndWrite"
+		}
+		
+		readable() {
+			return liquid.allowRead(this);
+		}
+
+		readable() {
+			return liquid.allowWrite(this);
+		}
+		
+		pageAllowCallOnServer(page) {
+			return this.allowCallOnServer(page.getActiveUser());			
+		}
+		
+		allowCallOnServer(user) {
+			return false;
+		}
 	}
+
+
+	/*---------------------------
+	 *         Index 
+	 *---------------------------*/
+
+	 class LiquidIndex extends LiquidEntity {
+		
+		function initialize(data) {
+			this.sorter = data.sorter;
+			this.contents = liquid.create({});
+		}
+		
+		function remove(object) {
+			delete this.contents[liquid.idExpression(object.const.id)];
+		}
+		
+		function add(object) {
+			this.contents[liquid.idExpression(object.const.id)] = object;		 
+		}
+	 }
 	
 	
 	/*---------------------------
@@ -184,7 +315,7 @@
 		return password + " [encrypted]";
 	}
 
-	createIncomingProperty(LiquidSession.prototype, "page", "session");
+	createIncomingSetProperty(LiquidSession.prototype, "pages", LiquidPage, "session");
 
 	// LiquidSession.prototype.getPage = function() {
 		// return getSingleIncomingReference(this, "session");

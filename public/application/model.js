@@ -41,27 +41,28 @@
 		}
 	};
 
+	
 	class User extends LiquidUser {
 		constructor() {} // Always leave empty
 
-		function initialize(data) {
+		initialize(data) {
 			super(data);
 			this.name = '';
 			this.email = '';
-			this.addedReferences = liquid.create([]);
-			this.ownedCategories = liquid.create([]);
+			this.addedReferences = liquid.create('LiquidIndex');
+			this.ownedCategories = liquid.create('LiquidIndex');
 		}
 		
-		function selectAllCategories(selection) {
+		selectAllCategories(selection) {
 			this.ownedCategories.forEach(function(category) {
 				liquid.addToSelection(selection, category);
 			});
 		}
 		
-		function getRootCategories() {
+		getRootCategories() {
 			let result = [];
 			this.ownedCategories.forEach(function(category) {
-				if (liquid.countIncoming("subCategory", category) === 0) {
+				if (category.getParents().length === 0) {
 					result.push(category);
 				}
 			});
@@ -74,142 +75,70 @@
 			this.name = '';
 			this.description = '';
 			
-			this.subCategories = liquid.create([]);
-			this.references = liquid.create([]);
+			this.subCategories = create("LiquidIndex"); //liquid.create([]);
+			this.references = create("LiquidIndex"); //liquid.create([]);
 			if (typeof(data.user) !== 'undefined') {
 				data.user.ownedCategories.push(this);
 			} 
 		}
-		
-		function getOwner() {
-			return liquid.getSingleIncoming(this, "ownedCategories");
-		}
-
-		function getParent() {
-			return liquid.getSingleIncoming(this, "subCategories");
-		}
-		
-		function __() {
+			
+		__() {
+			liquid.withoutRecording(function() {
+				return "(" + this._className() + "." + this._idString() + ":" + unloadedOrName + ")";				
+			});
 			// Old:
 			// return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";
 
 			// New: TODO: Create a without observation syntax?
 			
 			// var unloadedOrName = this._propertyInstances['name'].data; //this.getName(); //+ liquid.onClient && !liquid. ?;
-			// return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";			
+		}
+		
+		// Return values, "noAccess", "readOnly", "readAndWrite".
+		accessLevel(user) {
+			// trace('security', "Considering security: ", page, " access level to ",  this);
+			var pageUserIsOwner = this.getOwner() === user;
+			if (pageUserIsOwner)  {
+				return "readAndWrite";
+			} else {
+				return this.name.startsWith("X") ? "noAccess" : "readOnly";
+			}
 		}
 	}
+	liquidEntity.addIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
+	liquidEntity.addIncomingProperty(Category, "parents", Category, "subCategories"); 
 	
-	registerClass({
-		
-		addMethods : function (object) {
+	function defined(entity) {
+		return typeof(entity) !== 'undefined';
+	}
+	
+	class Reference extends LiquidEntity {
+		initialize(data) {
+			super(data);
+			this.url = "";
+			this.pageExtractedTitle = "";
+			this.pageExtractedSummary = "";
+			this.pageExtractedImageUrl = "";
 			
-			
-			object.overrideMethod('__', function(parent) {
-			});
-
-			object.overrideMethod('accessLevel', function(parent, page) {  // Return values, "noAccess", "readOnly", "readAndWrite".
-				trace('security', "Considering security: ", page, " access level to ",  this);
-				var pageUserIsOwner = this.getOwner() === page.getActiveUser();
-				if (pageUserIsOwner)  {
-					return "readAndWrite";
-				} else {
-					return startsWith("X", this.getName()) ? "noAccess" : "readOnly";
-				}
-			});
-
+			if (defined(initialData.user)) {
+				this.setOwner(initialData.user);
+			}
+			if (defined(initialData.categories)) {
+				this.setCategories(initialData.categories);
+			}
+			if (defined(initialData.category)) {
+				// console.log(this);
+				this.setCategories([initialData.category]);
+			}
 		}
-	});
+	}
+	liquidEntity.addIncomingSetProperty(Reference, "categories", Category, "references"); 
+	liquidEntity.addIncomingProperty(Reference, "owner", User, "addedReferences"); 
 
-
-	registerClass({
-		name: 'Reference', _extends: 'Entity',
-		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('url', '');
-			object.addProperty('pageExtractedTitle', '');
-			object.addProperty('pageExtractedSummary', '');
-			object.addProperty('pageExtractedImageUrl', '');
-					
-			// Relations
-			object.addReverseRelationTo('Category_Reference', 'Category', 'toMany');
-			object.addReverseRelationTo('User_AddedReference', 'Owner', 'toOne');
-		},
-		
-		addMethods : function (object) {
-			// console.log("Adding methods in Reference");
-			object.overrideMethod('init', function(parent, initialData) {
-				// console.log("=== Initialize in Reference ===");
-				parent(initialData);
-				if (defined(initialData.user)) {
-					this.setOwner(initialData.user);
-				}
-				if (defined(initialData.categories)) {
-					// console.log(this);
-					this.setCategories(initialData.categories);
-				}
-				// console.log(initialData);
-				// console.log(defined(initialData.category));
-				if (defined(initialData.category)) {
-					// console.log(this);
-					this.setCategories([initialData.category]);
-				}
-			});
-		}
-	});	
-
-
-	registerClass({
-		name: 'Comment', _extends: 'Entity',
-		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('url', '');
-			
-			// Relations
-			object.addRelation('AddedBy', 'toMany');
-		},
-		
-		addMethods : function (object) {}
-	});	
-
-	registerClass({
-		name: 'Title', _extends: 'Comment',
-		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('value', '');
-		},
-		
-		addMethods : function (object) {}
-	});	
-
-	registerClass({
-		name: 'PlainTextComment', _extends: 'Comment',
-		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('text', '');
-		},
-		
-		addMethods : function (object) {}
-	});	
-
-	registerClass({
-		name: 'TitledPlainTextComment', _extends: 'Comment',
-		
-		addPropertiesAndRelations : function (object) {
-			// Properties
-			object.addProperty('text', '');
-			object.addProperty('title', '');
-		},
-		
-		addMethods : function (object) {}
-	});	
 	return {
 		injectLiquid : injectLiquid,
 		User : User,
 		Category : Category,
+		Reference : Reference
 	}	
 }));
