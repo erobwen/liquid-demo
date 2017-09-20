@@ -5,7 +5,7 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-		root.userPageAndSession = factory();
+		root.liquidEntity = factory();
     }
 }(this, function () {
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.

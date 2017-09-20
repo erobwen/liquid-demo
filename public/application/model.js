@@ -13,12 +13,9 @@
 		// }
     }
 }(this, function () {
-	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
-	// This has to follow the injected dependency pattern to avoid circular package dependencies. This is since reallyDumbRequire cannot deal with circularity, dumb as it is...
-
-	let liquidEntity = require("../liquid/liquidEntity.js");
-	let LiquidUser = liquidEntity.LiquidUser;
-	let LiquidEntity = liquidEntity.LiquidEntity;
+	let liquid = require("./liquid.js");
+	let LiquidUser = liquid.LiquidUser;
+	let LiquidEntity = liquid.LiquidEntity;
 	
 	let liquid; 
 	function injectLiquid(injectedLiquid) {
@@ -105,8 +102,8 @@
 			}
 		}
 	}
-	liquidEntity.addIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
-	liquidEntity.addIncomingProperty(Category, "parents", Category, "subCategories"); 
+	liquid.addIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
+	liquid.addIncomingProperty(Category, "parents", Category, "subCategories"); 
 	
 	function defined(entity) {
 		return typeof(entity) !== 'undefined';
@@ -132,8 +129,8 @@
 			}
 		}
 	}
-	liquidEntity.addIncomingSetProperty(Reference, "categories", Category, "references"); 
-	liquidEntity.addIncomingProperty(Reference, "owner", User, "addedReferences"); 
+	liquid.addIncomingSetProperty(Reference, "categories", Category, "references"); 
+	liquid.addIncomingProperty(Reference, "owner", User, "addedReferences"); 
 
 	return {
 		injectLiquid : injectLiquid,

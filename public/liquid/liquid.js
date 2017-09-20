@@ -36,7 +36,9 @@
 		} else {
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
 		}		
-		liquid.addModels(require("./liquidEntity.js"));
+		let liquidEntity = require("./liquidEntity.js");
+		liquid.addModels(liquidEntity);
+		Object.assign(liquid, liquidEntity); // Assign all to liquid.... 
 
 		/***************************************************************
 		 *
