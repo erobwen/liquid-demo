@@ -17,11 +17,6 @@
 	let LiquidUser = liquid.LiquidUser;
 	let LiquidEntity = liquid.LiquidEntity;
 	
-	let liquid; 
-	function injectLiquid(injectedLiquid) {
-		liquid = injectedLiquid;
-	}
-
 	// Reference service
 	var defined = function(something) {
 		return typeof(something) !== 'undefined';

@@ -297,6 +297,7 @@
 			this._const_isIndex = true; // Tell causality to put something in the const? 
 		}
 		initialize(data) {
+			super.initialize(data);
 			this.sorter = data.sorter;
 			this.contents = liquid.create({});
 		}
@@ -321,33 +322,14 @@
 	
 	
 	/*---------------------------
-	 *         Session 
-	 *---------------------------*/
-
-	class LiquidSession extends LiquidEntity {
-		initialize(data) {
-			super(data)
-			this.token = null; // Hard to guess session id
-			this.user = null;			
-		}
-		
-
-		
-		accessLevel(page) {
-			return 'readOnly';
-		}
-	}
-	createIncomingSetProperty(LiquidSession, "pages", LiquidPage, "session");
-
-	/*---------------------------
 	 *         Page 
 	 *---------------------------*/
 
-	class LiquidPage() {
+	class LiquidPage extends LiquidEntity {
 		initialize(data) {
-			super(data)
+			super.initialize(data);
 			
-			this.session = null;
+			this.session = null; // TODO: will this override stuff in data?
 			this.receivedSubscriptions = []; // Do not do in constructor... besides, it needs a create. 			
 		
 			this.service = this.createPageService();
@@ -375,7 +357,7 @@
 			return 'readOnly';
 		}
 		
-		upstreamPulseReceived = function() {
+		upstreamPulseReceived() {
 			// TODO: activate this later
 			// this.setReceivedSubscriptions(this.getOrderedSubscriptions()); // TODO: Consider, what happens if two subscriptions are requested at the same time?
 			// this._requestingSubscription = false;
@@ -476,10 +458,27 @@
 
 
 	/*---------------------------
+	 *         Session 
+	 *---------------------------*/
+
+	class LiquidSession extends LiquidEntity {
+		initialize(data) {
+			super.initialize(data);
+			this.token = null; // Hard to guess session id
+			this.user = null;			
+		}
+		
+		accessLevel(user) {
+			return 'readOnly';
+		}
+	}
+	createIncomingSetProperty(LiquidSession, "pages", LiquidPage, "session");
+
+	/*---------------------------
 	 *      Page Service
 	 *---------------------------*/
 
-	class LiquidPageService {
+	class LiquidPageService extends LiquidEntity {
 		initialize() {
 			this.orderedSubscriptions = [];
 			
@@ -564,7 +563,7 @@
 
 	class LiquidUser extends LiquidEntity {
 		initialize(data) {
-			super(data);
+			super.initialize(data);
 			this.loginName = "";
 			this.alternativeLoginName = "";
 			
