@@ -1499,19 +1499,17 @@
 		 *
 		 ***************************************************************/
 		
-		state.classRegistry = {};
-		
-		function addModels(models) {
-			models.injectLiquid(causalityInstance);
-			addClasses(models);
-		}
+		// configuration.classRegistry = {};
 		
 		function addClasses(classes) {
-			Object.assign(state.classRegistry, classes); 
+			console.log("addClasses!!");
+			console.log(classes);
+			Object.assign(configuration.classRegistry, classes); 
+			console.log(configuration.classRegistry);
 		};
 		
-		function setClassNamesTo(object) {
-			Object.assign(object, state.classRegistry);
+		function assignClassNamesTo(object) {
+			Object.assign(object, configuration.classRegistry);
 		}
 		 
 		function createImmutable(initial) {
@@ -1543,7 +1541,8 @@
 				initializer = createdTarget; 
 				createdTarget = {};
 			} else if (typeof(createdTarget) === 'string') {
-				createdTarget = classRegister[createdTarget]();
+				console.log(configuration.classRegistry[createdTarget]);
+				createdTarget = new configuration.classRegistry[createdTarget]();
 			}
 			if (typeof(cacheId) === 'undefined') {
 				cacheId = null;
@@ -3257,6 +3256,8 @@
 			
 			// Install causality to global scope. 
 			install : install,
+			addClasses : addClasses,
+			assignClassNamesTo : assignClassNamesTo,
 			
 			// Setup. Consider: add these to configuration instead? 
 			addPostPulseAction : addPostPulseAction,
@@ -3303,6 +3304,9 @@
 	
 	function getDefaultConfiguration() {
 		return {
+			// Class registry
+			classRegistry : {},
+			
 			// Main feature switch, turn off for performance! This property will be set automatically depending on the other settings.
 			activateSpecialFeatures : false, 
 						

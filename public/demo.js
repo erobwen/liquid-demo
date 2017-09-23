@@ -1,7 +1,7 @@
 (function(root) {
 	// Create one single liquid instance
 	let liquid = root.liquid({usePersistency: false});
-	liquid.addModels(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
+	liquid.addClasses(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
 	liquid.setClassNamesTo(root); // Optional: Make all class names global
 	
 	// Setup data

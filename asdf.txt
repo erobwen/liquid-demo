@@ -1,0 +1,20 @@
+
+	class Bar extends LiquidEntity  {
+		constructor() {
+			this.addIncomingSetProperty("foos", Foo, "bar");
+		}
+	}
+
+	class Foo extends LiquidEntity {
+		initialize(data) {
+			this.name = (typeof (data.name)) ? data.name : ''; 
+			this.bar = (typeof (data.bar)) ? data.bar : null; 
+		}
+	}
+
+	let bar = create("Foo");
+
+	let foo1 = create("Foo", {name: "foo1", bar : bar});
+	let foo2 = create("Foo", {name: "foo2", bar : bar});
+
+	console.log(bar.foos);  // should print something like [{name: "foo1", bar: #recursive} , {name: "foo2", bar: #recursive}]

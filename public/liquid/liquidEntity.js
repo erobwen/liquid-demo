@@ -35,15 +35,15 @@
 		return string.substr(0, 1).toUpperCase() + string.slice(1);
 	};
 
-	function createIncomingProperty(object, name, incomingProperty) {
-		object["get" + capitaliseFirstLetter(name)] = function() {
-			return getSingleIncomingReference(this, incomingProperty);
-		}
+	// function createIncomingProperty(object, name, incomingProperty) {
+		// object["get" + capitaliseFirstLetter(name)] = function() {
+			// return getSingleIncomingReference(this, incomingProperty);
+		// }
 
-		object["set" + capitaliseFirstLetter(name)] = function(page) {
-			this[incomingProperty] = this;
-		}	
-	}
+		// object["set" + capitaliseFirstLetter(name)] = function(page) {
+			// this[incomingProperty] = this;
+		// }	
+	// }
 
 
 	// let LiquidSession = function() {
@@ -88,6 +88,37 @@
 	*       Create incoming properties
 	-------------------------------------*/
 	
+	function createClassFilter(incomingClassFilter) { // filterClassNameConstructorOrPrototype
+		// Normalize incoming class filter
+		if (typeof(incomingClassFilter) === 'string') {
+			incomingClassFilter = liquid.classRegistry[incomingClassFilter];
+		}
+		if (typeof(incomingClassFilter) !== 'function') {
+			incomingClassFilter = incomingClassFilter.constructor;
+		}
+		return function(object) {
+			return incomingClassFilter === null || (object instanceof incomingClassFilter);
+		}
+	}
+	
+	function createIncomingProperty(object, name, incomingClassFilter, incomingProperty) {
+		// Get the prototype if called with a constructor
+		if (typeof(object) === 'function') object = object.prototype;
+		
+		// Create class filter
+		let filter = createClassFilter(incomingClassFilter);
+		
+		addIncomingPropertyGetter(object, name, incomingProperty, filter);
+		addIncomingPropertySetter(object, name, incomingProperty, filter);
+	}
+	
+	function addIncomingPropertyGetter(object, name, incomingProperty, filter) {
+		let getterName = "get" + capitaliseFirstLetter(name);
+		object[getterName] = function() {
+			return getSingleIncomingReference(this, incomingProperty, filter);
+		}
+	}
+	
 	// TODO: use javascript getters/setters.
 	// (function(i) {
 		// Object.defineProperty(self, i, {
@@ -102,19 +133,13 @@
 		// })
 	// })(i);
 
-	
-	function createIncomingProperty(object, name, incomingProperty, filter) {
-		let getterName = "get" + capitaliseFirstLetter(name);
-		object[getterName] = function() {
-			return getSingleIncomingReference(this, incomingProperty, filter);
-		}
-
+	function addIncomingPropertySetter(object, name, incomingProperty, filter) {
 		let setterName = "set" + capitaliseFirstLetter(name);
 		object[setterName] = function(newObject) {
-			let previousObject = object[getterName];
+			let previousObject = this[getterName];
 			if (newObject !== previousObject && filter(newObject)) {
 				if (previousObject[incomingProperty] instanceof LiquidIndex) {
-					previousObject[incomingProperty].remove(object);
+					previousObject[incomingProperty].remove(this);
 				} else {
 					previousObject[incomingProperty] = null; // Or delete by choice? 
 				}
@@ -123,16 +148,19 @@
 		}	
 	}
 
-	
 	function createIncomingSetProperty(object, name, incomingClassFilter, incomingProperty, sorter) {
-		if (typeof(object) === 'function') {
-			object = object.prototype;
-		}
-		let filter = function(object) {
-			return (object instanceof incomingClassFilter);
-		}
+		// Get the prototype if called with a constructor
+		if (typeof(object) === 'function') object = object.prototype;
 		
-		// filter, sorter
+		// Create class filter
+		let filter = createClassFilter(incomingClassFilter);
+		
+		// Add getters and setters
+		addIncomingPropertySetGetter(object, name, incomingProperty, filter, sorter);
+		addIncomingPropertySetSetter(object, name, incomingProperty, filter);
+	}
+
+	function addIncomingPropertySetGetter(object, getterName, incomingProperty, filter, sorter) {
 		let getterName = "get" + capitaliseFirstLetter(name);
 		object[getterName] = function() {
 			let objects = getIncomingReferences(this, incomingProperty, filter);
@@ -141,18 +169,20 @@
 			}
 			return objects;
 		}
-
+	}	
+	
+	function addIncomingPropertySetGetter(object, name, incomingProperty, filter) {
 		let setterName = "set" + capitaliseFirstLetter(name);
 		object[setterName] = function(newObjects) {
 			let newObjectsIdMap = createIdMap(newObjects);
-			let previousObjectsIdMap = getIncomingReferencesMap(object, incomingProperty, filter);
+			let previousObjectsIdMap = getIncomingReferencesMap(this, incomingProperty, filter);
 			
 			for(id in previousObjectsIdMap) {
 				let previousObject = previousObjectsIdMap[id];
 				if (!newObjectsIdMap[id]) {
 					// if (previousObject.references instanceof LiquidIndex)
 					if (previousObject[incomingProperty] instanceof LiquidIndex) {
-						previousObject[incomingProperty].remove(object);
+						previousObject[incomingProperty].remove(this);
 					} else {
 						previousObject[incomingProperty] = null; // Or delete by choice? 
 					}					
@@ -163,15 +193,16 @@
 				let newCategory = newObjectsIdMap[id];
 				if (!previousObjectsIdMap[newCategory]) {
 					if (newCategory[incomingProperty] instanceof LiquidIndex) {
-						newCategory[incomingProperty].add(object);
+						newCategory[incomingProperty].add(this);
 					} else {
-						newCategory[incomingProperty] = object;
+						newCategory[incomingProperty] = this;
 					}
 				}
 			}
-		}	
+		}
 	}
 
+	
 	/*---------------------------
 	 *         Entity 
 	 *---------------------------*/
@@ -186,8 +217,24 @@
 		}
 
 		initialize(data) {
+			assign(data);
+		}
+		
+		get(data, property, defaultValue) {
+			return (typeof(data[property] !== 'undefined')) ? data[property] : defaultValue;
+		}
+		
+		assign(data) {
 			for(property in data) {
 				this[property] = data[property];
+			}
+		}
+		
+		assignWeak(data) {
+			for(property in data) {
+				if (typeof(this[property] === 'undefined')) {
+					this[property] = data[property];
+				}
 			}
 		}
 
@@ -291,10 +338,11 @@
 	 *         Index 
 	 *---------------------------*/
 
-	 class LiquidIndex extends LiquidEntity {	
+	class LiquidIndex extends LiquidEntity {	
 		constructor() {
+			super();
 			this.const.isIndex = true; // is this working.... maybe not... TODO: figure out something else.  
-			this._const_isIndex = true; // Tell causality to put something in the const? 
+			// this._const_isIndex = true; // Tell causality to put something in the const? 
 		}
 		initialize(data) {
 			super.initialize(data);
@@ -592,12 +640,19 @@
 	
 	return {
 		injectLiquid : injectLiquid,
-		LiquidEntity : LiquidEntity,
-		LiquidSession : LiquidSession,
-		LiquidPage : LiquidPage,
-		LiquidPageService : LiquidPageService,
-		LiquidUser : LiquidUser
-		// LiquidUserPasswordVault : LiquidUserPasswordVault
+		functions : {
+			createIncomingSetProperty : createIncomingSetProperty,
+			createIncomingProperty : createIncomingProperty
+		},
+		classes : {
+			LiquidEntity : LiquidEntity,
+			LiquidIndex : LiquidIndex,
+			LiquidSession : LiquidSession,
+			LiquidPage : LiquidPage,
+			LiquidPageService : LiquidPageService,
+			LiquidUser : LiquidUser			
+			// LiquidUserPasswordVault : LiquidUserPasswordVault
+		}
 	}	
 }));
 

@@ -1,8 +1,8 @@
 
 // Setup liquid and add models to it
 let liquid = require("./public/liquid/liquid.js")({usePersistency: true, databaseFileName: "demoDb.mongoDb"});
-liquid.addModels(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
-liquid.setClassNamesTo(global); // Optional: Make all class names global
+liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
+liquid.assignClassNamesTo(global); // Optional: Make all class names global
 
 
 /**--------------------------------------------------------------
@@ -14,9 +14,9 @@ liquid.setClassNamesTo(global); // Optional: Make all class names global
 // include('./liquid/application/serverConfiguration.js');
 
 if (!liquid.persistent.demoInitialized) {
-	liquid.pulse('local', function() {
+	liquid.pulse(function() {
 		// Create a simple user index. (no advanced index).
-		liquid.persistent.users = create({});
+		liquid.persistent.users = liquid.create("LiquidIndex");
 		
 		// Create user and add to index.
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});

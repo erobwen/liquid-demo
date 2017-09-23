@@ -10,6 +10,8 @@ class Foobar {
 	}
 }
 
+let FoobarPrototype = Foobar.prototype;
+
 // Foobar.prototype.isPrototype = true;
 
 // // console.log(Foobar);
@@ -32,3 +34,6 @@ function className(object) {
 let x = new Foobar();
 
 console.log(className(x));
+
+console.log(x instanceof Foobar);
+console.log(x instanceof FoobarPrototype.constructor);

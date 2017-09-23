@@ -32,13 +32,23 @@
 
 		let liquid;
 		if (configuration.usePersistency) {
+			// TODO: use given if possible
+			let classRegistry = {};
+			// configuration.classRegistry = classRegistry;
+			configuration.eternityConfiguration.classRegistry = classRegistry;
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
+			// TODO: use given if possible
+			let classRegistry = {};
+			// configuration.classRegistry = classRegistry;
+			configuration.causalityConfiguration.classRegistry = classRegistry;
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
 		}		
 		let liquidEntity = require("./liquidEntity.js");
-		liquid.addModels(liquidEntity);
-		Object.assign(liquid, liquidEntity); // Assign all to liquid.... 
+		liquidEntity.injectLiquid(liquid);
+		liquid.addClasses(liquidEntity.classes);
+		Object.assign(liquid, liquidEntity.classes); // Assign all base classes to liquid as well.... 
+		Object.assign(liquid, liquidEntity.functions); // Assign all functions to liquid as well.... 
 
 		/***************************************************************
 		 *
@@ -1018,6 +1028,10 @@
 	
 	let configurationToSystemMap = {};
 	return function(requestedConfiguration) {
+		if(requestedConfiguration === "default" && Object.keys(configurationToSystemMap).length === 1) {
+			console.log("Giving default liquid!!!!");
+			return configurationToSystemMap[Object.keys(configurationToSystemMap)[0]];
+		}
 		if(typeof(requestedConfiguration) === 'undefined') {
 			requestedConfiguration = {};
 		}

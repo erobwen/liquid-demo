@@ -13,8 +13,9 @@
 		// }
     }
 }(this, function () {
-	let liquid = require("./liquid.js");
+	let liquid = require("../liquid/liquid.js")('default');
 	let LiquidUser = liquid.LiquidUser;
+	// console.log(liquid);
 	let LiquidEntity = liquid.LiquidEntity;
 	
 	// Reference service
@@ -38,7 +39,7 @@
 		constructor() {} // Always leave empty
 
 		initialize(data) {
-			super(data);
+			super.initialize(data);
 			this.name = '';
 			this.email = '';
 			this.addedReferences = liquid.create('LiquidIndex');
@@ -63,15 +64,33 @@
 	}
 
 	class Category extends LiquidEntity {
-		function initialize(data) {
-			this.name = '';
-			this.description = '';
+		initialize(data) {
+			this.name = this.get(data, "name", '');
+			this.description = this.get(data, "description", '');
+			// this.owner;  Incoming: User.categories
+
+			// Sub categories
+			this.subCategories = create("LiquidIndex");
+			if (typeof(data['subCategories']) !== 'undefined') {
+				data['subCategories'].forEach(function(subCategory) {
+					this.subCategories.add(subCategory);					
+				});
+			}
 			
-			this.subCategories = create("LiquidIndex"); //liquid.create([]);
-			this.references = create("LiquidIndex"); //liquid.create([]);
+			// References
+			this.references = create("LiquidIndex");
+			if (typeof(data['references']) !== 'undefined') {
+				data['references'].forEach(function(subCategory) {
+					this.references.add(subCategory);					
+				});
+			}
+
+			// User
 			if (typeof(data.user) !== 'undefined') {
-				data.user.ownedCategories.push(this);
-			} 
+				this.setOwner(data.user)
+			}
+			// assignWeak(data);
+			super.initialize();
 		}
 			
 		__() {
@@ -97,8 +116,8 @@
 			}
 		}
 	}
-	liquid.addIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
-	liquid.addIncomingProperty(Category, "parents", Category, "subCategories"); 
+	liquid.createIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
+	liquid.createIncomingProperty(Category, "parents", Category, "subCategories"); 
 	
 	function defined(entity) {
 		return typeof(entity) !== 'undefined';
@@ -106,7 +125,6 @@
 	
 	class Reference extends LiquidEntity {
 		initialize(data) {
-			super(data);
 			this.url = "";
 			this.pageExtractedTitle = "";
 			this.pageExtractedSummary = "";
@@ -122,13 +140,13 @@
 				// console.log(this);
 				this.setCategories([initialData.category]);
 			}
+			super.initialize(data);
 		}
 	}
-	liquid.addIncomingSetProperty(Reference, "categories", Category, "references"); 
-	liquid.addIncomingProperty(Reference, "owner", User, "addedReferences"); 
+	liquid.createIncomingSetProperty(Reference, "categories", Category, "references"); 
+	liquid.createIncomingProperty(Reference, "owner", User, "addedReferences"); 
 
 	return {
-		injectLiquid : injectLiquid,
 		User : User,
 		Category : Category,
 		Reference : Reference
