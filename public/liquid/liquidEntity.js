@@ -14,54 +14,7 @@
 	function injectLiquid(injectedLiquid) {
 		liquid = injectedLiquid;
 	}
-	
-	/*-----------------------------------------------
-	 *              Helpers
-	 *-----------------------------------------------*/
 
-	function defaultInitializer(data) {
-		for(property in data) {
-			this[property] = data[property];
-		}
-	}
-
-	// TODO: support class filter for incoming: 
-	// return liquid.getSingleIncomingReference(this, "session");
-	// return liquid.getSingleIncomingReference(this, "Page", "session");
-
-
-
-	var capitaliseFirstLetter = function(string){
-		return string.substr(0, 1).toUpperCase() + string.slice(1);
-	};
-
-	// function createIncomingProperty(object, name, incomingProperty) {
-		// object["get" + capitaliseFirstLetter(name)] = function() {
-			// return getSingleIncomingReference(this, incomingProperty);
-		// }
-
-		// object["set" + capitaliseFirstLetter(name)] = function(page) {
-			// this[incomingProperty] = this;
-		// }	
-	// }
-
-
-	// let LiquidSession = function() {
-		// let Constructor = function() {
-			// this.token = null; // Hard to guess session id
-			// this.user = null;		
-		// }
-		
-		// let Prototype = Constructor.prototype;
-		
-		// Prototype.init = defaultInitializer;
-		
-		// Prototype.encryptPassword = function() {
-			// ...
-		// }
-		
-		// return Constructor;
-	// }();
 
 	
 	/** --------------------------
@@ -89,15 +42,20 @@
 	-------------------------------------*/
 	
 	function createClassFilter(incomingClassFilter) { // filterClassNameConstructorOrPrototype
-		// Normalize incoming class filter
-		if (typeof(incomingClassFilter) === 'string') {
-			incomingClassFilter = liquid.classRegistry[incomingClassFilter];
-		}
-		if (typeof(incomingClassFilter) !== 'function') {
-			incomingClassFilter = incomingClassFilter.constructor;
-		}
-		return function(object) {
-			return incomingClassFilter === null || (object instanceof incomingClassFilter);
+		if (incomingClassFilter === null) {
+			return function() {
+				return true;
+			}
+		} else if (typeof(incomingClassFilter) === 'string') {
+			return function(object) {
+				incomingPrototype = liquid.classRegistry[incomingClassFilter];
+				if (typeof(incomingPrototype) !== 'function') incomingPrototype = incomingPrototype.constructor;
+				return (object instanceof incomingPrototype);
+			}
+		} else if (typeof(incomingClassFilter) === 'function') {
+			return function(object) {
+				return (object instanceof incomingClassFilter);
+			}
 		}
 	}
 	
@@ -108,46 +66,40 @@
 		// Create class filter
 		let filter = createClassFilter(incomingClassFilter);
 		
-		addIncomingPropertyGetter(object, name, incomingProperty, filter);
-		addIncomingPropertySetter(object, name, incomingProperty, filter);
-	}
-	
-	function addIncomingPropertyGetter(object, name, incomingProperty, filter) {
-		let getterName = "get" + capitaliseFirstLetter(name);
-		object[getterName] = function() {
-			return getSingleIncomingReference(this, incomingProperty, filter);
-		}
-	}
-	
-	// TODO: use javascript getters/setters.
-	// (function(i) {
-		// Object.defineProperty(self, i, {
-			// // Create a new getter for the property
-			// get: function () {
-				// return properties[i];
-			// },
-			// // Create a new setter for the property
-			// set: function (val) {
-				// properties[i] = val;
-			// }
-		// })
-	// })(i);
-
-	function addIncomingPropertySetter(object, name, incomingProperty, filter) {
-		let setterName = "set" + capitaliseFirstLetter(name);
-		object[setterName] = function(newObject) {
-			let previousObject = this[getterName];
-			if (newObject !== previousObject && filter(newObject)) {
-				if (previousObject[incomingProperty] instanceof LiquidIndex) {
-					previousObject[incomingProperty].remove(this);
+		Object.defineProperty(object, name, {
+			get: function() {
+				return liquid.getSingleIncomingReference(this, incomingProperty, filter);
+			},
+			set: function(newObject) {
+				if (liquid.isObject(newObject)) {
+					let previousObject = this[getterName];
+					if (newObject !== previousObject && filter(newObject)) {
+						if (previousObject[incomingProperty] instanceof LiquidIndex) {
+							previousObject[incomingProperty].remove(this);
+						} else {
+							previousObject[incomingProperty] = null; // Or delete by choice? 
+						}
+					}
+					this[incomingProperty] = this;
 				} else {
-					previousObject[incomingProperty] = null; // Or delete by choice? 
+					throw new Error("Expected an object when assigning an incoming property.");
 				}
 			}
-			this[incomingProperty] = this;
-		}	
+		});
 	}
-
+	
+	function removeFromArray(object, array) {
+		for(var i = 0; i < array.length; i++) {
+			// console.log("Searching!");
+			// console.log(array[i]);
+			if (array[i] === object) {
+				// console.log("found it!");
+				array.splice(i, 1);
+				break;
+			}
+		}		
+	}
+	
 	function createIncomingSetProperty(object, name, incomingClassFilter, incomingProperty, sorter) {
 		// Get the prototype if called with a constructor
 		if (typeof(object) === 'function') object = object.prototype;
@@ -156,51 +108,149 @@
 		let filter = createClassFilter(incomingClassFilter);
 		
 		// Add getters and setters
-		addIncomingPropertySetGetter(object, name, incomingProperty, filter, sorter);
-		addIncomingPropertySetSetter(object, name, incomingProperty, filter);
+		Object.defineProperty(object, name, {
+			get: function() {
+				let objects = getIncomingReferences(this, incomingProperty, filter);
+				if (typeof(sorter) !== 'undefined') {
+					objects.sort(sorter);
+				}
+				return objects;
+			},
+			set: function(newObjects) {
+				if (newObjects instanceof Array) {
+					let newObjectsIdMap = createIdMap(newObjects);
+					let previousObjectsIdMap = getIncomingReferencesMap(this, incomingProperty, filter);
+					
+					for(id in previousObjectsIdMap) {
+						let previousObject = previousObjectsIdMap[id];
+						if (!newObjectsIdMap[id]) {
+							// if (previousObject.references instanceof LiquidIndex)
+							if (previousObject[incomingProperty] instanceof LiquidIndex) {
+								previousObject[incomingProperty].remove(this);
+							} else {
+								previousObject[incomingProperty] = null; // Or delete by choice? 
+							}					
+						}
+					}
+					
+					for(id in newObjectsIdMap) {
+						let newCategory = newObjectsIdMap[id];
+						if (!previousObjectsIdMap[newCategory]) {
+							if (newCategory[incomingProperty] instanceof LiquidIndex) {
+								newCategory[incomingProperty].add(this);
+							} else {
+								newCategory[incomingProperty] = this;
+							}
+						}
+					}					
+				} else {
+					throw new Error("Expected an array of objects to when assigning incoming set property.");					
+				}
+			}
+		});
+
+		object["addTo" + capitaliseFirstLetter(name)] = function(newObject) {
+			objects = this[name];
+			objects.push(newObject);
+			this[name] = objects;
+		}
+		
+		object["removeFrom" + capitaliseFirstLetter(name)] = function(removedObject) {
+			objects = this[name];
+			removeFromArray(removedObject, objects);
+			this[name] = objects;
+		}
 	}
 
-	function addIncomingPropertySetGetter(object, getterName, incomingProperty, filter, sorter) {
-		let getterName = "get" + capitaliseFirstLetter(name);
-		object[getterName] = function() {
-			let objects = getIncomingReferences(this, incomingProperty, filter);
-			if (typeof(sorter) !== 'undefined') {
-				objects.sort(sorter);
-			}
-			return objects;
-		}
-	}	
+	/*---------------------------
+	 *  With setters and getters
+	 *---------------------------*/
+	// function createIncomingProperty(object, name, incomingClassFilter, incomingProperty) {
+		// // Get the prototype if called with a constructor
+		// if (typeof(object) === 'function') object = object.prototype;
+		
+		// // Create class filter
+		// let filter = createClassFilter(incomingClassFilter);
+		
+		// addIncomingPropertyGetter(object, name, incomingProperty, filter);
+		// addIncomingPropertySetter(object, name, incomingProperty, filter);
+	// }
 	
-	function addIncomingPropertySetGetter(object, name, incomingProperty, filter) {
-		let setterName = "set" + capitaliseFirstLetter(name);
-		object[setterName] = function(newObjects) {
-			let newObjectsIdMap = createIdMap(newObjects);
-			let previousObjectsIdMap = getIncomingReferencesMap(this, incomingProperty, filter);
+	// function createIncomingSetProperty(object, name, incomingClassFilter, incomingProperty, sorter) {
+		// // Get the prototype if called with a constructor
+		// if (typeof(object) === 'function') object = object.prototype;
+		
+		// // Create class filter
+		// let filter = createClassFilter(incomingClassFilter);
+		
+		// // Add getters and setters
+		// addIncomingPropertySetGetter(object, name, incomingProperty, filter, sorter);
+		// addIncomingPropertySetSetter(object, name, incomingProperty, filter);
+	// }
+	
+	// function addIncomingPropertyGetter(object, name, incomingProperty, filter) {
+		// let getterName = "get" + capitaliseFirstLetter(name);
+		// object[getterName] = function() {
+			// return getSingleIncomingReference(this, incomingProperty, filter);
+		// }
+	// }
+
+	// function addIncomingPropertySetter(object, name, incomingProperty, filter) {
+		// let setterName = "set" + capitaliseFirstLetter(name);
+		// object[setterName] = function(newObject) {
+			// let previousObject = this[getterName];
+			// if (newObject !== previousObject && filter(newObject)) {
+				// if (previousObject[incomingProperty] instanceof LiquidIndex) {
+					// previousObject[incomingProperty].remove(this);
+				// } else {
+					// previousObject[incomingProperty] = null; // Or delete by choice? 
+				// }
+			// }
+			// this[incomingProperty] = this;
+		// }	
+	// }
+
+	// function addIncomingPropertySetGetter(object, getterName, incomingProperty, filter, sorter) {
+		// let getterName = "get" + capitaliseFirstLetter(name);
+		// object[getterName] = function() {
+			// let objects = getIncomingReferences(this, incomingProperty, filter);
+			// if (typeof(sorter) !== 'undefined') {
+				// objects.sort(sorter);
+			// }
+			// return objects;
+		// }
+	// }	
+	
+	// function addIncomingPropertySetSetter(object, name, incomingProperty, filter) {
+		// let setterName = "set" + capitaliseFirstLetter(name);
+		// object[setterName] = function(newObjects) {
+			// let newObjectsIdMap = createIdMap(newObjects);
+			// let previousObjectsIdMap = getIncomingReferencesMap(this, incomingProperty, filter);
 			
-			for(id in previousObjectsIdMap) {
-				let previousObject = previousObjectsIdMap[id];
-				if (!newObjectsIdMap[id]) {
-					// if (previousObject.references instanceof LiquidIndex)
-					if (previousObject[incomingProperty] instanceof LiquidIndex) {
-						previousObject[incomingProperty].remove(this);
-					} else {
-						previousObject[incomingProperty] = null; // Or delete by choice? 
-					}					
-				}
-			}
+			// for(id in previousObjectsIdMap) {
+				// let previousObject = previousObjectsIdMap[id];
+				// if (!newObjectsIdMap[id]) {
+					// // if (previousObject.references instanceof LiquidIndex)
+					// if (previousObject[incomingProperty] instanceof LiquidIndex) {
+						// previousObject[incomingProperty].remove(this);
+					// } else {
+						// previousObject[incomingProperty] = null; // Or delete by choice? 
+					// }					
+				// }
+			// }
 			
-			for(id in newObjectsIdMap) {
-				let newCategory = newObjectsIdMap[id];
-				if (!previousObjectsIdMap[newCategory]) {
-					if (newCategory[incomingProperty] instanceof LiquidIndex) {
-						newCategory[incomingProperty].add(this);
-					} else {
-						newCategory[incomingProperty] = this;
-					}
-				}
-			}
-		}
-	}
+			// for(id in newObjectsIdMap) {
+				// let newCategory = newObjectsIdMap[id];
+				// if (!previousObjectsIdMap[newCategory]) {
+					// if (newCategory[incomingProperty] instanceof LiquidIndex) {
+						// newCategory[incomingProperty].add(this);
+					// } else {
+						// newCategory[incomingProperty] = this;
+					// }
+				// }
+			// }
+		// }
+	// }
 
 	
 	/*---------------------------
@@ -370,6 +420,24 @@
 	
 	
 	/*---------------------------
+	 *         Session 
+	 *---------------------------*/
+
+	class LiquidSession extends LiquidEntity {
+		initialize(data) {
+			super.initialize(data);
+			this.token = null; // Hard to guess session id
+			this.user = null;			
+		}
+		
+		accessLevel(user) {
+			return 'readOnly';
+		}
+	}
+	createIncomingSetProperty(LiquidSession, "pages", "LiquidPage", "session");
+
+	
+	/*---------------------------
 	 *         Page 
 	 *---------------------------*/
 
@@ -506,23 +574,6 @@
 
 
 	/*---------------------------
-	 *         Session 
-	 *---------------------------*/
-
-	class LiquidSession extends LiquidEntity {
-		initialize(data) {
-			super.initialize(data);
-			this.token = null; // Hard to guess session id
-			this.user = null;			
-		}
-		
-		accessLevel(user) {
-			return 'readOnly';
-		}
-	}
-	createIncomingSetProperty(LiquidSession, "pages", LiquidPage, "session");
-
-	/*---------------------------
 	 *      Page Service
 	 *---------------------------*/
 
@@ -567,7 +618,7 @@
 			this.getPage().setActiveUser(null);
 		}
 	}
-	createIncomingProperty(LiquidPageService, "page", LiquidPage, "service");
+	createIncomingProperty(LiquidPageService, "page", "LiquidPage", "service");
 
 	
 
