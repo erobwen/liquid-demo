@@ -1,16 +1,32 @@
 
 
-class Foobar {
-    constructor() {
-		this.x = 10;
+	class Foobar {
+		constructor() {
+			this.member = 10;
+		}
+		
+		somePrototypeFunctionInClass() {
+			this.member = 1000;
+		}
 	}
-	
-	addToPrototype() {
-		Object.getPrototypeOf(this).y = "foo";
+	Foobar.prototype.prototypeMember = "fum";
+	let FoobarPrototype = Foobar.prototype;
+	Foobar.prototype.prototypeFunction = function() {
+		return true;
 	}
-}
 
-let FoobarPrototype = Foobar.prototype;
+	let x = new Foobar();
+
+	x.decoration = "bar";
+
+	console.log(Object.keys(x));
+
+	for(property in x) {
+		console.log(property);
+	}
+
+
+
 
 // Foobar.prototype.isPrototype = true;
 
@@ -26,14 +42,12 @@ let FoobarPrototype = Foobar.prototype;
 // // console.log(foo.prototype);
 // console.log(Foobar.prototype);
 
-function className(object) {
-	return Object.getPrototypeOf(object).constructor.name;
-}
+// function className(object) {
+	// return Object.getPrototypeOf(object).constructor.name;
+// }
 
 
-let x = new Foobar();
+// console.log(className(x));
 
-console.log(className(x));
-
-console.log(x instanceof Foobar);
-console.log(x instanceof FoobarPrototype.constructor);
+// console.log(x instanceof Foobar);
+// console.log(x instanceof FoobarPrototype.constructor);

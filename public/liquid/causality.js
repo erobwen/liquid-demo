@@ -1525,7 +1525,7 @@
 			return initial;
 		} 
 		 
-		function create(createdTarget, cacheId) {
+		function create(createdTarget, cacheIdOrInitData) {
 			if (trace.basic > 0) {
 				log("create:");
 				logGroup();
@@ -1544,8 +1544,14 @@
 				console.log(configuration.classRegistry[createdTarget]);
 				createdTarget = new configuration.classRegistry[createdTarget]();
 			}
-			if (typeof(cacheId) === 'undefined') {
-				cacheId = null;
+			let cacheId = null;
+			let initialData = null;
+			if (typeof(cacheIdOrInitData) !== 'undefined') {
+				if (typeof(cacheIdOrInitData) === 'string') {
+					cacheId = cacheIdOrInitData; // TODO: int too? 
+				} else {
+					initialData = cacheIdOrInitData;
+				}
 			}
 
 			let handler;
@@ -1605,6 +1611,8 @@
 				// }
 			}
 
+			let initialConst = createdTarget.const;
+			delete createdTarget.const;
 			handler.target = createdTarget;
 			
 			// createdTarget.const.id = id; // TODO ??? 
@@ -1645,6 +1653,10 @@
 				removeForwarding : genericRemoveForwarding.bind(proxy),
 				mergeAndRemoveForwarding: genericMergeAndRemoveForwarding.bind(proxy)
 			};
+			for(property in initialConst) {
+				handler.const[property] = initialConst[property];
+			}
+			
 			if (typeof(createdTarget.const) !== 'undefined') {
 				for (property in createdTarget.const) {
 					handler.const[property] = createdTarget.const[property]; 

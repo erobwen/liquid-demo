@@ -36,8 +36,6 @@
 
 	
 	class User extends LiquidUser {
-		constructor() {} // Always leave empty
-
 		initialize(data) {
 			super.initialize(data);
 			this.name = '';

@@ -259,11 +259,12 @@
 
 	class LiquidEntity {
 		constructor() {
+			this.const = {};
 			// Client only (reactive) properties:
-			if (liquid.configuration.onClient) {
+			// if (liquid.configuration.onClient) { // TODO!!! 
 				this.isPlaceholderObject = false;
 				this.isLockedObject = false;			
-			}
+			// }
 		}
 
 		initialize(data) {
@@ -391,7 +392,8 @@
 	class LiquidIndex extends LiquidEntity {	
 		constructor() {
 			super();
-			this.const.isIndex = true; // is this working.... maybe not... TODO: figure out something else.  
+			// this.const.isIndex = true; // is this working.... maybe not... TODO: figure out something else.
+			this.const.isIndex = true;
 			// this._const_isIndex = true; // Tell causality to put something in the const? 
 		}
 		initialize(data) {

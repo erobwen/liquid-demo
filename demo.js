@@ -3,7 +3,7 @@
 let liquid = require("./public/liquid/liquid.js")({usePersistency: true, databaseFileName: "demoDb.mongoDb"});
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
-
+let create = liquid.create;
 
 /**--------------------------------------------------------------
  *            Initialize database if necessary
@@ -16,7 +16,7 @@ liquid.assignClassNamesTo(global); // Optional: Make all class names global
 if (!liquid.persistent.demoInitialized) {
 	liquid.pulse(function() {
 		// Create a simple user index. (no advanced index).
-		liquid.persistent.users = liquid.create("LiquidIndex");
+		liquid.persistent.users = create("LiquidIndex");
 		
 		// Create user and add to index.
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
@@ -26,7 +26,7 @@ if (!liquid.persistent.demoInitialized) {
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		var politics = create('Category', {name: 'Politics', description: '', owner: user});
 		var georgism = create('Category', {name: 'Georgism', description: '', owner: user});
-		politics.addSubCategory(georgism);
+		politics.subCategories.add(georgism);
 
 		setTimeout(function() {
 			liquid.pulse('local', function() {
