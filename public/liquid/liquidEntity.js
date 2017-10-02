@@ -110,7 +110,7 @@
 		// Add getters and setters
 		Object.defineProperty(object, name, {
 			get: function() {
-				let objects = getIncomingReferences(this, incomingProperty, filter);
+				let objects = liquid.getIncomingReferences(this, incomingProperty, filter);
 				if (typeof(sorter) !== 'undefined') {
 					objects.sort(sorter);
 				}
@@ -119,7 +119,7 @@
 			set: function(newObjects) {
 				if (newObjects instanceof Array) {
 					let newObjectsIdMap = createIdMap(newObjects);
-					let previousObjectsIdMap = getIncomingReferencesMap(this, incomingProperty, filter);
+					let previousObjectsIdMap = liquid.getIncomingReferencesMap(this, incomingProperty, filter);
 					
 					for(id in previousObjectsIdMap) {
 						let previousObject = previousObjectsIdMap[id];
@@ -268,7 +268,7 @@
 		}
 
 		initialize(data) {
-			assign(data);
+			this.assign(data);
 		}
 		
 		get(data, property, defaultValue) {
@@ -703,8 +703,8 @@
 			LiquidSession : LiquidSession,
 			LiquidPage : LiquidPage,
 			LiquidPageService : LiquidPageService,
-			LiquidUser : LiquidUser			
-			// LiquidUserPasswordVault : LiquidUserPasswordVault
+			LiquidUser : LiquidUser,	
+			LiquidUserPasswordVault : LiquidUserPasswordVault
 		}
 	}	
 }));

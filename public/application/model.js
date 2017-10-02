@@ -14,6 +14,7 @@
     }
 }(this, function () {
 	let liquid = require("../liquid/liquid.js")('default');
+	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
 	// console.log(liquid);
 	let LiquidEntity = liquid.LiquidEntity;
@@ -40,8 +41,8 @@
 			super.initialize(data);
 			this.name = '';
 			this.email = '';
-			this.addedReferences = liquid.create('LiquidIndex');
-			this.ownedCategories = liquid.create('LiquidIndex');
+			this.addedReferences = create('LiquidIndex');
+			this.ownedCategories = create('LiquidIndex');
 		}
 		
 		selectAllCategories(selection) {
@@ -128,15 +129,15 @@
 			this.pageExtractedSummary = "";
 			this.pageExtractedImageUrl = "";
 			
-			if (defined(initialData.user)) {
-				this.setOwner(initialData.user);
+			if (defined(data.user)) {
+				this.setOwner(data.user);
 			}
-			if (defined(initialData.categories)) {
-				this.setCategories(initialData.categories);
+			if (defined(data.categories)) {
+				this.categories = data.categories;
 			}
-			if (defined(initialData.category)) {
+			if (defined(data.category)) {
 				// console.log(this);
-				this.setCategories([initialData.category]);
+				this.categories = [data.category];
 			}
 			super.initialize(data);
 		}

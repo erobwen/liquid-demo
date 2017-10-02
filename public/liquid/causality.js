@@ -207,9 +207,9 @@
 		
 		function getSingleIncomingReference(object, property, filter) {	
 			let result = null;
-			forAllIncoming(object, property, function(object) {
+			forAllIncoming(object, property, function(foundObject) {
 				if (result === null) {
-					result = object;
+					result = foundObject;
 				} else {
 					throw new Error("Unexpected: More than one incoming reference for property: " + property);
 				}
@@ -217,10 +217,13 @@
 			return result;
 		}
 		
-		function getIncomingReferences(object, property, filter) {	
+		function getIncomingReferences(object, property, filter) {
+			if (typeof(object) === 'undefined') {
+				throw new Error("No object given to 'getIncomingReferences'");
+			}
 			let result = [];
-			forAllIncoming(object, property, function(object) {
-				result.push(object);
+			forAllIncoming(object, property, function(foundObject) {
+				result.push(foundObject);
 			}, filter);
 			return result;
 		}
@@ -235,7 +238,7 @@
 		
 		function forAllIncoming(object, property, callback, filter) {
 			if(trace.basics) log("forAllIncoming");
-			registerAnyChangeObserver(getSpecifier(getSpecifier(object.const, "incomingObservers"), property));
+			registerAnyChangeObserver(getSpecifier(getSpecifier(object.const, "incoming"), property));
 			withoutRecording(function() { // This is needed for setups where incoming structures are made out of causality objects. 
 				if (typeof(object.incoming) !== 'undefined') {
 					if(trace.basics) log("incoming exists!");
@@ -334,8 +337,8 @@
 				if (trace.basic) log("tear down previous... ");
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
 				removeIncomingStructure(objectProxy.const.id, previousStructure); // TODO: Fix BUG. This really works?
-				if (typeof(previousValue.const.incomingObservers) !== 'undefined') {
-					notifyChangeObservers(previousValue.const.incomingObservers[referringRelation]);
+				if (typeof(previousValue.const.incoming) !== 'undefined') {
+					notifyChangeObservers(previousValue.const.incoming[referringRelation]);
 				}
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize--;
 			}
@@ -343,8 +346,8 @@
 			// Setup structure to new value
 			if (isObject(value)) {
 				let referencedValue = createIncomingStructure(objectProxy, objectProxy.const.id, referringRelation, value);
-				if (typeof(value.const.incomingObservers) !== 'undefined') {
-					notifyChangeObservers(value.const.incomingObservers[referringRelation]);
+				if (typeof(value.const.incoming) !== 'undefined') {
+					notifyChangeObservers(value.const.incoming[referringRelation]);
 				}
 				value = referencedValue;
 			}
@@ -365,8 +368,8 @@
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
 				removeIncomingStructure(objectProxy.const.id, previousStructure);
 				// removeIncomingStructure(objectProxy.const.id, removedValue);
-				if (typeof(removedValue.const.incomingObservers) !== 'undefined') {
-					notifyChangeObservers(removedValue.const.incomingObservers[referringRelation]);
+				if (typeof(removedValue.const.incoming) !== 'undefined') {
+					notifyChangeObservers(removedValue.const.incoming[referringRelation]);
 				}
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize--;
 			}
@@ -389,8 +392,8 @@
 					addedElement.const.incomingReferences++;
 					// log("added element is object");
 					let referencedValue = createIncomingStructure(arrayProxy, arrayProxy.const.id, referringRelation, addedElement);
-					if (typeof(addedElement.const.incomingObservers) !== 'undefined') {
-						notifyChangeObservers(addedElement.const.incomingObservers[referringRelation]);
+					if (typeof(addedElement.const.incoming) !== 'undefined') {
+						notifyChangeObservers(addedElement.const.incoming[referringRelation]);
 					}
 					addedAdjusted.push(referencedValue);
 				} else {
@@ -404,8 +407,8 @@
 					if (isObject(removedElement)) {
 						if ((previousValue.const.incomingReferences -= 1) === 0)  removedLastIncomingRelation(removedElement);
 						removeIncomingStructure(proxy.const.id, removedElement);
-						if (typeof(removedElement.const.incomingObservers) !== 'undefined') {
-							notifyChangeObservers(removedElement.const.incomingObservers[referringRelation]);
+						if (typeof(removedElement.const.incoming) !== 'undefined') {
+							notifyChangeObservers(removedElement.const.incoming[referringRelation]);
 						}
 					}					
 				});					
@@ -1526,6 +1529,7 @@
 		} 
 		 
 		function create(createdTarget, cacheIdOrInitData) {
+			console.log("create " + typeof(createdTarget));
 			if (trace.basic > 0) {
 				log("create:");
 				logGroup();
@@ -1541,7 +1545,10 @@
 				initializer = createdTarget; 
 				createdTarget = {};
 			} else if (typeof(createdTarget) === 'string') {
-				console.log(configuration.classRegistry[createdTarget]);
+				let classOrPrototype = configuration.classRegistry[createdTarget];
+				console.log(Object.keys(configuration.classRegistry));
+				console.log(createdTarget);
+				console.log(classOrPrototype);
 				createdTarget = new configuration.classRegistry[createdTarget]();
 			}
 			let cacheId = null;
@@ -1699,6 +1706,12 @@
 			
 			if (trace.basic > 0) logUngroup();
 			
+			if(typeof(proxy.initialize) === 'function') {
+				if (initialData === null) {
+					initialData = {};
+				}
+				proxy.initialize.apply(proxy, [initialData]);
+			}
 			return proxy;
 		}
 
@@ -3234,6 +3247,8 @@
 			
 			// Incoming images
 			forAllIncoming : forAllIncoming,
+			getIncomingReferences : getIncomingReferences,
+			getSingleIncomingReference : getSingleIncomingReference, 
 			createArrayIndex : createArrayIndex,
 			setIndex : setIndex
 		}
