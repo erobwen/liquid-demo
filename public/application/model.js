@@ -147,13 +147,13 @@
 				this.categories = [data.category];
 				delete data.category;
 			}
-			log("====================================================");
-			liquid.trace.basic = true;
-			logGroup();
+			// log("====================================================");
+			// liquid.trace.basic = true;
+			// logGroup();
 			this.assignWeak(data);
-			logUngroup();
-			liquid.trace.basic = false;
-			log("====================================================");
+			// logUngroup();
+			// liquid.trace.basic = false;
+			// log("====================================================");
 		}
 	}
 	liquid.createIncomingSetProperty(Reference, "categories", Category, "references"); 

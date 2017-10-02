@@ -103,7 +103,7 @@
 					var page = liquid.pagesMap[pageToken];
 					trace('serialize', "Make call on server ", page);
 
-					liquid.pulse(page, function() {
+					liquid.pulse(function() {
 						var object = getEntity(callInfo.objectId);
 						var methodName = callInfo.methodName;
 						var argumentList = callInfo.argumentList; // TODO: Convert to
@@ -160,11 +160,13 @@
 		// function createOrGetSessionObject(req) {
 			// var hardToGuessSessionId = req.session.id;
 		function createOrGetSessionObject(hardToGuessSessionId) {
-			if (typeof(liquid.sessionsMap[hardToGuessSessionId]) === 'undefined') {
+			log("createOrGetSessionObject");
+			log(hardToGuessSessionId);
+			if (typeof(sessionsMap[hardToGuessSessionId]) === 'undefined') {
 				// TODO: createPersistent instead
-				liquid.sessionsMap[hardToGuessSessionId] = create('LiquidSession', {hardToGuessSessionId: hardToGuessSessionId});
+				sessionsMap[hardToGuessSessionId] = liquid.create('LiquidSession', {hardToGuessSessionId: hardToGuessSessionId});
 			}
-			return liquid.sessionsMap[hardToGuessSessionId];
+			return sessionsMap[hardToGuessSessionId];
 		}
 		
 		function registerPageTokenTurnaround(pageToken) {
@@ -448,6 +450,7 @@
 		};
 
 		// if (liquid.activePulse.originator === liquid.clientPage) {
+			
 
 
 		/**-------------------------------------------------------------
@@ -582,7 +585,7 @@
 		 *----------------------------------------------------------------*/
 		
 		function receiveChangesFromUpstream(changes) {
-			liquid.pulse('upstream', function() {
+			liquid.pulse(function() {
 				// Consolidate ids:
 				for (id in changes.idToUpstreamId) {
 					liquid.getEntity(id)._upstreamId = changes.idToUpstreamId[id];
@@ -679,7 +682,7 @@
 	
 
 		function unserializeObjectsFromUpstream(serializedObjects) {
-			liquid.pulse('upstream', function() {
+			liquid.pulse(function() {
 				liquid.unserializeFromUpstream(serializedObjects);
 			});			
 		}
@@ -996,6 +999,17 @@
 			liquid.allUnlocked--;
 			liquid.turnOffShapeCheck--;
 		}
+		
+		/**--------------------------------------------------------------
+		 *            Publish functions 
+		 *----------------------------------------------------------------*/
+		
+		// Publish some functions 
+		Object.assign(liquid, {
+			createOrGetSessionObject: createOrGetSessionObject,
+			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback
+		}); 
+
 		
 		return liquid;
 	}

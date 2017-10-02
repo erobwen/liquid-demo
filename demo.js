@@ -29,20 +29,20 @@ if (!liquid.persistent.demoInitialized) {
 		politics.subCategories.add(georgism);
 
 		setTimeout(function() {
-			liquid.pulse('local', function() {
+			liquid.pulse(function() {
 
 				var myPolitics = create('Category', {name: 'MyPoliticalCommitments', description: '', owner: user});
-				politics.addSubCategory(myPolitics);
+				politics.subCategories.add(myPolitics);
 
 				var directDemocracy = create('Category', {name: 'Direct Democracy', description: '', owner: user});
-				politics.addSubCategory(directDemocracy);
+				politics.subCategories.add(directDemocracy);
 
 				var liquidDemocracy = create('Category', {name: 'Liquid Democracy', description: '', owner: user});
-				directDemocracy.addSubCategory(liquidDemocracy);
+				directDemocracy.subCategories.add(liquidDemocracy);
 
 				var direktdemokraterna = create('Category', {name: 'Direktdemokraterna', description: '', owner: user});
-				liquidDemocracy.addSubCategory(direktdemokraterna);
-				myPolitics.addSubCategory(direktdemokraterna);
+				liquidDemocracy.subCategories.add(direktdemokraterna);
+				myPolitics.subCategories.add(direktdemokraterna);
 			});
 		}, 10000);
 
@@ -100,10 +100,10 @@ function createExpressControllers(liquidControllers) {
 		var controllerDefinition = liquidControllers[url];
 		if (typeof(controllerDefinition) === 'string') {
 			// console.debug("Create controller: " + url + " -> " + controllerDefinition);
-			controllers[url] = createControllerFromClassName(controllerDefinition);
+			controllers[url] = createExpressControllerFromClassName(controllerDefinition);
 		} else {
 			// console.debug("Create controller: " + url + " -> [function]");
-			controllers[url] = createControllerFromPageCreatorFunction(controllerDefinition);
+			controllers[url] = createExpressControllerFromPageCreatorFunction(controllerDefinition);
 		}
 	}
 	// controllers['foo'] = function(req, res) {  res.send('made it'); };

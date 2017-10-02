@@ -79,9 +79,9 @@
 			set: function(newObject) {
 				if (liquid.isObject(newObject)) {
 					let previousObject = this[name];
-					log("Previous and new object: ");
-					log(previousObject);
-					log(newObject);
+					// log("Previous and new object: ");
+					// log(previousObject);
+					// log(newObject);
 					if (newObject !== previousObject && filter(newObject)) {
 						if (previousObject !== null) {
 							if (previousObject[incomingProperty] instanceof LiquidIndex) {
