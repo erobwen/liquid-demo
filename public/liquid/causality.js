@@ -9,7 +9,7 @@
 	}
 }(this, function () {	
 	// Debugging
-	let objectlog = require('./objectlog.js');
+	let objectlog = require('../../objectlog.js');
 	let log = objectlog.log;
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
@@ -1120,6 +1120,7 @@
 						let descriptor = Object.getOwnPropertyDescriptor(scan, key);
 						if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
 							if (trace.get > 0) logUngroup();
+							if (trace.basic) log("returning bound thing...");
 							return descriptor.get.bind(this.const.object)();
 						}
 						scan = Object.getPrototypeOf( scan );
@@ -1282,6 +1283,18 @@
 				return;
 			}
 			if (trace.basic > 0) log("can write!");
+			
+			// Check if setting a property
+			let scan = target;
+			while ( scan !== null && typeof(scan) !== 'undefined' ) {
+				let descriptor = Object.getOwnPropertyDescriptor(scan, key);
+				if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
+					if (trace.get > 0) logUngroup();
+					if (trace.basic) log("Calling setter!...");
+					return descriptor.set.apply(this.const.object, [value]);
+				}
+				scan = Object.getPrototypeOf( scan );
+			}
 			
 			// Get previous value		// Get previous value
 			let previousValue;
@@ -1505,10 +1518,10 @@
 		// configuration.classRegistry = {};
 		
 		function addClasses(classes) {
-			console.log("addClasses!!");
-			console.log(classes);
+			// log("addClasses!!");
+			// log(classes, 2);
 			Object.assign(configuration.classRegistry, classes); 
-			console.log(configuration.classRegistry);
+			// log(configuration.classRegistry, 2);
 		};
 		
 		function assignClassNamesTo(object) {
@@ -1529,9 +1542,8 @@
 		} 
 		 
 		function create(createdTarget, cacheIdOrInitData) {
-			console.log("create " + typeof(createdTarget));
 			if (trace.basic > 0) {
-				log("create:");
+				log("create, target type: " + typeof(createdTarget));
 				logGroup();
 			}
 			
@@ -1546,9 +1558,9 @@
 				createdTarget = {};
 			} else if (typeof(createdTarget) === 'string') {
 				let classOrPrototype = configuration.classRegistry[createdTarget];
-				console.log(Object.keys(configuration.classRegistry));
-				console.log(createdTarget);
-				console.log(classOrPrototype);
+				// console.log(Object.keys(configuration.classRegistry));
+				// console.log(createdTarget);
+				// console.log(classOrPrototype);
 				createdTarget = new configuration.classRegistry[createdTarget]();
 			}
 			let cacheId = null;
@@ -3248,6 +3260,7 @@
 			// Incoming images
 			forAllIncoming : forAllIncoming,
 			getIncomingReferences : getIncomingReferences,
+			getIncomingReferencesMap : getIncomingReferencesMap,
 			getSingleIncomingReference : getSingleIncomingReference, 
 			createArrayIndex : createArrayIndex,
 			setIndex : setIndex

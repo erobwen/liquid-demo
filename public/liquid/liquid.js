@@ -1029,7 +1029,7 @@
 	let configurationToSystemMap = {};
 	return function(requestedConfiguration) {
 		if(requestedConfiguration === "default" && Object.keys(configurationToSystemMap).length === 1) {
-			console.log("Giving default liquid!!!!");
+			// console.log("Giving default liquid!!!!");
 			return configurationToSystemMap[Object.keys(configurationToSystemMap)[0]];
 		}
 		if(typeof(requestedConfiguration) === 'undefined') {

@@ -14,9 +14,15 @@
     }
 }(this, function () {
 	let liquid = require("../liquid/liquid.js")('default');
+	
+	// Debugging
+	let objectlog = require('../../objectlog.js');
+	let log = objectlog.log;
+	let logGroup = objectlog.enter;
+	let logUngroup = objectlog.exit;
+	
 	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
-	// console.log(liquid);
 	let LiquidEntity = liquid.LiquidEntity;
 	
 	// Reference service
@@ -133,10 +139,17 @@
 				this.setOwner(data.user);
 			}
 			if (defined(data.categories)) {
-				this.categories = data.categories;
+				let cats = data.categories;
+				
+				log("====================================================");
+				logGroup();
+				liquid.trace.basic = true;
+				log(this.const.id);
+				this.categories = cats;
+				liquid.trace.basic = false;
+				logUngroup();
 			}
 			if (defined(data.category)) {
-				// console.log(this);
 				this.categories = [data.category];
 			}
 			super.initialize(data);

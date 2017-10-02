@@ -8,6 +8,12 @@
 		root.liquidEntity = factory();
     }
 }(this, function () {
+	// Debugging
+	let objectlog = require('../../objectlog.js');
+	let log = objectlog.log;
+	let logGroup = objectlog.enter;
+	let logUngroup = objectlog.exit;
+
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
 	// This has to follow the injected dependency pattern to avoid circular package dependencies. This is since reallyDumbRequire cannot deal with circularity, dumb as it is...
 	let liquid; 
@@ -72,7 +78,7 @@
 			},
 			set: function(newObject) {
 				if (liquid.isObject(newObject)) {
-					let previousObject = this[getterName];
+					let previousObject = this[name];
 					if (newObject !== previousObject && filter(newObject)) {
 						if (previousObject[incomingProperty] instanceof LiquidIndex) {
 							previousObject[incomingProperty].remove(this);
@@ -80,6 +86,7 @@
 							previousObject[incomingProperty] = null; // Or delete by choice? 
 						}
 					}
+					return true;
 					this[incomingProperty] = this;
 				} else {
 					throw new Error("Expected an object when assigning an incoming property.");
@@ -110,6 +117,8 @@
 		// Add getters and setters
 		Object.defineProperty(object, name, {
 			get: function() {
+				log("Inside getter!!!");
+				log(this);
 				let objects = liquid.getIncomingReferences(this, incomingProperty, filter);
 				if (typeof(sorter) !== 'undefined') {
 					objects.sort(sorter);
@@ -117,6 +126,8 @@
 				return objects;
 			},
 			set: function(newObjects) {
+				log("Inside setter!!!");
+				log(this.const);
 				if (newObjects instanceof Array) {
 					let newObjectsIdMap = createIdMap(newObjects);
 					let previousObjectsIdMap = liquid.getIncomingReferencesMap(this, incomingProperty, filter);
@@ -142,7 +153,8 @@
 								newCategory[incomingProperty] = this;
 							}
 						}
-					}					
+					}
+					return true;
 				} else {
 					throw new Error("Expected an array of objects to when assigning incoming set property.");					
 				}
