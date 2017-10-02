@@ -137,22 +137,23 @@
 			
 			if (defined(data.user)) {
 				this.setOwner(data.user);
+				delete data.user;
 			}
 			if (defined(data.categories)) {
-				let cats = data.categories;
-				
-				log("====================================================");
-				logGroup();
-				liquid.trace.basic = true;
-				log(this.const.id);
-				this.categories = cats;
-				liquid.trace.basic = false;
-				logUngroup();
+				this.categories = data.categories;
+				delete data.categories;
 			}
 			if (defined(data.category)) {
 				this.categories = [data.category];
+				delete data.category;
 			}
-			super.initialize(data);
+			log("====================================================");
+			liquid.trace.basic = true;
+			logGroup();
+			this.assignWeak(data);
+			logUngroup();
+			liquid.trace.basic = false;
+			log("====================================================");
 		}
 	}
 	liquid.createIncomingSetProperty(Reference, "categories", Category, "references"); 

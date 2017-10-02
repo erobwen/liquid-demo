@@ -1082,6 +1082,10 @@
 	*/
 		
 		function getHandlerObject(target, key) {
+			if (trace.basic > 0) {
+				// log("getHandlerObject: "  + this.const.name + "." + key);
+				// logGroup();
+			}
 			if (trace.get > 0) {
 				log("getHandlerObject: "  + this.const.name + "." + key);
 				logGroup();
@@ -1289,7 +1293,7 @@
 			while ( scan !== null && typeof(scan) !== 'undefined' ) {
 				let descriptor = Object.getOwnPropertyDescriptor(scan, key);
 				if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
-					if (trace.get > 0) logUngroup();
+					if (trace.basic > 0) logUngroup();
 					if (trace.basic) log("Calling setter!...");
 					return descriptor.set.apply(this.const.object, [value]);
 				}

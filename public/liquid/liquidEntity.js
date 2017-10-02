@@ -79,11 +79,16 @@
 			set: function(newObject) {
 				if (liquid.isObject(newObject)) {
 					let previousObject = this[name];
+					log("Previous and new object: ");
+					log(previousObject);
+					log(newObject);
 					if (newObject !== previousObject && filter(newObject)) {
-						if (previousObject[incomingProperty] instanceof LiquidIndex) {
-							previousObject[incomingProperty].remove(this);
-						} else {
-							previousObject[incomingProperty] = null; // Or delete by choice? 
+						if (previousObject !== null) {
+							if (previousObject[incomingProperty] instanceof LiquidIndex) {
+								previousObject[incomingProperty].remove(this);
+							} else {
+								previousObject[incomingProperty] = null; // Or delete by choice? 
+							}							
 						}
 					}
 					return true;
@@ -117,8 +122,8 @@
 		// Add getters and setters
 		Object.defineProperty(object, name, {
 			get: function() {
-				log("Inside getter!!!");
-				log(this);
+				// log("Inside getter!!!");
+				// log(this);
 				let objects = liquid.getIncomingReferences(this, incomingProperty, filter);
 				if (typeof(sorter) !== 'undefined') {
 					objects.sort(sorter);
@@ -126,8 +131,8 @@
 				return objects;
 			},
 			set: function(newObjects) {
-				log("Inside setter!!!");
-				log(this.const);
+				// log("Inside setter!!!");
+				// log(this.const);
 				if (newObjects instanceof Array) {
 					let newObjectsIdMap = createIdMap(newObjects);
 					let previousObjectsIdMap = liquid.getIncomingReferencesMap(this, incomingProperty, filter);
