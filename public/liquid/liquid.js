@@ -24,7 +24,9 @@
 	let logUngroup = objectlog.exit;
 	
 	
-	function createLiquidInstance(configuration) {		
+	function createLiquidInstance(configuration) {
+		console.log("createLiquidInstance");
+		console.log(configuration);
 		pagesMap = {};
 		sessionsMap = {};
 
@@ -1159,8 +1161,11 @@
 	let configurationToSystemMap = {};
 	return function(requestedConfiguration) {
 		if(requestedConfiguration === "default" && Object.keys(configurationToSystemMap).length === 1) {
-			// console.log("Giving default liquid!!!!");
+			console.log("Giving default liquid!!!!");
 			return configurationToSystemMap[Object.keys(configurationToSystemMap)[0]];
+		}
+		if (requestedConfiguration === "default") {
+			throw new Error("Should not happen!");
 		}
 		if(typeof(requestedConfiguration) === 'undefined') {
 			requestedConfiguration = {};
