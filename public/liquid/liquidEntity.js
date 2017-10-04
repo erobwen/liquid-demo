@@ -17,8 +17,10 @@
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
 	// This has to follow the injected dependency pattern to avoid circular package dependencies. This is since reallyDumbRequire cannot deal with circularity, dumb as it is...
 	let liquid; 
+	let create;
 	function injectLiquid(injectedLiquid) {
 		liquid = injectedLiquid;
+		create = liquid.create;
 	}
 
 
@@ -416,7 +418,7 @@
 		initialize(data) {
 			super.initialize(data);
 			this.sorter = data.sorter;
-			this.contents = liquid.create({});
+			this.contents = create({});
 		}
 		
 		setContents(objectArray) {
@@ -480,12 +482,11 @@
 			this.const._subscriptionQueue = [];
 			
 			// Register page 
-			this.token = liquid.generatePageId();
-			liquid.pagesMap[this.token] = this;
+			liquid.registerPage(this);
 		}
 		
 		createPageService() {
-			return new LiquidPageService();
+			return create("LiquidPageService");
 		}
 		
 		accessLevel(user) {
@@ -694,7 +695,7 @@
 				encryptedPassword = data.serverEncryptedPassword;
 			}
 			
-			this.passwordVault = liquid.create("LiquidUserPasswordVault", { encryptedPassword: encryptedPassword });			
+			this.passwordVault = create("LiquidUserPasswordVault", { encryptedPassword: encryptedPassword });			
 		}
 		
 		getEncryptedPassword() {

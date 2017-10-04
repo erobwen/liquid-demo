@@ -75,22 +75,22 @@ if (!liquid.persistent.demoInitialized) {
 
 // Setup express server
 var express = require('express');
-var liquidHttpServer = express();
-liquidHttpServer.set('view engine', 'ejs');
+var expressHttpServer = express();
+expressHttpServer.set('view engine', 'ejs');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
-liquidHttpServer.use(cookieParser());
-liquidHttpServer.use(session({secret: '12345QWER67890TY'}));
-// liquidHttpServer.get('/fie', function(req, res) {res.send("Found me!");}); // Test server alive...
+expressHttpServer.use(cookieParser());
+expressHttpServer.use(session({secret: '12345QWER67890TY'}));
+// expressHttpServer.get('/fie', function(req, res) {res.send("Found me!");}); // Test server alive...
 var expressControllers = createExpressControllers(liquidControllers);
 
 for (controllerName in expressControllers) {
-	liquidHttpServer.get('/' + controllerName, expressControllers[controllerName]);
+	expressHttpServer.get('/' + controllerName, expressControllers[controllerName]);
 }
 
-liquidHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
+expressHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
 
-liquidHttpServer.listen(4000, function () {
+expressHttpServer.listen(4000, function () {
   console.log('Liquid is now listening on port 4000!');
 });
 
@@ -115,7 +115,7 @@ function createExpressControllerFromClassName(className) {
 		var session = liquid.createOrGetSessionObject(req.session.token);
 	
 		// Setup page object TODO: persistent page object?
-		return create(className, { token: liquid.getPageId(), Session : session });
+		return create(className, { Session : session });
 	});
 }
 

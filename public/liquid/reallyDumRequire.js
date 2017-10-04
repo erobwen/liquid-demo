@@ -5,7 +5,12 @@
 (function(root) {
 	if (typeof(root.require) === 'undefined') {
 		root.require = function(moduleName) {
-			return root[moduleName.replace(/^.*[\\\/]/, '').replace(/\.\w*/, '')];
+			let pureName = moduleName.replace(/^.*[\\\/]/, '').replace(/\.\w*/, '');
+			let requireResult = root[pureName];
+			// console.log("reallyDumRequire: " + moduleName + " as " + pureName);
+			// console.log(requireResult);
+			// console.log(root);
+			return requireResult;
 		}			
 	}
 }(this));

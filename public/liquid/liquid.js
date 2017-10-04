@@ -98,9 +98,9 @@
 			// trace('serialize', callInfo);
 			liquid.callOnServer = true;
 			Fiber(function() {
-				// trace('serialize', Object.keys(liquid.pagesMap));
-				if (typeof(liquid.pagesMap[pageToken]) !== 'undefined') {
-					var page = liquid.pagesMap[pageToken];
+				// trace('serialize', Object.keys(pagesMap));
+				if (typeof(pagesMap[pageToken]) !== 'undefined') {
+					var page = pagesMap[pageToken];
 					trace('serialize', "Make call on server ", page);
 
 					liquid.pulse(function() {
@@ -129,8 +129,8 @@
 		function disconnect() {
 			Fiber(function() {
 				// pageToken
-				// var page = liquid.pagesMap[pageToken];
-				// delete liquid.pagesMap[pageToken];
+				// var page = pagesMap[pageToken];
+				// delete pagesMap[pageToken];
 				// page.setSession(null);
 				// // TODO: unpersist page
 				trace('serialize', 'Disconnected'); 
@@ -141,9 +141,14 @@
 		/**--------------------------------------------------------------
 		 *              Page and session setup
 		 *----------------------------------------------------------------*/
-		 
+		
+		function registerPage(page) {
+			page.token = generatePageId();
+			pagesMap[page.token] = page;
+		}
+		
 		function generatePageId() {
-			return liquid.generateUniqueKey(liquid.pagesMap);
+			return generateUniqueKey(pagesMap);
 		}
 		
 		function generateUniqueKey(keysMap) {
@@ -244,12 +249,12 @@
 		let dirtyPageSubscritiptions = {};
 		function getSubscriptionUpdate(page) {
 			// console.group("getSubscriptionUpdate");
-			traceGroup('subscribe', "--- getSubscriptionUpdate ", page, "---");
+			// traceGroup('subscribe', "--- getSubscriptionUpdate ", page, "---");
 			var result = {};
 
 			var addedAndRemovedIds;
 			if (page._dirtySubscriptionSelections) {
-				traceGroup('subscribe', '--- dirty footprint selection --- ');
+				// traceGroup('subscribe', '--- dirty footprint selection --- ');
 				// console.log("dirty selection");
 				liquid.uponChangeDo(function() {
 					var selection = {};
@@ -257,7 +262,7 @@
 						var object = subscription._relationInstances['Subscription_TargetObject'].data; // silent get
 						var selectorSuffix = capitaliseFirstLetter(subscription._propertyInstances['selector'].data); // Silent get
 						// console.log("--- Considering subscription: " + object._ + ".select" + selectorSuffix + "() ---");
-						traceGroup('subscribe', "--- Considering subscription: ", object, ".select" + selectorSuffix + "() ---");
+						// traceGroup('subscribe', "--- Considering subscription: ", object, ".select" + selectorSuffix + "() ---");
 						var selectorFunctionName = 'select' + selectorSuffix;
 
 						// Perform a selection with dependency recording!
@@ -273,7 +278,7 @@
 						for (id in subscriptionSelection) {
 							selection[id] = true;
 						}
-						traceGroupEnd();
+						// traceGroupEnd();
 						// console.log("--- Finish considering subscription: " + object._ + ".select" + selectorSuffix + "() ---");
 						// console.groupEnd();
 					});
@@ -285,16 +290,16 @@
 					page._addedAndRemovedIds = getMapDifference(page._previousSelection, selection);
 					page._dirtySubscriptionSelections  = false;
 				}, function() {
-					trace('serialize', "A subscription selection got dirty: ", page);
+					// trace('serialize', "A subscription selection got dirty: ", page);
 					// console.log("A subscription selection got dirty: " + page._id);
 					// stackDump();
 					liquid.dirtyPageSubscritiptions[page._id] = page;
 					page._dirtySubscriptionSelections  = true;
 				});
 				addedAndRemovedIds = page._addedAndRemovedIds;
-				traceGroupEnd();
+				// traceGroupEnd();
 			} else {
-				trace('serialize', "just events");
+				// trace('serialize', "just events");
 				addedAndRemovedIds = {
 					added : {},
 					removed : {},
@@ -302,20 +307,20 @@
 				}
 			}
 
-			traceGroup('serialize', "Added and removed:");
-			trace('serialize', "Added:");
-			for (var id in addedAndRemovedIds.added) {
-				trace('serialize', getEntity(id));
-			}
-			trace('serialize', "Removed:");
-			for (var id in addedAndRemovedIds.removed) {
-				trace('serialize', getEntity(id));
-			}
-			trace('serialize', "Static:");
-			for (var id in addedAndRemovedIds.static) {
-				trace('serialize', getEntity(id));
-			}
-			traceGroupEnd();
+			// traceGroup('serialize', "Added and removed:");
+			// trace('serialize', "Added:");
+			// for (var id in addedAndRemovedIds.added) {
+				// trace('serialize', getEntity(id));
+			// }
+			// trace('serialize', "Removed:");
+			// for (var id in addedAndRemovedIds.removed) {
+				// trace('serialize', getEntity(id));
+			// }
+			// trace('serialize', "Static:");
+			// for (var id in addedAndRemovedIds.static) {
+				// trace('serialize', getEntity(id));
+			// }
+			// traceGroupEnd();
 			// console.log("Added ids:");
 			// console.log(addedAndRemovedIds.added);
 			// console.log("Removed ids:");
@@ -339,29 +344,30 @@
 
 			// Serialize
 			liquid.pageSubject = page;
-			result.addedSerialized = liquid.serializeSelection(addedAndRemovedIds.added);
+			result.addedSerialized = serializeSelection(addedAndRemovedIds.added);
 			liquid.pageSubject = null;
 
 			result.unsubscribedUpstreamIds = addedAndRemovedIds.removed;
 
-			//add event info originating from repeaters.
-			result.events = [];
-			trace('serialize', "Serialize events");
-			if (liquid.activePulse !== null) {
-				liquid.activePulse.events.forEach(function (event) {
-					trace('serialize', event.action, event.object);
-					// trace('serialize', event);
-					if (!event.redundant && (liquid.activePulse.originator !== page || event.repeater !== null || liquid.callOnServer)) { // Do not send back events to originator!
-						// console.log("A");
-						if (addedAndRemovedIds.static[event.object._id]) {
-							// console.log("B");
-							liquid.pageSubject = page;
-							result.events.push(serializeEventForDownstream(event));
-							liquid.pageSubject = null;
-						}
-					}
-				});
-			}
+			// TODO: Consider what to do about this... do we really need a pulse object? 
+			// //add event info originating from repeaters.
+			// result.events = [];
+			// // trace('serialize', "Serialize events");
+			// if (liquid.activePulse !== null) {
+				// liquid.activePulse.events.forEach(function (event) {
+					// // trace('serialize', event.action, event.object);
+					// // trace('serialize', event);
+					// if (!event.redundant && (liquid.activePulse.originator !== page || event.repeater !== null || liquid.callOnServer)) { // Do not send back events to originator!
+						// // console.log("A");
+						// if (addedAndRemovedIds.static[event.object._id]) {
+							// // console.log("B");
+							// liquid.pageSubject = page;
+							// result.events.push(serializeEventForDownstream(event));
+							// liquid.pageSubject = null;
+						// }
+					// }
+				// });
+			// }
 
 			// Add id mapping information
 			result.idToUpstreamId = {};
@@ -378,9 +384,9 @@
 			}
 
 			// console.log(result);
-			trace('serialize', "Subscription update: ", result);
+			// trace('serialize', "Subscription update: ", result);
 			// console.groupEnd();
-			traceGroupEnd();
+			// traceGroupEnd();
 			return result;
 
 			/**
@@ -396,7 +402,78 @@
 			 * result.events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 			 */
 		};
-
+		
+		function serializeSelection(selection) {
+			var serialized = [];
+			for (id in selection) {
+				var object = liquid.idObjectMap[id];
+				serialized.push(liquid.serializeObject(object, false));
+			}
+			return serialized;
+		};
+		
+		
+		/**
+		 * Example output:
+		 * 
+		 * {
+		 * 	 id: 34
+		 * 	 className: 'Dog'
+		 *	 HumanOwner: 'Human:23'
+		 *	 property: "A string"	
+		 * }
+		 */
+		function serializeObject(object, forUpstream = false) {
+			function serializedReference(object) {
+				if (object !== null) {
+					if (forUpstream) {
+						if (object._upstreamId !== null) {
+							return object.className + ":id:" + object._upstreamId;
+						} else {
+							return object.className + ":downstreamId:" + object._id;
+						}
+					} else {
+						return object.className + ":" + object._id + ":" + !object.readable();
+					}
+				} else {
+					return null;
+				}
+			};
+			
+			serialized = {};
+			serialized._ = object.__();
+			serialized.className = object.className;
+			if (forUpstream) {
+				if (object._upstreamId !== null) {
+					serialized.id = object._upstreamId;
+				} else {
+					serialized.downstreamId = object._id;
+				}
+			} else {
+				serialized.id = object._id;
+			}
+			for (relationQualifiedName in object._relationDefinitions) {
+				var definition = object._relationDefinitions[relationQualifiedName];
+				if (!definition.isReverseRelation) {
+					if (definition.isSet) {
+						serialized[relationQualifiedName] = object[definition.getterName]().map(serializedReference);
+					} else {
+						serialized[relationQualifiedName] = serializedReference(object[definition.getterName]());
+						// console.log(serialized[relationQualifiedName]);
+					}
+				}
+			}
+			for (propertyName in object._propertyDefinitions) {
+				if (forUpstream && definition.clientOnly) {
+					// Ignore
+				} else {
+					definition = object._propertyDefinitions[propertyName];
+					serialized[definition.name] = object[definition.getterName]();
+				}
+			}
+			return serialized;
+		};
+		
 		// Form for events:
 		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
 		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
@@ -443,7 +520,7 @@
 						delete liquid.dirtyPageSubscritiptions[id];
 					} else {
 						// An update occured before the page has gotten to register its socket id.
-						trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
+						// trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
 					}
 				}
 			}
@@ -638,10 +715,10 @@
 			
  		
 		function getPage(pageToken) {
-				trace('serialize', "Register page connection:" + pageToken);
-				trace('serialize', pageToken);
-				if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(liquid.pagesMap[pageToken]) !== 'undefined') {
-					return liquid.pagesMap[pageToken];
+				// trace('serialize', "Register page connection:" + pageToken);
+				// trace('serialize', pageToken);
+				if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(pagesMap[pageToken]) !== 'undefined') {
+					return pagesMap[pageToken];
 				}
 		}
 
@@ -687,6 +764,7 @@
 			});			
 		}
 		
+
 		
 		
 		// This was done on client... wierd... I think that active subscriptions should be updated by server and pushed in same pulse as newly loaded... 
@@ -763,10 +841,10 @@
 							}
 						})
 					};
-					traceGroup('serialize', "=== Call on server ===");
-					trace('serialize', callData.callId, callData.objectId, callData.methodName);
-					trace('serialize', callData.argumentList);
-					traceGroupEnd();
+					// traceGroup('serialize', "=== Call on server ===");
+					// trace('serialize', callData.callId, callData.objectId, callData.methodName);
+					// trace('serialize', callData.argumentList);
+					// traceGroupEnd();
 					liquid.makeCallOnServer(callData);
 				};
 			}
@@ -866,15 +944,16 @@
 					}
 				}
 		
-				liquid.activePulse.events.forEach(function(event) {
-					var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
-					if (!eventIsFromUpstream) {
-						trace('serialize', "processing event required objects");
-						if (event.object._upstreamId !== null && event.action == 'addingRelation' && event.relatedObject._upstreamId === null) {
-							addRequiredCascade(event.relatedObject, requiredObjects);
-						}
-					}
-				});
+				// TODO: What to do with this?... get events as argument?... 
+				// liquid.activePulse.events.forEach(function(event) {
+					// var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
+					// if (!eventIsFromUpstream) {
+						// // trace('serialize', "processing event required objects");
+						// if (event.object._upstreamId !== null && event.action == 'addingRelation' && event.relatedObject._upstreamId === null) {
+							// addRequiredCascade(event.relatedObject, requiredObjects);
+						// }
+					// }
+				// });
 		
 				var serializedObjects = [];
 				for(id in requiredObjects) {
@@ -883,18 +962,19 @@
 				}
 		
 				var serializedEvents = [];
-				liquid.activePulse.events.forEach(function(event) {
-					// console.log(event);
-					var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
-					if (!event.redundant && !eventIsFromUpstream) {
-						trace('serialize', "not from upstream");
-						if (event.object._upstreamId !== null && typeof(event.definition) !== 'undefined' && !event.definition.clientOnly) {
-							serializedEvents.push(serializeEventForUpstream(event));
-						} else if (typeof(requiredObjects[event.object._id]) !== 'undefined') {
-							serializedEvents.push(serializeEventForUpstream(event));
-						}
-					}
-				});
+				// TODO: get events from argument
+				// liquid.activePulse.events.forEach(function(event) {
+					// // console.log(event);
+					// var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
+					// if (!event.redundant && !eventIsFromUpstream) {
+						// // trace('serialize', "not from upstream");
+						// if (event.object._upstreamId !== null && typeof(event.definition) !== 'undefined' && !event.definition.clientOnly) {
+							// serializedEvents.push(serializeEventForUpstream(event));
+						// } else if (typeof(requiredObjects[event.object._id]) !== 'undefined') {
+							// serializedEvents.push(serializeEventForUpstream(event));
+						// }
+					// }
+				// });
 		
 				var serializedPulse = {
 					serializedEvents : serializedEvents,
@@ -902,7 +982,7 @@
 				};
 		
 				if (serializedPulse.serializedEvents.length > 0 || serializedPulse.serializedObjects.length > 0) {
-					trace('serialize', "Push upstream:", serializedPulse);
+					// trace('serialize', "Push upstream:", serializedPulse);
 					// console.log(serializedPulse);
 					tryPushSerializedPulseUpstream(serializedPulse);
 				}
@@ -956,7 +1036,7 @@
 			if (targetObject.getIsPlaceholderObject()) {
 				targetObject.forAllOutgoingRelations(function(definition, instance) {
 					// console.log("processingRelation: " + definition.name);
-					trace('unserialize', definition.name, "~~>", targetObject);
+					// trace('unserialize', definition.name, "~~>", targetObject);
 					if (typeof(serializedObject[definition.qualifiedName]) !== 'undefined') {
 						var data = serializedObject[definition.qualifiedName];
 						if (definition.isSet) {
@@ -970,7 +1050,7 @@
 				for (propertyName in targetObject._propertyDefinitions) {
 					definition = targetObject._propertyDefinitions[propertyName];
 					// console.log("processingProperty: " + definition.name);
-					trace('unserialize', definition.name, "~~>", targetObject);
+					// trace('unserialize', definition.name, "~~>", targetObject);
 					if (typeof(serializedObject[definition.name]) !== 'undefined') {
 						var data = serializedObject[definition.name];
 						targetObject[definition.setterName](data);
@@ -979,7 +1059,7 @@
 				targetObject.setIsPlaceholderObject(false);
 				targetObject._ = targetObject.__();
 			} else {
-				trace('unserialize', "Loaded data that was already loaded!!!");
+				// trace('unserialize', "Loaded data that was already loaded!!!");
 				// console.log("Loaded data that was already loaded!!!");
 			}
 		}
@@ -989,7 +1069,7 @@
 			liquid.turnOffShapeCheck++;
 			liquid.allUnlocked++;
 			arrayOfSerialized.forEach(function(serialized) {
-				trace('unserialize', "unserializeFromUpstream: ", serialized.id);
+				// trace('unserialize', "unserializeFromUpstream: ", serialized.id);
 				// console.log("unserializeFromUpstream: " + serialized.id);
 				unserializeUpstreamObject(serialized);
 			});
@@ -1000,6 +1080,39 @@
 			liquid.turnOffShapeCheck--;
 		}
 		
+
+		/**--------------------------------------------------------------
+		 * 
+		 *            Timeing 
+		 *
+		 *----------------------------------------------------------------*/
+		
+		let notifyUICallbacks = []; 
+		function addNotifyUICallback(callback) {
+			notifyUICallbacks.push(callback);
+		}
+		
+		function streamInRelevantDirections() {
+			// Notify UI
+			notifyUICallbacks.forEach(function(callback) {
+				callback();
+			});
+				
+			// Push data downstream
+			pushDataDownstream();
+			
+			// Push data upstream
+			pushDataUpstream();
+			
+			// Store to database, do nothing, leave to eternity, see calling function
+		}
+		
+		if (configuration.usePersistency) {
+			liquid.setPostPulseCallbackBeforeStorage(streamInRelevantDirections);			
+		} else {
+			liquid.addPostPulseCallback(streamInRelevantDirections);		
+		}
+		
 		/**--------------------------------------------------------------
 		 *            Publish functions 
 		 *----------------------------------------------------------------*/
@@ -1007,7 +1120,10 @@
 		// Publish some functions 
 		Object.assign(liquid, {
 			createOrGetSessionObject: createOrGetSessionObject,
-			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback
+			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback,
+			getSubscriptionUpdate : getSubscriptionUpdate, 
+			registerPage : registerPage,
+			addNotifyUICallback : addNotifyUICallback
 		}); 
 
 		

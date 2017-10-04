@@ -2,6 +2,9 @@
 
 var reactRootComponentInstance = null;
 
+let liquid = require('./liquid.js')('default');
+console.log("in reactLiquidIntegration.js...");
+console.log(liquid);
 
 /*--------------------------------------*
 *              Focus    
@@ -37,7 +40,7 @@ var focusComponent = function(component) {
 *---------------------------------------*/
 
 var componentsNeedOfForceUpdate = [];
-liquid.addNoMoreDirtyRepeaterCallback(function() {
+liquid.addNotifyUICallback(function() {
 	// console.group("=== Updating user interface ===");
 	// stackDump();
 	traceGroup('react', "Starting UI update with " + componentsNeedOfForceUpdate.length + " required updates");

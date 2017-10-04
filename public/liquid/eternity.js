@@ -31,10 +31,17 @@
 		/*-----------------------------------------------
 		 *          Object post pulse events
 		 *-----------------------------------------------*/
-		 
+		
+		let postPulseCallbackBeforeStorage = null;
+		function setPostPulseCallbackBeforeStorage(callback) {
+			postPulseCallbackBeforeStorage = callback;
+		}
+		
 		let unstableImages = [];
 
 		function postObjectPulseAction(events) {
+			if (postPulseCallbackBeforeStorage) postPulseCallbackBeforeStorage();
+			
 			// log("postObjectPulseAction: " + events.length + " events");
 			// logGroup();
 			// if (events.length > 0) {
@@ -2193,6 +2200,9 @@
 		let objectCausality = require("./causality.js")(objectCausalityConfiguration);
 		
 		// Additions 
+		Object.assign(objectCausality, {
+			setPostPulseCallbackBeforeStorage : setPostPulseCallbackBeforeStorage
+		});
 		objectCausality.addPostPulseAction(postObjectPulseAction);
 		objectCausality.mockMongoDB = mockMongoDB;
 		objectCausality.unloadAllAndClearMemory = unloadAllAndClearMemory;
