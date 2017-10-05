@@ -79,7 +79,9 @@
 				return liquid.getSingleIncomingReference(this, incomingProperty, filter);
 			},
 			set: function(newObject) {
-				if (liquid.isObject(newObject)) {
+				let result = liquid.isObject(newObject);
+				// console.log(result);
+				if (result) {
 					let previousObject = this[name];
 					// log("Previous and new object: ");
 					// log(previousObject);
@@ -96,6 +98,8 @@
 					return true;
 					this[incomingProperty] = this;
 				} else {
+					console.log(newObject);
+					console.log(newObject.const.id);
 					throw new Error("Expected an object when assigning an incoming property.");
 				}
 			}

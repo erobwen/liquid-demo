@@ -1,6 +1,6 @@
 (function(root) {
 	// Create one single liquid instance
-	let liquid = root.liquid({usePersistency: false, causalityConfiguration : {}});
+
 	liquid.addClasses(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
 	liquid.setClassNamesTo(root); // Optional: Make all class names global
 	
@@ -8,7 +8,7 @@
 	liquid.receiveInitialDataFromUpstream(data);
 		
 	// Setup socket io.
-	function () {
+	(function () {
 		var socket = io('http://localhost:8080');
 
 		socket.on('connect', function(){
@@ -28,7 +28,7 @@
 		liquid.setPushMessageUpstreamCallback(function(messageType, pageToken, data) {
 			socket.emit(messageType, pageToken, data);	
 		});		
-	}();
+	})();
 
 	
 	// Setup global variables

@@ -23,6 +23,8 @@
 	let logUngroup = objectlog.exit;
 
 	function createEternityInstance(configuration) {
+		console.log(">>> CREATE ETERNITY INSTANCE <<<");
+
 		// log("createEternityInstance: " + configuration.name);
 		// logGroup();
 		// log(configuration,5);
@@ -33,7 +35,7 @@
 		 *-----------------------------------------------*/
 		
 		let postPulseCallbackBeforeStorage = null;
-		function setPostPulseCallbackBeforeStorage(callback) {
+		function setPostPulseActionBeforeStorage(callback) {
 			postPulseCallbackBeforeStorage = callback;
 		}
 		
@@ -806,7 +808,8 @@
 			let placeholder;
 			imageCausality.pulse(function() { // Pulse here to make sure that dbId is set before post image pulse comence.
 				let record = peekAtRecord(dbId);
-				placeholder = imageCausality.create(createTarget(typeof(record._eternityImageClass) !== 'undefined' ? record._eternityImageClass : 'Object'));
+				console.log(typeof(record._eternityImageClass) !== 'undefined' ? record._eternityImageClass : 'Object');
+				placeholder = imageCausality.create(typeof(record._eternityImageClass) !== 'undefined' ? record._eternityImageClass : 'Object');
 				placeholder.const.isObjectImage = typeof(record._eternityIsObjectImage) !== 'undefined' ? record._eternityIsObjectImage : false;
 				placeholder.const.loadedIncomingReferenceCount = 0;
 				placeholder.const.dbId = dbId;
@@ -854,28 +857,28 @@
 			logUngroup();
 		}
 		
-		function createTarget(className) {
-			if (typeof(className) !== 'undefined') {
-				if (className === 'Array') {
-					return []; // On Node.js this is different from Object.create(eval("Array").prototype) for some reason... 
-				} else if (className === 'Object') {
-					return {}; // Just in case of similar situations to above for some Javascript interpretors... 
-				} else {
-					if (typeof(configuration.classRegistry[className]) === 'function') {
-						return Object.create(configuration.classRegistry[className].prototype);
-					} else if (typeof(configuration.classRegistry[className]) === 'object') {
-						return Object.create(configuration.classRegistry[className]);
-					} else {
-						throw new Error("Cannot find class named " + className + ". Make sure to enter it in the eternity classRegistry configuration." );
-					}
-				}
-			} else {
-				return {};
-			}
-		}
+		// function createTarget(className) {
+			// if (typeof(className) !== 'undefined') {
+				// if (className === 'Array') {
+					// return []; // On Node.js this is different from Object.create(eval("Array").prototype) for some reason... 
+				// } else if (className === 'Object') {
+					// return {}; // Just in case of similar situations to above for some Javascript interpretors... 
+				// } else {
+					// if (typeof(configuration.classRegistry[className]) === 'function') {
+						// return Object.create(configuration.classRegistry[className].prototype);
+					// } else if (typeof(configuration.classRegistry[className]) === 'object') {
+						// return Object.create(configuration.classRegistry[className]);
+					// } else {
+						// throw new Error("Cannot find class named " + className + ". Make sure to enter it in the eternity classRegistry configuration." );
+					// }
+				// }
+			// } else {
+				// return {};
+			// }
+		// }
 		
 		function createObjectPlaceholderFromDbId(dbId) {
-			let placeholder = objectCausality.create(createTarget(peekAtRecord(dbId)._eternityObjectClass));
+			let placeholder = objectCausality.create(peekAtRecord(dbId)._eternityObjectClass);
 			placeholder.const.dbId = dbId;
 			placeholder.const.name = peekAtRecord(dbId).name;
 			// log("createObjectPlaceholderFromDbId: " + dbId + ", " + placeholder.const.name);
@@ -2201,7 +2204,7 @@
 		
 		// Additions 
 		Object.assign(objectCausality, {
-			setPostPulseCallbackBeforeStorage : setPostPulseCallbackBeforeStorage
+			setPostPulseActionBeforeStorage : setPostPulseActionBeforeStorage
 		});
 		objectCausality.addPostPulseAction(postObjectPulseAction);
 		objectCausality.mockMongoDB = mockMongoDB;
@@ -2273,7 +2276,6 @@
 		return {
 			maxNumberOfLoadedObjects : 10000,
 			persistentIncomingChunkSize : 500,
-			classRegistry : {},
 			twoPhaseComit : true,
 			causalityConfiguration : {}
 		}

@@ -2,7 +2,7 @@
 
 var reactRootComponentInstance = null;
 
-let liquid = require('./liquid.js')('default');
+let liquid = require('./liquid.js')();
 console.log("in reactLiquidIntegration.js...");
 console.log(liquid);
 

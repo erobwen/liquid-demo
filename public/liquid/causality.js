@@ -16,7 +16,13 @@
 	
 	
 	function createCausalityInstance(configuration) {
+		console.log(">>> CREATE CAUSALITY INSTANCE <<<");
 		
+		
+		// Class registry
+		let classRegistry =  {};
+		
+		// State
 		let state = { 
 			useIncomingStructures : configuration.useIncomingStructures,
 			incomingStructuresDisabled : 0
@@ -1519,17 +1525,17 @@
 		 *
 		 ***************************************************************/
 		
-		// configuration.classRegistry = {};
+		// classRegistry = {};
 		
 		function addClasses(classes) {
 			// log("addClasses!!");
 			// log(classes, 2);
-			Object.assign(configuration.classRegistry, classes); 
-			// log(configuration.classRegistry, 2);
+			Object.assign(classRegistry, classes); 
+			// log(classRegistry, 2);
 		};
 		
 		function assignClassNamesTo(object) {
-			Object.assign(object, configuration.classRegistry);
+			Object.assign(object, classRegistry);
 		}
 		 
 		function createImmutable(initial) {
@@ -1561,11 +1567,17 @@
 				initializer = createdTarget; 
 				createdTarget = {};
 			} else if (typeof(createdTarget) === 'string') {
-				let classOrPrototype = configuration.classRegistry[createdTarget];
-				// console.log(Object.keys(configuration.classRegistry));
-				// console.log(createdTarget);
-				// console.log(classOrPrototype);
-				createdTarget = new configuration.classRegistry[createdTarget]();
+				if (createdTarget === 'Array') {
+					createdTarget = []; // On Node.js this is different from Object.create(eval("Array").prototype) for some reason... 
+				} else if (createdTarget === 'Object') {
+					createdTarget = {}; // Just in case of similar situations to above for some Javascript interpretors... 
+				} else {
+					let classOrPrototype = classRegistry[createdTarget];
+					// console.log(Object.keys(classRegistry));
+					// console.log(createdTarget);
+					// console.log(classOrPrototype);
+					createdTarget = new classRegistry[createdTarget]();
+				}
 			}
 			let cacheId = null;
 			let initialData = null;
@@ -1734,18 +1746,32 @@
 		function isObject(entity) {
 			// console.log();
 			// console.log("isObject:");
-			// console.log(typeof(entity) === 'object');
-			// if (typeof(entity) === 'object') {
-				// console.log(entity !== null);
-				// if (entity !== null) {
-					// console.log(typeof(entity.const) !== 'undefined');
-					// if (typeof(entity.const) !== 'undefined')
-						// console.log(entity.const.causalityInstanceIdentity === causalityInstanceIdentity);				
-				// }
-			// }
-			// TODO: Fix the causality identity somehow. 
-			// return typeof(entity) === 'object' && entity !== null && typeof(entity.const) !== 'undefined' && entity.const.causalityInstanceIdentity === causalityInstanceIdentity;
-			return typeof(entity) === 'object' && entity !== null && typeof(entity.const) !== 'undefined' && entity.const.causalityInstance === causalityInstance;
+
+			let typeCorrect = typeof(entity) === 'object';
+			let notNull = entity !== null;
+			let hasConst = false;			
+			let rightCausalityInstance = false;
+			
+			if (typeCorrect && notNull) {
+				hasConst = typeof(entity.const) !== 'undefined';
+				// console.log("rightafter")
+				// console.log(hasConst);
+			
+				if (hasConst === true) {
+					rightCausalityInstance = entity.const.causalityInstance === causalityInstance;
+				}
+			}
+			
+			// console.log(typeCorrect);
+			// console.log(notNull);
+			// console.log(hasConst);
+			// console.log(rightCausalityInstance);
+			let result = (typeCorrect && notNull && hasConst && rightCausalityInstance); 
+			// console.log(result);
+			return result; 
+			
+			// One go!
+			// return typeof(entity) === 'object' && entity !== null && typeof(entity.const) !== 'undefined' && entity.const.causalityInstance === causalityInstance;
 		}
 		
 		/**********************************
@@ -3348,9 +3374,6 @@
 	
 	function getDefaultConfiguration() {
 		return {
-			// Class registry
-			classRegistry : {},
-			
 			// Main feature switch, turn off for performance! This property will be set automatically depending on the other settings.
 			activateSpecialFeatures : false, 
 						

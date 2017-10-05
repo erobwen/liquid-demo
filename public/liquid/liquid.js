@@ -22,10 +22,14 @@
 	// }
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
-	
-	
+	let done = false;
 	function createLiquidInstance(configuration) {
-		console.log("createLiquidInstance");
+		console.log(">>> CREATE LIQUID INSTANCE " + configuration.name +"<<<");
+		if (done) {
+			throw new Error("WTF");
+		}
+		done = true;
+		// console.log("createLiquidInstance");
 		console.log(configuration);
 		pagesMap = {};
 		sessionsMap = {};
@@ -34,16 +38,8 @@
 
 		let liquid;
 		if (configuration.usePersistency) {
-			// TODO: use given if possible
-			let classRegistry = {};
-			// configuration.classRegistry = classRegistry;
-			configuration.eternityConfiguration.classRegistry = classRegistry;
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
-			// TODO: use given if possible
-			let classRegistry = {};
-			// configuration.classRegistry = classRegistry;
-			configuration.causalityConfiguration.classRegistry = classRegistry;
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
 		}		
 		let liquidEntity = require("./liquidEntity.js");
@@ -1094,7 +1090,7 @@
 			notifyUICallbacks.push(callback);
 		}
 		
-		function streamInRelevantDirections() {
+		function streamInRelevantDirections() { // Stream in your general direction.
 			// Notify UI
 			notifyUICallbacks.forEach(function(callback) {
 				callback();
@@ -1110,14 +1106,18 @@
 		}
 		
 		if (configuration.usePersistency) {
-			liquid.setPostPulseCallbackBeforeStorage(streamInRelevantDirections);			
+			liquid.setPostPulseActionBeforeStorage(streamInRelevantDirections);			
 		} else {
-			liquid.addPostPulseCallback(streamInRelevantDirections);		
+			liquid.addPostPulseAction(streamInRelevantDirections);		
 		}
 		
 		/**--------------------------------------------------------------
 		 *            Publish functions 
 		 *----------------------------------------------------------------*/
+		 
+		function setAsDefaultConfiguration() {
+			userDefaultConfiguration = configuration;
+		}
 		
 		// Publish some functions 
 		Object.assign(liquid, {
@@ -1125,7 +1125,8 @@
 			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback,
 			getSubscriptionUpdate : getSubscriptionUpdate, 
 			registerPage : registerPage,
-			addNotifyUICallback : addNotifyUICallback
+			addNotifyUICallback : addNotifyUICallback,
+			setAsDefaultConfiguration : setAsDefaultConfiguration
 		}); 
 
 		
@@ -1148,6 +1149,7 @@
 		return sortedObject;
 	}
 
+	// Default configuration of liquid
 	function getDefaultConfiguration() {
 		return {
 			eternityConfiguration : {
@@ -1158,17 +1160,23 @@
 		}
 	}
 	
+	// User defined default configuration 
+	let userDefaultConfiguration = null;
+	
 	let configurationToSystemMap = {};
 	return function(requestedConfiguration) {
-		if(requestedConfiguration === "default" && Object.keys(configurationToSystemMap).length === 1) {
-			console.log("Giving default liquid!!!!");
-			return configurationToSystemMap[Object.keys(configurationToSystemMap)[0]];
-		}
-		if (requestedConfiguration === "default") {
-			throw new Error("Should not happen!");
-		}
+		console.log("requesting....");
+		console.log(userDefaultConfiguration);
+		console.log(requestedConfiguration);
 		if(typeof(requestedConfiguration) === 'undefined') {
-			requestedConfiguration = {};
+			
+			if (userDefaultConfiguration) {
+				console.log("use it!");
+				requestedConfiguration = userDefaultConfiguration;
+			} else {
+				console.log("dont use it!");
+				requestedConfiguration = {};
+			}		
 		}
 		
 		let defaultConfiguration = getDefaultConfiguration();
@@ -1180,6 +1188,9 @@
 		
 		if (typeof(configurationToSystemMap[signature]) === 'undefined') {
 			configurationToSystemMap[signature] = createLiquidInstance(configuration);
+		}
+		if (Object.keys(configurationToSystemMap) > 1) {
+			throw new Error("Should not happen!");
 		}
 		return configurationToSystemMap[signature];
 	};	
