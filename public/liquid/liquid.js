@@ -105,8 +105,8 @@
 						var object = getEntity(callInfo.objectId);
 						var methodName = callInfo.methodName;
 						var argumentList = callInfo.argumentList; // TODO: Convert to
-						trace('serialize', "Call: ", methodName);
-						trace('serialize', "Call: ", argumentList);
+						// trace('serialize', "Call: ", methodName);
+						// trace('serialize', "Call: ", argumentList);
 
 						// traceTags.event = true;
 						if (object.allowCallOnServer(page)) {
@@ -116,7 +116,7 @@
 						}
 						// delete traceTags.event;
 
-						trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
+						// trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
 					});
 				}
 			}).run();
@@ -131,8 +131,8 @@
 				// delete pagesMap[pageToken];
 				// page.setSession(null);
 				// // TODO: unpersist page
-				trace('serialize', 'Disconnected'); 
-				trace('serialize', pageToken);
+				// trace('serialize', 'Disconnected'); 
+				// trace('serialize', pageToken);
 			}).run();
 		}
 
@@ -246,17 +246,19 @@
 
 		let dirtyPageSubscritiptions = {};
 		function getSubscriptionUpdate(page) {
+			log("getSubscriptionUpdate");
+			logGroup();
 			// console.group("getSubscriptionUpdate");
 			// traceGroup('subscribe', "--- getSubscriptionUpdate ", page, "---");
 			var result = {};
 
 			var addedAndRemovedIds;
-			if (page._dirtySubscriptionSelections) {
+			if (page.const._dirtySubscriptionSelections) {
 				// traceGroup('subscribe', '--- dirty footprint selection --- ');
 				// console.log("dirty selection");
 				liquid.uponChangeDo(function() {
-					var selection = {};
-					page.getPageService().getOrderedSubscriptions().forEach(function(subscription) {
+					var selection = {};// get
+					page.service.orderedSubscriptions.forEach(function(subscription) {
 						var object = subscription._relationInstances['Subscription_TargetObject'].data; // silent get
 						var selectorSuffix = capitaliseFirstLetter(subscription._propertyInstances['selector'].data); // Silent get
 						// console.log("--- Considering subscription: " + object._ + ".select" + selectorSuffix + "() ---");
@@ -286,13 +288,13 @@
 					// console.log(page._previousSelection);
 					page._selection = selection;
 					page._addedAndRemovedIds = getMapDifference(page._previousSelection, selection);
-					page._dirtySubscriptionSelections  = false;
+					page.const._dirtySubscriptionSelections  = false;
 				}, function() {
 					// trace('serialize', "A subscription selection got dirty: ", page);
 					// console.log("A subscription selection got dirty: " + page._id);
 					// stackDump();
 					liquid.dirtyPageSubscritiptions[page._id] = page;
-					page._dirtySubscriptionSelections  = true;
+					page.const._dirtySubscriptionSelections  = true;
 				});
 				addedAndRemovedIds = page._addedAndRemovedIds;
 				// traceGroupEnd();
@@ -385,6 +387,8 @@
 			// trace('serialize', "Subscription update: ", result);
 			// console.groupEnd();
 			// traceGroupEnd();
+			logUngroup();
+
 			return result;
 
 			/**
@@ -667,14 +671,14 @@
 				}
 				console.log(changes);
 				//result
-				liquid.unserializeFromUpstream(changes.addedSerialized);
+				unserializeFromUpstream(changes.addedSerialized);
 
 				liquid.blockUponChangeActions(function() {
 					liquid.allUnlocked++;
 					changes.events.forEach(function(event) {
 						if (event.action === 'addingRelation') {
-							var object = liquid.getUpstreamEntity(event.objectId);
-							var relatedObject = liquid.getUpstreamEntity(event.relatedObjectId);
+							var object = getUpstreamEntity(event.objectId);
+							var relatedObject = getUpstreamEntity(event.relatedObjectId);
 							var relation = object._relationDefinitions[event.relationName];
 							if (relation.isSet) {
 								object[relation.adderName](relatedObject);
@@ -683,8 +687,8 @@
 							}
 						} else if (event.action === 'deletingRelation') {
 							liquid.activeSaver = null;
-							var object = liquid.getUpstreamEntity(event.objectId);
-							var relatedObject = liquid.getUpstreamEntity(event.relatedObjectId);
+							var object = getUpstreamEntity(event.objectId);
+							var relatedObject = getUpstreamEntity(event.relatedObjectId);
 							var relation = object._relationDefinitions[event.relationName];
 							if (relation.isSet) {
 								object[relation.removerName](relatedObject);
@@ -694,7 +698,7 @@
 							liquid.activeSaver = liquid.defaultSaver;
 						} else if (event.action === 'settingProperty') {
 							liquid.activeSaver = null;
-							var object = liquid.getUpstreamEntity(event.objectId);
+							var object = getUpstreamEntity(event.objectId);
 							var setterName = object._propertyDefinitions[event.propertyName].setterName;
 							object[setterName](event.newValue);
 							liquid.activeSaver = liquid.defaultSaver;
@@ -703,7 +707,7 @@
 
 					// and create an "originators copy" of the data for safekeeping. 
 					for (upstreamId in changes.unsubscribedUpstreamIds) {
-						var object = liquid.getUpstreamEntity(upstreamId);
+						var object = getUpstreamEntity(upstreamId);
 						object.setIsLockedObject(true);
 					}
 					liquid.allUnlocked--;
@@ -750,15 +754,18 @@
 		 ***************************************************************/
 
 		function receiveInitialDataFromUpstream(serializedData) {
+			console.log("receiveInitialDataFromUpstream");
+			console.log(serializedData);
 			liquid.unserializeObjectsFromUpstream(serializedData.subscriptionInfo.addedSerialized)
-			liquid.instancePage = liquid.getUpstreamEntity(serializedData.pageUpstreamId);			
+			liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
+			console.log(liquid);
 		}
 
 	
 
 		function unserializeObjectsFromUpstream(serializedObjects) {
 			liquid.pulse(function() {
-				liquid.unserializeFromUpstream(serializedObjects);
+				unserializeFromUpstream(serializedObjects);
 			});			
 		}
 		
@@ -995,6 +1002,8 @@
 		 *            Unserialization from upstream
 		 *----------------------------------------------------------------*/
 		
+		upstreamIdObjectMap = {};
+		
 		function unserializeUpstreamReference(reference) {
 			if (reference === null) {
 				return null;
@@ -1009,27 +1018,35 @@
 			return ensureEmptyObjectExists(id, className, locked);
 		}
 		
+		// Note: this function can only be used when we know that there is at least a placeholder. 
+		function getUpstreamEntity(upstreamId) {
+			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
+				throw new Error("Tried to get an upstream entity that is unknown... ");
+			}
+			return upstreamIdObjectMap[upstreamId];
+		}
+		
 		function ensureEmptyObjectExists(upstreamId, className, isLocked) {
-			if (typeof(liquid.upstreamIdObjectMap[upstreamId]) === 'undefined') {
+			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
 				var newObject = liquid.createClassInstance(className);
 				newObject._upstreamId = upstreamId;
-				liquid.upstreamIdObjectMap[upstreamId] = newObject;
+				upstreamIdObjectMap[upstreamId] = newObject;
 				newObject._ = newObject.__();
 				newObject.setIsPlaceholderObject(true);
 				newObject.setIsLockedObject(isLocked);
 				// newObject._noDataLoaded = true;
 			}
-			return liquid.upstreamIdObjectMap[upstreamId];
+			return upstreamIdObjectMap[upstreamId];
 		}
 		
 		function unserializeUpstreamObject(serializedObject) {
 			// console.log("unserializeObject: " + serializedObject.className);
 			// console.log(serializedObject);
 			var upstreamId = serializedObject.id;
-			if (typeof(liquid.upstreamIdObjectMap[upstreamId]) === 'undefined') {
+			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
 				ensureEmptyObjectExists(upstreamId, serializedObject.className, false);
 			}
-			var targetObject = liquid.upstreamIdObjectMap[upstreamId];
+			var targetObject = upstreamIdObjectMap[upstreamId];
 			// console.log(targetObject);
 			if (targetObject.getIsPlaceholderObject()) {
 				targetObject.forAllOutgoingRelations(function(definition, instance) {
@@ -1121,9 +1138,12 @@
 		
 		// Publish some functions 
 		Object.assign(liquid, {
+			receiveInitialDataFromUpstream : receiveInitialDataFromUpstream,
 			createOrGetSessionObject: createOrGetSessionObject,
 			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback,
+			setPushMessageUpstreamCallback : setPushMessageUpstreamCallback, 
 			getSubscriptionUpdate : getSubscriptionUpdate, 
+			unserializeObjectsFromUpstream : unserializeObjectsFromUpstream,
 			registerPage : registerPage,
 			addNotifyUICallback : addNotifyUICallback,
 			setAsDefaultConfiguration : setAsDefaultConfiguration

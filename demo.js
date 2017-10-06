@@ -155,7 +155,7 @@ var fs = require('fs');
 var liquidSocket = socketIo.sockets;
  
 liquidSocket.on('connection', function (socket) {
-	trace('serialize', 'Connected a socket!');
+	// trace('serialize', 'Connected a socket!');
 	
 	socket.on('registerPageTokenTurnaround', function(pageToken) {
 		liquid.registerPageTokenTurnaround(pageToken).then(function(page) {

@@ -352,7 +352,7 @@
 		}
 					
 		selectAll(selection) {
-			trace('selection', liquid.allowRead(this));
+			// trace('selection', liquid.allowRead(this));
 			if (typeof(selection[this.const.id]) === 'undefined' && liquid.allowRead(this)) {
 				// console.log("Selecting " + this.__());
 				selection[this.const.id] = true;

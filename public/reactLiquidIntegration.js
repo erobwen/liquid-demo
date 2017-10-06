@@ -43,7 +43,7 @@ var componentsNeedOfForceUpdate = [];
 liquid.addNotifyUICallback(function() {
 	// console.group("=== Updating user interface ===");
 	// stackDump();
-	traceGroup('react', "Starting UI update with " + componentsNeedOfForceUpdate.length + " required updates");
+	// traceGroup('react', "Starting UI update with " + componentsNeedOfForceUpdate.length + " required updates");
 	// console.log("Starting UI update with " + componentsNeedOfForceUpdate.length + " required updates");
 	componentsNeedOfForceUpdate.forEach(function(component) {
 		// console.log("Force update!");
@@ -55,7 +55,7 @@ liquid.addNotifyUICallback(function() {
 	// console.log("=== Finished updating user interface ===");
 	// console.groupEnd();
 	componentsNeedOfForceUpdate.length = 0;
-	traceGroupEnd();
+	// traceGroupEnd();
 });
 
 
@@ -136,7 +136,7 @@ var liquidClassData = function(classData) {
 
 
 var invalidateUponLiquidChange = function(className, component, renderFunction) {
-	traceGroup('react', " Render: " + className + ".render ");
+	// traceGroup('react', " Render: " + className + ".render ");
 	// stackDump();
 	// console.log(componentsNeedOfForceUpdate);
 	component._ = "<" + className + " />";
@@ -145,12 +145,12 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 		// console.log("Actually rendering!");
 		var element = renderFunction();
 		// console.groupEnd();
-		traceGroupEnd();
+		// traceGroupEnd();
 		return element;
 	},
 	function() {
 		// console.log("Component:" + className + " in need of update");
-		trace('react', "Component:" + className + " in need of update");
+		// trace('react', "Component:" + className + " in need of update");
 		componentsNeedOfForceUpdate.push(component);
 	});
 	// return repeater.returnValue; //getReturnValueWithoutObservation(); // To not bind the surrounding repeater to this one.

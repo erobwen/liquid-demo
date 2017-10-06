@@ -2,10 +2,12 @@
 	// Create one single liquid instance
 
 	liquid.addClasses(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
-	liquid.setClassNamesTo(root); // Optional: Make all class names global
+	liquid.assignClassNamesTo(root); // Optional: Make all class names global
 	
 	// Setup data
+	console.log("HEEEEEEEEEEERE");
 	liquid.receiveInitialDataFromUpstream(data);
+	console.log("HEEEEEEEEEEERE");
 		
 	// Setup socket io.
 	(function () {
