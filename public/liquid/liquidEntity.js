@@ -352,8 +352,8 @@
 		}
 					
 		selectAll(selection) {
-			// trace('selection', liquid.allowRead(this));
-			if (typeof(selection[this.const.id]) === 'undefined' && liquid.allowRead(this)) {
+			// trace('selection', liquid.canRead(this));
+			if (typeof(selection[this.const.id]) === 'undefined' && liquid.canRead(this)) {
 				// console.log("Selecting " + this.__());
 				selection[this.const.id] = true;
 				for (property in this) {
@@ -391,7 +391,7 @@
 		}
 		
 		readable() {
-			return liquid.allowRead(this);
+			return liquid.canRead(this);
 		}
 
 		readable() {
@@ -467,14 +467,8 @@
 	 *---------------------------*/
 
 	class LiquidPage extends LiquidEntity {
-		initialize(data) {
-			super.initialize(data);
-			
-			this.session = null; // TODO: will this override stuff in data?
-			this.receivedSubscriptions = []; // Do not do in constructor... besides, it needs a create. 			
-		
-			this.service = this.createPageService();
-			this.service.orderedSubscriptions.push(create({selector: "Basics", object: this})); // Consider: Really have this? Or is it enough 
+		constructor () {
+			super();
 			
 			// Server variables
 			this.const._selection = {};
@@ -484,6 +478,16 @@
 			// Client variables
 			this.const._requestingSubscription = false;
 			this.const._subscriptionQueue = [];
+		}
+		
+		initialize(data) {
+			super.initialize(data);
+			
+			this.session = null; // TODO: will this override stuff in data?
+			this.receivedSubscriptions = []; // Do not do in constructor... besides, it needs a create. 			
+		
+			this.service = this.createPageService();
+			this.service.orderedSubscriptions.push(create({selector: "Basics", object: this})); // Consider: Really have this? Or is it enough 
 			
 			// Register page 
 			liquid.registerPage(this);
@@ -508,13 +512,13 @@
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.session);
 			liquid.addToSelection(selection, this.getActiveUser());
-			liquid.addToSelection(selection, this.pageService);
+			liquid.addToSelection(selection, this.service);
 			
 			this.receivedSubscriptions.forEach(function(subscription) {
 				liquid.addToSelection(selection, subscription);
 				liquid.addToSelection(selection, subscription.targetObject);
 			});
-			this.pageService.orderedSubscriptions.forEach(function(subscription) {
+			this.service.orderedSubscriptions.forEach(function(subscription) {
 				liquid.addToSelection(selection, subscription);
 				liquid.addToSelection(selection, subscription.targetObject);
 			});	

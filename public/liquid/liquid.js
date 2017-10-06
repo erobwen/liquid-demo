@@ -196,12 +196,12 @@
 		 *----------------------------------------------------------------*/
 
 		function addToSelection(selection, object) {
-			if (object !== null && typeof(selection[object._id]) === 'undefined' && liquid.allowRead(object)) {
-				trace('selection', "Added: ", object);
+			if (liquid.isObject(object) && typeof(selection[object.const.id]) === 'undefined' && liquid.canRead(object)) {
+				// trace('selection', "Added: ", object);
 				selection[object._id] = true;
 				return true;
 			} else {
-				trace('selection', "Nothing to add!");
+				// trace('selection', "Nothing to add!");
 				// console.log("Nothing to add!");
 				return false;
 			}
@@ -259,35 +259,28 @@
 				liquid.uponChangeDo(function() {
 					var selection = {};// get
 					page.service.orderedSubscriptions.forEach(function(subscription) {
-						var object = subscription._relationInstances['Subscription_TargetObject'].data; // silent get
-						var selectorSuffix = capitaliseFirstLetter(subscription._propertyInstances['selector'].data); // Silent get
-						// console.log("--- Considering subscription: " + object._ + ".select" + selectorSuffix + "() ---");
-						// traceGroup('subscribe', "--- Considering subscription: ", object, ".select" + selectorSuffix + "() ---");
-						var selectorFunctionName = 'select' + selectorSuffix;
-
 						// Perform a selection with dependency recording!
 						var subscriptionSelection = {};
 						
 						// Select as
-						liquid.pageSubject = page;
-						object[selectorFunctionName](subscriptionSelection);
-						liquid.pageSubject = null;
+						liquid.state.pageSubject = page;
+
+						// TODO: Get without observe... 
+						subscription.object['select' + subscription.selector](subscriptionSelection);
+
+						liquid.state.pageSubject = null;
 						
-						// console.log(subscriptionSelection);
-						// console.log(subscriptionSelection);
+						log(subscriptionSelection);
 						for (id in subscriptionSelection) {
 							selection[id] = true;
 						}
-						// traceGroupEnd();
-						// console.log("--- Finish considering subscription: " + object._ + ".select" + selectorSuffix + "() ---");
-						// console.groupEnd();
 					});
 					// console.log("consolidate");
 					// console.log(selection);
-					page._previousSelection = page._selection;
-					// console.log(page._previousSelection);
+					page.const._previousSelection = page.const._selection;
+					// console.log(page.const._previousSelection);
 					page._selection = selection;
-					page._addedAndRemovedIds = getMapDifference(page._previousSelection, selection);
+					page._addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
 					page.const._dirtySubscriptionSelections  = false;
 				}, function() {
 					// trace('serialize', "A subscription selection got dirty: ", page);
@@ -343,9 +336,9 @@
 			}
 
 			// Serialize
-			liquid.pageSubject = page;
+			liquid.state.pageSubject = page;
 			result.addedSerialized = serializeSelection(addedAndRemovedIds.added);
-			liquid.pageSubject = null;
+			liquid.state.pageSubject = null;
 
 			result.unsubscribedUpstreamIds = addedAndRemovedIds.removed;
 
@@ -361,9 +354,9 @@
 						// // console.log("A");
 						// if (addedAndRemovedIds.static[event.object._id]) {
 							// // console.log("B");
-							// liquid.pageSubject = page;
+							// liquid.state.pageSubject = page;
 							// result.events.push(serializeEventForDownstream(event));
-							// liquid.pageSubject = null;
+							// liquid.state.pageSubject = null;
 						// }
 					// }
 				// });
@@ -1146,7 +1139,8 @@
 			unserializeObjectsFromUpstream : unserializeObjectsFromUpstream,
 			registerPage : registerPage,
 			addNotifyUICallback : addNotifyUICallback,
-			setAsDefaultConfiguration : setAsDefaultConfiguration
+			setAsDefaultConfiguration : setAsDefaultConfiguration,
+			addToSelection : addToSelection
 		}); 
 
 		

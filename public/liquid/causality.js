@@ -3269,6 +3269,9 @@
 			c : create,
 			isObject: isObject,
 			
+			// Security
+			canRead : canRead, // TODO: change to allow read/write?
+			
 			// Reactive primitives
 			uponChangeDo : uponChangeDo,
 			repeatOnChange : repeatOnChange,
