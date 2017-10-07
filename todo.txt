@@ -3,3 +3,4 @@
 TODO: cacheId should no longer be a parameter of create. Move it to a liquid state variable. Otherwise tests in causality/eternity will break. 
 TODO: Take use of bower in some intelligent way... 
 TODO: Put all state variables in the state object, so that context switching is possible. 
+TODO: Rebuild selections so that they refer to the objects they include, to avoid global id->object map. 

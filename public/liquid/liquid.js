@@ -48,6 +48,50 @@
 		Object.assign(liquid, liquidEntity.classes); // Assign all base classes to liquid as well.... 
 		Object.assign(liquid, liquidEntity.functions); // Assign all functions to liquid as well.... 
 
+		
+		
+		/***************************************************************
+		 *
+		 *  Security
+		 *
+		 ***************************************************************/
+		
+		let restrictAccessToThatOfPage = null;
+		
+		let readable = {
+			"readAndWrite" : true;
+			"readOnly" : true;
+			"noAccess" : false;
+		};
+		
+		let writeable = {
+			"readAndWrite" : true;
+			"readOnly" : false;
+			"noAccess" : false;
+		}
+
+		liquid.setCustomCanRead(function(object) {
+			return readable[getAccessLevel(object)];
+		});
+
+		liquid.setCustomCanWrite(function(object) {
+			return !isSelecting && writeable[getAccessLevel(object)];
+		});
+		
+		function getAccessLevel(object) {
+			if (restrictAccessToThatOfPage !== null) {
+				let accessLevel = null;
+				if (typeof(object.pageAccessLevel) !== 'undefined') {
+					accessLevel = object.pageAccessLevel(restrictAccessToThatOfPage);
+				} else if (typeof(object.redirectSecurityTo) !== 'undefined'){
+					// TODO: Recusive, do this cached instead to prevent really expensive operations. 
+					accessLevel = getAccessLevel(object.redirectSecurityTo);
+				}
+				return accessLevel;
+			}
+			return "readAndWrite";
+		}
+		
 		/***************************************************************
 		 *
 		 *  Server oriented code
@@ -195,10 +239,14 @@
 		 *              Selection
 		 *----------------------------------------------------------------*/
 
+		function logSelection(selection) {
+			log(Object.keys(selection));
+		}
+		 
 		function addToSelection(selection, object) {
 			if (liquid.isObject(object) && typeof(selection[object.const.id]) === 'undefined' && liquid.canRead(object)) {
 				// trace('selection', "Added: ", object);
-				selection[object._id] = true;
+				selection[object._id] = object;
 				return true;
 			} else {
 				// trace('selection', "Nothing to add!");
@@ -222,17 +270,17 @@
 			for(id in firstSet) {
 				if(typeof(secondSet[id]) === 'undefined') {
 					// console.log("removed");
-					removed[id] = true;
+					removed[id] = firstSet[id];
 				} else {
 					// console.log("static");
-					static[id] = true;
+					static[id] = firstSet[id];
 				}
 			} 
 			
 			for(id in secondSet) {
 				if(typeof(firstSet[id]) === 'undefined') {
 					// console.log("added");
-					added[id] = true;
+					added[id] = secondSet[id];
 				}
 			}
 
@@ -242,8 +290,8 @@
 				static : static
 			}
 		}
-
-
+		
+		let isSelecting;
 		let dirtyPageSubscritiptions = {};
 		function getSubscriptionUpdate(page) {
 			log("getSubscriptionUpdate");
@@ -263,12 +311,18 @@
 						var subscriptionSelection = {};
 						
 						// Select as
-						liquid.state.pageSubject = page;
+						restrictAccessToThatOfPage = page; // pageAccessRestriction
+						isSelecting = true;
+						// Also deactivate repeaters during this... 
+						// Better idea: Writeprotect the system here... 
 
 						// TODO: Get without observe... 
 						subscription.object['select' + subscription.selector](subscriptionSelection);
 
-						liquid.state.pageSubject = null;
+						// Reactivate repeaters here... 
+						// Remove write protection...
+						isSelecting = false;
+						restrictAccessToThatOfPage = null;
 						
 						log(subscriptionSelection);
 						for (id in subscriptionSelection) {
@@ -279,9 +333,10 @@
 					// console.log(selection);
 					page.const._previousSelection = page.const._selection;
 					// console.log(page.const._previousSelection);
-					page._selection = selection;
-					page._addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
+					page.const._selection = selection;
 					page.const._dirtySubscriptionSelections  = false;
+					
+					addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
 				}, function() {
 					// trace('serialize', "A subscription selection got dirty: ", page);
 					// console.log("A subscription selection got dirty: " + page._id);
@@ -289,14 +344,13 @@
 					liquid.dirtyPageSubscritiptions[page._id] = page;
 					page.const._dirtySubscriptionSelections  = true;
 				});
-				addedAndRemovedIds = page._addedAndRemovedIds;
 				// traceGroupEnd();
 			} else {
 				// trace('serialize', "just events");
 				addedAndRemovedIds = {
 					added : {},
 					removed : {},
-					static : page._selection
+					static : page.const._selection
 				}
 			}
 

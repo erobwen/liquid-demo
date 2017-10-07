@@ -1391,8 +1391,7 @@
 			emitSetEvent(this, key, value, previousValue);
 			
 			// End pulse 
-			observerNotificationPostponed--;
-			proceedWithPostponedNotifications();
+			if (--observerNotificationPostponed === 0) proceedWithPostponedNotifications();
 			if (--inPulse === 0) postPulseCleanup();
 			if (trace.basic > 0) logUngroup();
 			return true;
