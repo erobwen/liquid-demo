@@ -59,15 +59,15 @@
 		let restrictAccessToThatOfPage = null;
 		
 		let readable = {
-			"readAndWrite" : true;
-			"readOnly" : true;
-			"noAccess" : false;
+			"readAndWrite" : true,
+			"readOnly" : true,
+			"noAccess" : false
 		};
 		
 		let writeable = {
-			"readAndWrite" : true;
-			"readOnly" : false;
-			"noAccess" : false;
+			"readAndWrite" : true,
+			"readOnly" : false,
+			"noAccess" : false
 		}
 
 		liquid.setCustomCanRead(function(object) {
