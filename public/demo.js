@@ -1,15 +1,18 @@
 (function(root) {
+	let log = console.log;
+	
+	log("demo.js");
 	// Create one single liquid instance
 
 	liquid.addClasses(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
 	liquid.assignClassNamesTo(root); // Optional: Make all class names global
 	
 	// Setup data
-	console.log("HEEEEEEEEEEERE");
 	liquid.receiveInitialDataFromUpstream(data);
-	console.log("HEEEEEEEEEEERE");
+	log("upstreamIdObjectMap");
+	log(liquid.upstreamIdObjectMap);
 	
-	root.displayedUser = liquid.foundUser; 
+	root.page = liquid.instancePage;
 		
 	// Setup socket io.
 	(function () {

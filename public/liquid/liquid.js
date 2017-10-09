@@ -22,15 +22,8 @@
 	// }
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
-	let done = false;
 	function createLiquidInstance(configuration) {
-		console.log(">>> CREATE LIQUID INSTANCE " + configuration.name +"<<<");
-		if (done) {
-			throw new Error("WTF");
-		}
-		done = true;
 		// console.log("createLiquidInstance");
-		console.log(configuration);
 		pagesMap = {};
 		sessionsMap = {};
 
@@ -220,7 +213,7 @@
 		
 		function registerPageTokenTurnaround(pageToken) {
 			return new Promise((resolve, reject) => {						
-				let page = liquid.getPage(pageToken);
+				let page = getPage(pageToken);
 				if (typeof(page) !== 'undefined') {
 				} else {
 				}
@@ -236,6 +229,17 @@
 		function setPushMessageDownstreamCallback(callback) {
 			pushMessageDownstreamCallback = callback;
 		}
+		
+		function disconnect(pageToken) {
+			if (pageToken !== null && typeof(pageToken) !== 'undefined') {
+				let page = getPage(pageToken);
+				if (liquid.isObject(page)) {
+					page.session = null;
+					delete pagesMap[pageToken];									
+				}
+			}
+		}
+
 		
 		/**--------------------------------------------------------------
 		 *              Selection
@@ -1194,7 +1198,9 @@
 			registerPage : registerPage,
 			addNotifyUICallback : addNotifyUICallback,
 			setAsDefaultConfiguration : setAsDefaultConfiguration,
-			addToSelection : addToSelection
+			addToSelection : addToSelection,
+			upstreamIdObjectMap : upstreamIdObjectMap,
+			disconnect : disconnect
 		}); 
 
 		
@@ -1233,16 +1239,11 @@
 	
 	let configurationToSystemMap = {};
 	return function(requestedConfiguration) {
-		console.log("requesting....");
-		console.log(userDefaultConfiguration);
-		console.log(requestedConfiguration);
 		if(typeof(requestedConfiguration) === 'undefined') {
 			
 			if (userDefaultConfiguration) {
-				console.log("use it!");
 				requestedConfiguration = userDefaultConfiguration;
 			} else {
-				console.log("dont use it!");
 				requestedConfiguration = {};
 			}		
 		}

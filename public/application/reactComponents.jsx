@@ -23,10 +23,14 @@
 window.LiquidApplication = React.createClass(liquidClassData({
 	render: function() {
 		return invalidateUponLiquidChange("LiquidApplication", this, function() {
+			let page = window.page;
+			console.log("RENDERING!!!");
+			console.log(page);
+			let activeUser = page.getActiveUser;
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
 					<LoginUI page = { page }/>
-					<UserView user = { displayedUser }/>
+					<UserView user = { activeUser }/>
 				</div>
 			);
 		}.bind(this));

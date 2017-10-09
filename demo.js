@@ -1,6 +1,5 @@
 
 // Setup liquid and add models to it
-console.log("Create DEFAULT Mother fucker!");
 let liquid = require("./public/liquid/liquid.js")({name: "serverLiquid", usePersistency: true, eternityConfiguration : {databaseFileName: "demoDb.mongoDb"}});
 liquid.setAsDefaultConfiguration();
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?

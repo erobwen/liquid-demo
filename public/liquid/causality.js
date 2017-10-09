@@ -16,8 +16,6 @@
 	
 	
 	function createCausalityInstance(configuration) {
-		console.log(">>> CREATE CAUSALITY INSTANCE <<<");
-		
 		
 		// Class registry
 		let classRegistry =  {};
@@ -3330,6 +3328,7 @@
 			install : install,
 			addClasses : addClasses,
 			assignClassNamesTo : assignClassNamesTo,
+			classRegistry : classRegistry, 
 			
 			// Setup. Consider: add these to configuration instead? 
 			addPostPulseAction : addPostPulseAction,

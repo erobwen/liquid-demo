@@ -13,7 +13,7 @@
 		// }
     }
 }(this, function () {
-	console.log("in model...");
+	// console.log("in model...");
 	let liquid = require("../liquid/liquid.js")();
 	
 	// Debugging

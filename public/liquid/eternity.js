@@ -23,7 +23,7 @@
 	let logUngroup = objectlog.exit;
 
 	function createEternityInstance(configuration) {
-		console.log(">>> CREATE ETERNITY INSTANCE <<<");
+		// console.log(">>> CREATE ETERNITY INSTANCE <<<");
 
 		// log("createEternityInstance: " + configuration.name);
 		// logGroup();
@@ -808,7 +808,7 @@
 			let placeholder;
 			imageCausality.pulse(function() { // Pulse here to make sure that dbId is set before post image pulse comence.
 				let record = peekAtRecord(dbId);
-				console.log(typeof(record._eternityImageClass) !== 'undefined' ? record._eternityImageClass : 'Object');
+				// console.log(typeof(record._eternityImageClass) !== 'undefined' ? record._eternityImageClass : 'Object');
 				placeholder = imageCausality.create(typeof(record._eternityImageClass) !== 'undefined' ? record._eternityImageClass : 'Object');
 				placeholder.const.isObjectImage = typeof(record._eternityIsObjectImage) !== 'undefined' ? record._eternityIsObjectImage : false;
 				placeholder.const.loadedIncomingReferenceCount = 0;
