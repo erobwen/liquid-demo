@@ -140,7 +140,7 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 	// stackDump();
 	// console.log(componentsNeedOfForceUpdate);
 	component._ = "<" + className + " />";
-	return uponChangeDo("Component:" + className,
+	return liquid.uponChangeDo("Component:" + className,
 	function() {
 		// console.log("Actually rendering!");
 		var element = renderFunction();

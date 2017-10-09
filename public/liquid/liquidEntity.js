@@ -285,8 +285,8 @@
 			this.const = {};
 			// Client only (reactive) properties:
 			// if (liquid.configuration.onClient) { // TODO!!! 
-				this.isPlaceholderObject = false;
-				this.isLockedObject = false;			
+			this.isPlaceholderObject = false;
+			this.isLockedObject = false;			
 			// }
 		}
 
@@ -329,13 +329,17 @@
 			// }
 			// return idString;
 			function removeNull(value) {
-				return (value === null) ? 'x' : value;
+				return (value === null || typeof(value) === 'undefined') ? 'x' : value;
 			}
-			return this.const.id + "." + removeNull(this._upstreamId) + "." + removeNull(this._persistentId) + "." + removeNull(this._globalId);
+			return this.const.id + "." + removeNull(this._upstreamId); //  + "." + removeNull(this._persistentId) + "." + removeNull(this._globalId);
 		};
 
-		className(object) {
-			return Object.getPrototypeOf(object).constructor.name;
+		className() {
+			let prototype = Object.getPrototypeOf(this);
+			if (typeof(prototype) === 'undefined') return "No Prototype";
+			let constructor = prototype.constructor;
+			if (typeof(constructor) === 'undefined') return "No Prototype";
+			return constructor.name;
 		}
 		
 		cached() {
@@ -484,8 +488,8 @@
 			super.initialize(data);
 			
 			this.session = null; // TODO: will this override stuff in data?
-			this.receivedSubscriptions = []; // Do not do in constructor... besides, it needs a create. 			
-		
+			this.receivedSubscriptions = create([]); 
+			
 			this.service = this.createPageService();
 			this.service.orderedSubscriptions.push(create({selector: "Basics", object: this})); // Consider: Really have this? Or is it enough 
 			

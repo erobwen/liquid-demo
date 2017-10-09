@@ -41,7 +41,8 @@
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
-		}		
+		}
+		let create = liquid.create;
 		let liquidEntity = require("./liquidEntity.js");
 		liquidEntity.injectLiquid(liquid);
 		liquid.addClasses(liquidEntity.classes);
@@ -463,7 +464,7 @@
 			var serialized = [];
 			for (id in selection) {
 				var object = selection[id];
-				serialized.push(liquid.serializeObject(object, false));
+				serialized.push(serializeObject(object, false));
 			}
 			return serialized;
 		};
@@ -480,19 +481,22 @@
 		 * }
 		 */
 		function serializeObject(object, forUpstream = false) {
-			function serializedReference(object) {
-				if (object !== null) {
+			function serializeReferences(object) {
+				if (liquid.isObject(object)) {
 					if (forUpstream) {
 						if (object._upstreamId !== null) {
-							return object.className + ":id:" + object._upstreamId;
+							return object.className() + ":id:" + object._upstreamId;
 						} else {
-							return object.className + ":downstreamId:" + object.const.id;
+							return object.className() + ":downstreamId:" + object.const.id;
 						}
 					} else {
-						return object.className + ":" + object.const.id + ":" + !object.readable();
+						let className = (object instanceof LiquidEntity) ? object.className() : Object.getPrototypeOf(object).constructor.name;
+						return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
 					}
-				} else {
+				} else if (typeof(object) === 'object' || typeof(object) === 'function'){
 					return null;
+				} else {
+					return object;
 				}
 			};
 			
@@ -508,25 +512,15 @@
 			} else {
 				serialized.id = object.const.id;
 			}
-			for (relationQualifiedName in object._relationDefinitions) {
-				var definition = object._relationDefinitions[relationQualifiedName];
-				if (!definition.isReverseRelation) {
-					if (definition.isSet) {
-						serialized[relationQualifiedName] = object[definition.getterName]().map(serializedReference);
-					} else {
-						serialized[relationQualifiedName] = serializedReference(object[definition.getterName]());
-						// console.log(serialized[relationQualifiedName]);
-					}
-				}
+			let omittedKeys = {
+				isPlaceholderObject : true,
+				isLockedObject : true
 			}
-			for (propertyName in object._propertyDefinitions) {
-				if (forUpstream && definition.clientOnly) {
-					// Ignore
-				} else {
-					definition = object._propertyDefinitions[propertyName];
-					serialized[definition.name] = object[definition.getterName]();
-				}
-			}
+			Object.keys(object).forEach(function(key) {
+				if (!omittedKeys[key]) {
+					serialized[key] = serializeReferences(object[key]);					
+				} 
+			});
 			return serialized;
 		};
 		
@@ -651,7 +645,7 @@
 			}
 			
 			function unserializeDownstreamObjectRecursivley(serializedObject) {
-				var newObject = liquid.createClassInstance(serializedObject.className);
+				var newObject = create(serializedObject.className);
 				downstreamIdToObjectMap[serializedObject.downstreamId] = newObject; // Set this early, so recursive unserializes can point to this object, avoiding infinite loop.
 
 				newObject.forAllOutgoingRelations(function(definition, instance) {
@@ -1085,7 +1079,7 @@
 		
 		function ensureEmptyObjectExists(upstreamId, className, isLocked) {
 			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
-				var newObject = liquid.createClassInstance(className);
+				var newObject = create(className);
 				newObject._upstreamId = upstreamId;
 				upstreamIdObjectMap[upstreamId] = newObject;
 				newObject._ = newObject.__();
