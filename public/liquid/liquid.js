@@ -208,6 +208,7 @@
 		// function createOrGetSessionObject(req) {
 			// var hardToGuessSessionId = req.session.id;
 		function createOrGetSessionObject(hardToGuessSessionId) {
+			// throw new Error("Hard to guess!!!");
 			log("createOrGetSessionObject");
 			log(hardToGuessSessionId);
 			if (typeof(sessionsMap[hardToGuessSessionId]) === 'undefined') {
@@ -830,7 +831,7 @@
 			// trace('setup', "Received Subscription ", subscription, " : ", subscription.getTargetObject(), ".", subscription.getSelector(), "()");
 		// });
 		// // Setup user
-		// // window.displayedUser = liquid.findLocalEntity({className: 'User'})
+		// window.displayedUser = liquid.findLocalEntity({className: 'User'})
 
 
 	

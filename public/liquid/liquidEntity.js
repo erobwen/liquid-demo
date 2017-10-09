@@ -470,6 +470,14 @@
 	 *         Page 
 	 *---------------------------*/
 
+	function get(value, defaultValue) {
+		if (typeof(value) !== 'undefined') {
+			return value;
+		} else {
+			return defaultValue;
+		}
+	}
+	
 	class LiquidPage extends LiquidEntity {
 		constructor () {
 			super();
@@ -485,16 +493,18 @@
 		}
 		
 		initialize(data) {
-			super.initialize(data);
-			
 			this.session = null; // TODO: will this override stuff in data?
 			this.receivedSubscriptions = create([]); 
 			
+			this.session = get(data.session, null); 
 			this.service = this.createPageService();
 			this.service.orderedSubscriptions.push(create({selector: "Basics", object: this})); // Consider: Really have this? Or is it enough 
 			
+			this.assignWeak(data);
+			
 			// Register page 
 			liquid.registerPage(this);
+			
 		}
 		
 		createPageService() {
@@ -589,7 +599,7 @@
 
 		getActiveUser() {
 			if (this.session != null) {
-				return this.session.getUser();
+				return this.session.user;
 			}
 			return null;
 		}
@@ -621,7 +631,7 @@
 		}
 
 		allowCallOnServer(user) {
-			return user === this.getPage().getActiveUser();
+			return user === this.page.getActiveUser();
 		}
 
 		tryLogin(loginName, liquidPassword) {

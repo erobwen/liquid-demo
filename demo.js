@@ -68,7 +68,7 @@ if (!liquid.persistent.demoInitialized) {
 	'index': 'LiquidPage',
 	'demo': function(req) { // Note: req follows express conventions.
 		var session = liquid.createOrGetSessionObject(req.session.token);
-		var page = create('LiquidPage', {Session: session});
+		var page = create('LiquidPage', {session: session});
 		page.getPageService().addOrderedSubscription(create('Subscription', {object: user, selector:'all'})); //object: user,
 		return page;
 	},

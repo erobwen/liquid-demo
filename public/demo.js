@@ -8,6 +8,8 @@
 	console.log("HEEEEEEEEEEERE");
 	liquid.receiveInitialDataFromUpstream(data);
 	console.log("HEEEEEEEEEEERE");
+	
+	root.displayedUser = liquid.foundUser; 
 		
 	// Setup socket io.
 	(function () {
