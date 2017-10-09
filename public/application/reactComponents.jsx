@@ -25,12 +25,12 @@ window.LiquidApplication = React.createClass(liquidClassData({
 		return invalidateUponLiquidChange("LiquidApplication", this, function() {
 			let page = window.page;
 			console.log("RENDERING!!!");
+					// <UserView user = { activeUser }/>
 			console.log(page);
 			let activeUser = page.getActiveUser;
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
 					<LoginUI page = { page }/>
-					<UserView user = { activeUser }/>
 				</div>
 			);
 		}.bind(this));
@@ -95,7 +95,7 @@ var LoginUI = React.createClass(liquidClassData({
 var UserView = React.createClass(liquidClassData({
 	render: function() {
 		return invalidateUponLiquidChange("UserView", this, function() {
-			trace('react', "Render in user view. ");
+			// trace('react', "Render in user view. ");
 			var rootCategories = this.props.user.cachedCall('getRootCategories');
 			// var rootCategories = this.props.user.getOwnedCategories();
 			return (

@@ -1,6 +1,7 @@
 (function() {
 	let liquid = require("liquid")({
 		usePersistency: false, 
+		isClient: true,
 		causalityConfiguration : {}
 	});
 	liquid.setAsDefaultConfiguration();

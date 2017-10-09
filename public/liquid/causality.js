@@ -1564,6 +1564,7 @@
 				initializer = createdTarget; 
 				createdTarget = {};
 			} else if (typeof(createdTarget) === 'string') {
+				// log("create: " +  createdTarget);
 				if (createdTarget === 'Array') {
 					createdTarget = []; // On Node.js this is different from Object.create(eval("Array").prototype) for some reason... 
 				} else if (createdTarget === 'Object') {

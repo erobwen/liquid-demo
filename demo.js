@@ -1,6 +1,6 @@
 
 // Setup liquid and add models to it
-let liquid = require("./public/liquid/liquid.js")({name: "serverLiquid", usePersistency: true, eternityConfiguration : {databaseFileName: "demoDb.mongoDb"}});
+let liquid = require("./public/liquid/liquid.js")({name: "serverLiquid", usePersistency: true, isServer: true, eternityConfiguration : {databaseFileName: "demoDb.mongoDb"}});
 liquid.setAsDefaultConfiguration();
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
 liquid.assignClassNamesTo(global); // Optional: Make all class names global

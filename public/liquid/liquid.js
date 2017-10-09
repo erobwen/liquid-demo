@@ -202,8 +202,8 @@
 			// var hardToGuessSessionId = req.session.id;
 		function createOrGetSessionObject(hardToGuessSessionId) {
 			// throw new Error("Hard to guess!!!");
-			log("createOrGetSessionObject");
-			log(hardToGuessSessionId);
+			// log("createOrGetSessionObject");
+			// log(hardToGuessSessionId);
 			if (typeof(sessionsMap[hardToGuessSessionId]) === 'undefined') {
 				// TODO: createPersistent instead
 				sessionsMap[hardToGuessSessionId] = liquid.create('LiquidSession', {hardToGuessSessionId: hardToGuessSessionId});
@@ -474,6 +474,9 @@
 			return serialized;
 		};
 		
+		function getClassName(object) {
+			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
+		}
 		
 		/**
 		 * Example output:
@@ -495,7 +498,7 @@
 							return object.className() + ":downstreamId:" + object.const.id;
 						}
 					} else {
-						let className = (object instanceof LiquidEntity) ? object.className() : Object.getPrototypeOf(object).constructor.name;
+						let className = getClassName(object);
 						// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
 						return "__ref__" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
 					}
@@ -508,7 +511,7 @@
 			
 			serialized = {};
 			serialized._ = object.__();
-			serialized.className = object.className;
+			serialized.className = getClassName(object);
 			if (forUpstream) {
 				if (object._upstreamId !== null) {
 					serialized.id = object._upstreamId;
@@ -1100,6 +1103,13 @@
 			return upstreamIdObjectMap[upstreamId];
 		}
 		
+		// function allNamedUpstreamObjects() {
+			// let result = {};
+			// for(upstreamId in upstreamIdObjectMap) {
+				
+			// }
+		// }
+		
 		function unserializeUpstreamObject(serializedObject) {
 			// console.log("unserializeObject: " + serializedObject.className);
 			// console.log(serializedObject);
@@ -1112,7 +1122,8 @@
 			if (targetObject.isPlaceholderObject) {
 				let ignoreKeys = {
 					"_" : true,
-					"id" : true
+					"id" : true,
+					"className" : true
 				}
 				for(key in serializedObject) {
 					if (!ignoreKeys[key]) {
@@ -1200,7 +1211,8 @@
 			setAsDefaultConfiguration : setAsDefaultConfiguration,
 			addToSelection : addToSelection,
 			upstreamIdObjectMap : upstreamIdObjectMap,
-			disconnect : disconnect
+			disconnect : disconnect,
+			configuration : configuration
 		}); 
 
 		

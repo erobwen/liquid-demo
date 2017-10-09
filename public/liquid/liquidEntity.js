@@ -284,10 +284,10 @@
 		constructor() {
 			this.const = {};
 			// Client only (reactive) properties:
-			// if (liquid.configuration.onClient) { // TODO!!! 
-			this.isPlaceholderObject = false;
-			this.isLockedObject = false;			
-			// }
+			if (liquid.configuration.isClient) { // TODO!!! 
+				this.isPlaceholderObject = false;
+				this.isLockedObject = false;			
+			}
 		}
 
 		initialize(data) {
