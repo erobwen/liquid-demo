@@ -491,7 +491,8 @@
 						}
 					} else {
 						let className = (object instanceof LiquidEntity) ? object.className() : Object.getPrototypeOf(object).constructor.name;
-						return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+						// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
+						return "__ref__" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
 					}
 				} else if (typeof(object) === 'object' || typeof(object) === 'function'){
 					return null;
@@ -1055,17 +1056,20 @@
 		
 		upstreamIdObjectMap = {};
 		
-		function unserializeUpstreamReference(reference) {
+		function unserializeUpstreamReferences(reference) {
 			if (reference === null) {
 				return null;
 			}
-			var fragments = reference.split(":");
-			var className = fragments[0];
-			var id = parseInt(fragments[1]);
-			var locked = fragments[2] === 'true' ? true : false;
-			// console.log("What the hell!!!");
-			// console.log(fragments);
-			// console.log(locked);
+			if (typeof(reference) === "string") {
+				if (reference.startsWith("__ref__"))
+				var fragments = reference.substr(7).split(":");
+				var className = fragments[0];
+				var id = parseInt(fragments[1]);
+				var locked = fragments[2] === 'true' ? true : false;
+				// console.log("What the hell!!!");
+				// console.log(fragments);
+				// console.log(locked);				
+			}
 			return ensureEmptyObjectExists(id, className, locked);
 		}
 		
@@ -1082,10 +1086,11 @@
 				var newObject = create(className);
 				newObject._upstreamId = upstreamId;
 				upstreamIdObjectMap[upstreamId] = newObject;
-				newObject._ = newObject.__();
-				newObject.setIsPlaceholderObject(true);
-				newObject.setIsLockedObject(isLocked);
-				// newObject._noDataLoaded = true;
+				if (typeof(newObject.__) === 'function') {
+					newObject._ = newObject.__();					
+				}
+				newObject.isPlaceholderObject = true;
+				newObject.isLocked = isLocked;
 			}
 			return upstreamIdObjectMap[upstreamId];
 		}
@@ -1099,31 +1104,21 @@
 			}
 			var targetObject = upstreamIdObjectMap[upstreamId];
 			// console.log(targetObject);
-			if (targetObject.getIsPlaceholderObject()) {
-				targetObject.forAllOutgoingRelations(function(definition, instance) {
-					// console.log("processingRelation: " + definition.name);
-					// trace('unserialize', definition.name, "~~>", targetObject);
-					if (typeof(serializedObject[definition.qualifiedName]) !== 'undefined') {
-						var data = serializedObject[definition.qualifiedName];
-						if (definition.isSet) {
-							data = data.map(unserializeUpstreamReference);
-						} else {
-							data = unserializeUpstreamReference(data);
-						}
-						targetObject[definition.setterName](data);
-					}
-				});
-				for (propertyName in targetObject._propertyDefinitions) {
-					definition = targetObject._propertyDefinitions[propertyName];
-					// console.log("processingProperty: " + definition.name);
-					// trace('unserialize', definition.name, "~~>", targetObject);
-					if (typeof(serializedObject[definition.name]) !== 'undefined') {
-						var data = serializedObject[definition.name];
-						targetObject[definition.setterName](data);
+			if (targetObject.isPlaceholderObject) {
+				let ignoreKeys = {
+					"_" : true,
+					"id" : true
+				}
+				for(key in serializedObject) {
+					if (!ignoreKeys[key]) {
+						targetObject[key] = unserializeUpstreamReferences(serializedObject[key]);
+						// unserializeUpstreamReference
 					}
 				}
-				targetObject.setIsPlaceholderObject(false);
-				targetObject._ = targetObject.__();
+				targetObject.isPlaceholderObject = false;
+				if (typeof(targetObject._) === 'function') {
+					targetObject._ = targetObject.__();					
+				}
 			} else {
 				// trace('unserialize', "Loaded data that was already loaded!!!");
 				// console.log("Loaded data that was already loaded!!!");
