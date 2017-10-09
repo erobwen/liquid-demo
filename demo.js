@@ -117,7 +117,7 @@ function createExpressControllerFromClassName(className) {
 		var session = liquid.createOrGetSessionObject(req.session.token);
 	
 		// Setup page object TODO: persistent page object?
-		return create(className, { Session : session });
+		return create(className, { session : session });
 	});
 }
 
@@ -128,7 +128,7 @@ function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 			var page = pageCreatorFunction(req)
 			var data = {
 				// serialized : liquid.serializeSelection(selection),
-				pageUpstreamId : page._id,
+				pageUpstreamId : page.const.id,
 				subscriptionInfo : liquid.getSubscriptionUpdate(page)
 			};
 			res.render('layout',{

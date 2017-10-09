@@ -146,7 +146,7 @@
 					trace('serialize', "Make call on server ", page);
 
 					liquid.pulse(function() {
-						var object = getEntity(callInfo.objectId);
+						var object = page.const._selection[callInfo.objectId];
 						var methodName = callInfo.methodName;
 						var argumentList = callInfo.argumentList; // TODO: Convert to
 						// trace('serialize', "Call: ", methodName);
@@ -246,7 +246,7 @@
 		function addToSelection(selection, object) {
 			if (liquid.isObject(object) && typeof(selection[object.const.id]) === 'undefined' && liquid.canRead(object)) {
 				// trace('selection', "Added: ", object);
-				selection[object._id] = object;
+				selection[object.const.id] = object;
 				return true;
 			} else {
 				// trace('selection', "Nothing to add!");
@@ -324,9 +324,10 @@
 						isSelecting = false;
 						restrictAccessToThatOfPage = null;
 						
-						log(subscriptionSelection);
+						log("subscriptionSelection");
+						log(subscriptionSelection, 3);
 						for (id in subscriptionSelection) {
-							selection[id] = true;
+							selection[id] = subscriptionSelection[id];
 						}
 					});
 					// console.log("consolidate");
@@ -339,9 +340,9 @@
 					addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
 				}, function() {
 					// trace('serialize', "A subscription selection got dirty: ", page);
-					// console.log("A subscription selection got dirty: " + page._id);
+					// console.log("A subscription selection got dirty: " + page.const.id);
 					// stackDump();
-					liquid.dirtyPageSubscritiptions[page._id] = page;
+					liquid.dirtyPageSubscritiptions[page.const.id] = page;
 					page.const._dirtySubscriptionSelections  = true;
 				});
 				// traceGroupEnd();
@@ -376,16 +377,22 @@
 			// Add as subscriber
 			for (id in addedAndRemovedIds.added) {
 				// console.log("Adding page observers");
-				var addedObject = liquid.getEntity(id);
-				addedObject._observingPages[page._id] = page;
-				// console.log(Object.keys(addedObject._observingPages));
+				var addedObject = addedAndRemovedIds.added[id];
+				if (typeof(addedObject.const) === 'undefined') {
+					log(addedObject, 3);
+				}
+				if (typeof(addedObject.const._observingPages) === 'undefined') {
+					addedObject.const._observingPages = {};
+				}
+				addedObject.const._observingPages[page.const.id] = page;
+				// console.log(Object.keys(addedObject.const._observingPages));
 			}
 
 			// Remove subscriber
 			for (id in addedAndRemovedIds.removed) {
 				// console.log("Removing page observers");
-				var removedObject = liquid.getEntity(id);
-				delete removedObject._observingPages[page._id];
+				var removedObject = addedAndRemovedIds.removed[id];
+				delete removedObject.const._observingPages[page.const.id];
 				// console.log(Object.keys(addedObject._observingPages));
 			}
 
@@ -406,7 +413,7 @@
 					// // trace('serialize', event);
 					// if (!event.redundant && (liquid.activePulse.originator !== page || event.repeater !== null || liquid.callOnServer)) { // Do not send back events to originator!
 						// // console.log("A");
-						// if (addedAndRemovedIds.static[event.object._id]) {
+						// if (addedAndRemovedIds.static[event.object.const.id]) {
 							// // console.log("B");
 							// liquid.state.pageSubject = page;
 							// result.events.push(serializeEventForDownstream(event));
@@ -419,15 +426,15 @@
 			// Add id mapping information
 			result.idToUpstreamId = {};
 			result.idsOfInstantlyHidden = [];
-			if (page._idToDownstreamIdMap !== null) {
-				for(id in page._idToDownstreamIdMap) {
+			if (page.const.idToDownstreamIdMap !== null) {
+				for(id in page.const.idToDownstreamIdMap) {
 					if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
-						result.idToUpstreamId[page._idToDownstreamIdMap[id]] = id;
+						result.idToUpstreamId[page.const.idToDownstreamIdMap[id]] = id;
 					} else {
-						result.idsOfInstantlyHidden[page._idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
+						result.idsOfInstantlyHidden[page.const.idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
 					}
 				}
-				page._idToDownstreamIdMap = null;
+				page.const.idToDownstreamIdMap = null;
 			}
 
 			// console.log(result);
@@ -455,7 +462,7 @@
 		function serializeSelection(selection) {
 			var serialized = [];
 			for (id in selection) {
-				var object = liquid.idObjectMap[id];
+				var object = selection[id];
 				serialized.push(liquid.serializeObject(object, false));
 			}
 			return serialized;
@@ -479,10 +486,10 @@
 						if (object._upstreamId !== null) {
 							return object.className + ":id:" + object._upstreamId;
 						} else {
-							return object.className + ":downstreamId:" + object._id;
+							return object.className + ":downstreamId:" + object.const.id;
 						}
 					} else {
-						return object.className + ":" + object._id + ":" + !object.readable();
+						return object.className + ":" + object.const.id + ":" + !object.readable();
 					}
 				} else {
 					return null;
@@ -496,10 +503,10 @@
 				if (object._upstreamId !== null) {
 					serialized.id = object._upstreamId;
 				} else {
-					serialized.downstreamId = object._id;
+					serialized.downstreamId = object.const.id;
 				}
 			} else {
-				serialized.id = object._id;
+				serialized.id = object.const.id;
 			}
 			for (relationQualifiedName in object._relationDefinitions) {
 				var definition = object._relationDefinitions[relationQualifiedName];
@@ -532,13 +539,13 @@
 			var serialized  = {
 				action: event.action
 			};
-			serialized.objectId = event.object._id;
+			serialized.objectId = event.object.const.id;
 
 			if (event.definition.type === 'relation') {
 				serialized.relationName = event.definition.qualifiedName;
 
 				if (typeof(event.relatedObject) !== 'undefined') {
-					serialized.relatedObjectId = event.relatedObject._id;
+					serialized.relatedObjectId = event.relatedObject.const.id;
 				}
 			} else {
 				serialized.propertyName = event.definition.name;
@@ -591,7 +598,7 @@
 		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
 		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
 
-		function unserializeDownstreamPulse(pulseData) {
+		function unserializeDownstreamPulse(page, pulseData) {
 			// console.log(pulseData);
 
 			var downstreamIdToSerializedObjectMap = {};
@@ -609,19 +616,19 @@
 				var type = fragments[1];
 				var id = parseInt(fragments[2]);
 				if (type === 'downstreamId') {
-					return ensureObjectUnserialized(null, id);
+					return ensureObjectUnserialized(page, null, id);
 				} else {
-					return liquid.getEntity(id);
+					return page.const._selection[id];
 				}
 			}
 			
-			function ensureRelatedObjectsUnserialized(event) {
+			function ensureRelatedObjectsUnserialized(page, event) {
 				var relatedObjectId = typeof(event.relatedObjectId) !== 'undefined' ? event.relatedObjectId : null;
 				var relatedObjectDownstreamId = typeof(event.relatedObjectDownstreamId) !== 'undefined' ? event.relatedObjectDownstreamId : null;
-				return ensureObjectUnserialized(relatedObjectId, relatedObjectDownstreamId);
+				return ensureObjectUnserialized(page, relatedObjectId, relatedObjectDownstreamId);
 			}
 
-			function ensureObjectUnserialized(id, downstreamId) {
+			function ensureObjectUnserialized(page, id, downstreamId) {
 				console.log("ensureObjectUnserialized");
 				console.log(id);
 				console.log(downstreamId);
@@ -638,7 +645,8 @@
 						return downstreamIdToObjectMap[downstreamId];
 					}
 				} else {
-					return liquid.getEntity(id);
+					// throw new Error("TODO: Think this throug... looks wierd... ");
+					return page.const._selection[id];//liquid.getEntity(id);
 				}
 			}
 			
@@ -670,7 +678,7 @@
 				pulseData.serializedEvents.forEach(function(event) {
 					if (typeof(event.objectId) !== 'undefined' || typeof(downstreamIdToObjectMap[event.downstreamObjectId])) { // Filter out events that should not be visible to server TODO: Make client not send them?
 			
-						var object = typeof(event.objectId) !== 'undefined' ?  liquid.getEntity(event.objectId) : downstreamIdToObjectMap[event.downstreamObjectId];
+						var object = typeof(event.objectId) !== 'undefined' ?  page.const._selection[event.objectId] : downstreamIdToObjectMap[event.downstreamObjectId];
 						// console.log()
 						if (event.action === 'settingRelation' ||
 							event.action === 'addingRelation' ||
@@ -678,7 +686,7 @@
 			
 							// This removes and replaces downstream id:s in the event!
 			
-							var relatedObject = ensureRelatedObjectsUnserialized(event, downstreamIdToSerializedObjectMap, downstreamIdToObjectMap);
+							var relatedObject = ensureRelatedObjectsUnserialized(page, event); //TODO: maps????, downstreamIdToSerializedObjectMap, downstreamIdToObjectMap
 							// console.log(relatedObject);
 							if (event.action === 'addingRelation') {
 								// console.log(object._);
@@ -698,9 +706,9 @@
 			
 					var idToDownstreamIdMap = {};
 					for (downstreamId in downstreamIdToObjectMap) {
-						idToDownstreamIdMap[downstreamIdToObjectMap[downstreamId]._id] = downstreamId;
+						idToDownstreamIdMap[downstreamIdToObjectMap[downstreamId].const.id] = downstreamId;
 					}
-					liquid.activePulse.originator._idToDownstreamIdMap = idToDownstreamIdMap;
+					liquid.activePulse.originator.const.idToDownstreamIdMap = idToDownstreamIdMap;
 				});
 			});
 		}
@@ -714,7 +722,9 @@
 			liquid.pulse(function() {
 				// Consolidate ids:
 				for (id in changes.idToUpstreamId) {
-					liquid.getEntity(id)._upstreamId = changes.idToUpstreamId[id];
+					throw new Error("Not done yet!");
+					// TODO: Needs to keep a local map for all server synched objects...  
+					// liquid.getEntity(id)._upstreamId = changes.idToUpstreamId[id];
 				}
 				console.log(changes);
 				//result
@@ -781,7 +791,7 @@
 					pushingDownstreamData = true; // What happens on asynchronous wait?? 
 					Fiber(function() {
 						liquid.pulse(function() {
-							liquid.unserializeDownstreamPulse(pulseData);
+							liquid.unserializeDownstreamPulse(page, pulseData);
 						});
 					}).run();
 					pushingDownstreamData = false;
@@ -922,7 +932,7 @@
 			if (event.object._upstreamId !== null) {
 				serialized.objectId = event.object._upstreamId;
 			} else {
-				serialized.objectDownstreamId = event.object._id;
+				serialized.objectDownstreamId = event.object.const.id;
 			}
 		
 			if (event.definition.type === 'relation') {
@@ -932,7 +942,7 @@
 					if (event.relatedObject._upstreamId !== null) {
 						serialized.relatedObjectId = event.relatedObject._upstreamId;
 					} else {
-						serialized.relatedObjectDownstreamId = event.relatedObject._id;
+						serialized.relatedObjectDownstreamId = event.relatedObject.const.id;
 					}
 				}
 			} else {
@@ -1022,7 +1032,7 @@
 						// // trace('serialize', "not from upstream");
 						// if (event.object._upstreamId !== null && typeof(event.definition) !== 'undefined' && !event.definition.clientOnly) {
 							// serializedEvents.push(serializeEventForUpstream(event));
-						// } else if (typeof(requiredObjects[event.object._id]) !== 'undefined') {
+						// } else if (typeof(requiredObjects[event.object.const.id]) !== 'undefined') {
 							// serializedEvents.push(serializeEventForUpstream(event));
 						// }
 					// }

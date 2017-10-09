@@ -324,14 +324,14 @@
 			//     idString = "¤." + this._globalId;
 			// } else if (this._persistentId !== null){
 			//     idString = "#." + this._persistsentId;
-			// } else if (this._id !== null) {
-			//     idString = "id." + this._id;
+			// } else if (this.const.id !== null) {
+			//     idString = "id." + this.const.id;
 			// }
 			// return idString;
 			function removeNull(value) {
 				return (value === null) ? 'x' : value;
 			}
-			return this._id + "." + removeNull(this._upstreamId) + "." + removeNull(this._persistentId) + "." + removeNull(this._globalId);
+			return this.const.id + "." + removeNull(this._upstreamId) + "." + removeNull(this._persistentId) + "." + removeNull(this._globalId);
 		};
 
 		className(object) {
@@ -567,7 +567,7 @@
 		
 		getLoadedSelectionsFor(object) {
 			// var idToSelectorsMap = this.cachedCall('getAllReceivedSelections');
-			// return idToSelectorsMap[object._id];
+			// return idToSelectorsMap[object.const.id];
 		}
 
 		getAllReceivedSelections() {
@@ -677,7 +677,7 @@
 				// this.setSelector(undefinedAsNull(initData.selector));
 				// this.setTargetObject(initData.object);
 				// this._previousSelection = {};
-				// this._idToDownstreamIdMap = null;  // This is set in pulses where this page pushes data upstream.
+				// this.const.idToDownstreamIdMap = null;  // This is set in pulses where this page pushes data upstream.
 			// });
 		// }
 	// });
