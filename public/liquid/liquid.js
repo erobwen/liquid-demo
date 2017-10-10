@@ -1070,14 +1070,15 @@
 				return null;
 			}
 			if (typeof(reference) === "string") {
-				if (reference.startsWith("__ref__"))
-				var fragments = reference.substr(7).split(":");
-				var className = fragments[0];
-				var id = parseInt(fragments[1]);
-				var locked = fragments[2] === 'true' ? true : false;
-				// console.log("What the hell!!!");
-				// console.log(fragments);
-				// console.log(locked);				
+				if (reference.startsWith("__ref__")) {
+					var fragments = reference.substr(7).split(":");
+					var className = fragments[0];
+					var id = parseInt(fragments[1]);
+					var locked = fragments[2] === 'true' ? true : false;
+					// console.log("What the hell!!!");
+					// console.log(fragments);
+					// console.log(locked);						
+				}
 			}
 			return ensureEmptyObjectExists(id, className, locked);
 		}
