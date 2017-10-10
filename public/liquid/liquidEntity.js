@@ -359,8 +359,10 @@
 			// trace('selection', liquid.canRead(this));
 			if (typeof(selection[this.const.id]) === 'undefined' && liquid.canRead(this)) {
 				// console.log("Selecting " + this.__());
-				selection[this.const.id] = true;
+				selection[this.const.id] = this;
 				for (property in this) {
+					console.log("selecting property: ");
+					console.log(property);
 					let value = this[property];
 					if (value instanceof LiquidEntity) { //liquid.isObject(value)
 						value.selectAll(selection);

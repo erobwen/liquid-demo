@@ -13,6 +13,7 @@ let create = liquid.create;
 // Custom setup server script
 // require('./include');
 // include('./liquid/application/serverConfiguration.js');
+let demoUser = null;
 
 if (!liquid.persistent.demoInitialized) {
 	liquid.pulse(function() {
@@ -21,6 +22,7 @@ if (!liquid.persistent.demoInitialized) {
 		
 		// Create user and add to index.
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		demoUser = user; 
 		liquid.persistent.users[user.email] = user; // Add to user index. 
 
 		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
@@ -68,7 +70,7 @@ if (!liquid.persistent.demoInitialized) {
 	'demo': function(req) { // Note: req follows express conventions.
 		var session = liquid.createOrGetSessionObject(req.session.token);
 		var page = create('LiquidPage', {session: session});
-		page.getPageService().addOrderedSubscription(create('Subscription', {object: user, selector:'all'})); //object: user,
+		page.service.orderedSubscriptions.push(create({object: demoUser, selector:'All'})); //object: user,
 		return page;
 	},
 	'someurl/:someargument' : 'PageWithArgument'

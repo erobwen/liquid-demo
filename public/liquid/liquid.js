@@ -447,6 +447,7 @@
 			// trace('serialize', "Subscription update: ", result);
 			// console.groupEnd();
 			// traceGroupEnd();
+			log(result, 10);
 			logUngroup();
 
 			return result;

@@ -113,7 +113,7 @@
 					specifierParent : javascriptObject, 
 					specifierProperty : specifierName, 
 					isIncomingStructure : true,   // This is a reuse of this object as incoming node as well.
-					name : "incomingStructure"
+					// name : "incomingStructure" // This fucked up things for incoming relations of name "name"
 				}
 				if (configuration.incomingStructuresAsCausalityObjects) {
 					javascriptObject[specifierName] = createImmutable(specifier);
@@ -452,6 +452,7 @@
 			// log("createIncomingStructure");
 			let incomingStructure = getIncomingRelationStructure(object, property);
 			// log(incomingStructure);
+			if (typeof(incomingStructure) === 'undefined') throw new Error("WTF");
 			let incomingRelationChunk = intitializeAndConstructIncomingStructure(incomingStructure, referingObject, referingObjectId);
 			if (incomingRelationChunk !== null) {
 				return incomingRelationChunk;
@@ -576,7 +577,11 @@
 					incomingStructureRoot.contents = create(incomingStructureRoot.contents);
 				}
 			}
-
+			if (typeof(incomingStructureRoot.contents) === 'undefined') {
+				log("What the hell!");
+				log(incomingStructureRoot, 3);
+			}
+			
 			// Already added in the root
 			if (typeof(incomingStructureRoot.contents[refererId]) !== 'undefined') {
 				return null;
@@ -2282,6 +2287,7 @@
 		}
 		
 		function registerChangeObserver(observerSet) {
+			if (typeof(observerSet) === 'undefined') throw new Error("WTF");
 			// Find right place in the incoming structure.
 			let incomingRelationChunk = intitializeAndConstructIncomingStructure(observerSet, activeRecording, activeRecording.const.id);
 			if (incomingRelationChunk !== null) {
