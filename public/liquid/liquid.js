@@ -312,6 +312,7 @@
 				// console.log("dirty selection");
 				liquid.uponChangeDo(function() {
 					var selection = {};// get
+					log(page.service.orderedSubscriptions, 2);
 					page.service.orderedSubscriptions.forEach(function(subscription) {
 						// Perform a selection with dependency recording!
 						var subscriptionSelection = {};
@@ -330,12 +331,12 @@
 						isSelecting = false;
 						restrictAccessToThatOfPage = null;
 						
-						log("subscriptionSelection");
-						log(subscriptionSelection, 3);
 						for (id in subscriptionSelection) {
 							selection[id] = subscriptionSelection[id];
 						}
 					});
+					log("pageSelection");
+					log(selection, 3);
 					// console.log("consolidate");
 					// console.log(selection);
 					page.const._previousSelection = page.const._selection;

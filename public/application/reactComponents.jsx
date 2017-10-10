@@ -58,11 +58,11 @@ var LoginUI = React.createClass(liquidClassData({
 	},
 
 	tryLogin : function() {
-		page.getPageService().tryLogin(this.state.name, this.state.password);
+		page.service.tryLogin(this.state.name, this.state.password);
 	},
 	
 	logout : function() {
-		page.getPageService().logout();
+		page.service.logout();
 	},
 	
 	render : function() {
@@ -83,7 +83,7 @@ var LoginUI = React.createClass(liquidClassData({
 			} else {
 				return (
 					<div style={{display: 'flex', 'flex-direction': 'column', border: '1px', margin: '1em', padding: '1em'}}>
-						<span>Logged in as <PropertyField object = { user } propertyName = "Name"/></span>
+						<span>Logged in as <PropertyField object = { user } propertyName = "name"/></span>
 						<button onClick={ this.logout } >Logout</button>
 					</div>
 				);
@@ -97,13 +97,14 @@ var UserView = React.createClass(liquidClassData({
 		return invalidateUponLiquidChange("UserView", this, function() {
 			// trace('react', "Render in user view. ");
 			var rootCategories = this.props.user.cached('getRootCategories');
-			// var rootCategories = this.props.user.getOwnedCategories();
+			console.log("rootCategories");
+			// var rootCategories = this.props.user.ownedCategories;
 			return (
 				<div className="UserView">
-					<span>{ this.props.user.getName() }'s categories</span>
+					<span>{ this.props.user.name }'s categories</span>
 					<div style={{height: "1em"}}></div>
 					<CategoriesView
-						key = { this.props.user._id }
+						key = { this.props.user.const.id }
 						categories = { rootCategories }  // This should evaluate to a new list upon change. This would not work with a relation... Should we create a new object on every change? However, it still means that both components needs reevaluation
 					/>
 					<button onClick= { function() { performScript(); }} >Execute script</button>
@@ -127,7 +128,7 @@ var PropertyField = React.createClass(liquidClassData({
 		return false;
 	},
 	propertyChanged: function(event) {
-		this.props.object['set' + this.props.propertyName](event.target.value);
+		this.props.object[this.props.propertyName] = event.target.value;
 	},	
 	render: function() {
 		return invalidateUponLiquidChange("PropertyField", this, function() {
@@ -135,13 +136,13 @@ var PropertyField = React.createClass(liquidClassData({
 			if (this.state.focused) {
 				return (
 					<span onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
-						<span>{ labelString }<input type="text" value={this.props.object['get' + this.props.propertyName]()} onChange={ this.propertyChanged } /></span>
+						<span>{ labelString }<input type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
 					</span>
 				);
 			} else {
 				return (
 					<span onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
-						<span>{ labelString }{this.props.object['get' + this.props.propertyName]()}</span>
+						<span>{ labelString }{this.props.object[this.props.propertyName]}</span>
 					</span>
 				);
 			}
@@ -155,10 +156,10 @@ var CategoriesView = React.createClass(liquidClassData({
 		return invalidateUponLiquidChange("CategoriesView", this, function() {
 			var categoriesElements = [];
 			this.props.categories.forEach(function(category) {
-				// console.log("A key: " + category._id);
+				// console.log("A key: " + category.const.id);
 				categoriesElements.push(
 					<CategoryView 
-						key = { category._id }
+						key = { category.const.id }
 						category = {category}
 					/>
 				);
@@ -214,14 +215,14 @@ window.CategoryView = React.createClass(liquidClassData({
 		
 	
 	onDragStart: function(event) {
-		// console.log("onDragStart:" + this.props.category.getName());
+		// console.log("onDragStart:" + this.props.category.name);
 		draggedCategory = this.props.category;
-		// event.dataTransfer.setData("categoryId", this.props.category._id);
+		// event.dataTransfer.setData("categoryId", this.props.category.const.id);
 	},
 	
 	dragEnterCounter: 0,
 	onDragEnter: function(event) {
-		// console.log("onDragEnter:" + this.props.category.getName() + ", " + this.dragEnterCounter);
+		// console.log("onDragEnter:" + this.props.category.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter++;
 		var category = this.props.category;
@@ -241,7 +242,7 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDragLeave: function(event) {
-		// console.log("onDragLeave:" + this.props.category.getName() + ", " + this.dragEnterCounter);
+		// console.log("onDragLeave:" + this.props.category.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter--;
 		var category = this.props.category;
@@ -261,7 +262,7 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDragExit: function(event) {
-		// console.log("onDragExit:" + this.props.category.getName() + ", " + this.dragEnterCounter);
+		// console.log("onDragExit:" + this.props.category.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.setState({ 
 			draggingOver: false
@@ -269,12 +270,12 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDragOver: function(event) {
-		// console.log("onDragOver:" + this.props.category.getName());
+		// console.log("onDragOver:" + this.props.category.name);
 		event.preventDefault();
 	},
 	
 	onDrop: function(event) {
-		// console.log("onDrop:" + this.props.category.getName() + ", " + this.dragEnterCounter);
+		// console.log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
 		// console.log(this.props.category);
 		event.preventDefault();
 		this.dragEnterCounter = 0;
@@ -283,9 +284,9 @@ window.CategoryView = React.createClass(liquidClassData({
 		draggedCategory = null;
 		if (category.writeable() && category.canAddSubCategory(droppedCategory)) {
 			liquid.pulse('local', function() {
-				// console.log(droppedCategory.getParents().length);
-				// console.log(droppedCategory.getParents());
-				var parents = copyArray(droppedCategory.getParents());
+				// console.log(droppedCategory.parents.length);
+				// console.log(droppedCategory.parents);
+				var parents = copyArray(droppedCategory.parents);
 				parents.forEach(function(parentCategory) {
 					// console.log("Dropping parent: " + parentCategory.__());
 					droppedCategory.removeParent(parentCategory);
@@ -358,22 +359,22 @@ window.CategoryView = React.createClass(liquidClassData({
 			}
 
 
-			this.props.category.getSubCategories().forEach(function(category) {
+			this.props.category.subCategories.contents.forEach(function(category) {
 				// How to do it with standard syntax:
 
 				subCategories.push(
 					<CategoryView 
-						key = { this.props.category._id + "." + category._id }
+						key = { this.props.category.const.id + "." + category.const.id }
 						category = {category}
 					/>
 				);
 				
 				// How to do it if we get element name as a string:
-				// subCategories.push(React.createElement(window[categoryViewElementName], { key : category._id, category : category }));				
+				// subCategories.push(React.createElement(window[categoryViewElementName], { key : category.const.id, category : category }));				
 			}.bind(this));
 
 			var collapseButton = 
-				(this.props.category.getSubCategories().length > 0) ? 
+				(this.props.category.subCategories.contents.length > 0) ? 
 					(<span 
 						onClick={ this.collapseOrExpand } 
 						style={{marginRight: "0.61em"}} 
@@ -398,7 +399,7 @@ window.CategoryView = React.createClass(liquidClassData({
 						onDrop = { this.onDrop }>
 						<span>
 							{ collapseButton }
-							<PropertyField label={null} object = { this.props.category} propertyName = "Name"/>
+							<PropertyField label={null} object = { this.props.category} propertyName = "name"/>
 						</span>
 					</div>
 					<div ref="subCategoriesDiv" style={{marginLeft:'1em'}}>

@@ -440,6 +440,12 @@
 			});
 		}
 		
+		forEach(callback) {
+			for(key in this.contents) {
+				callback(this.contents[key]);
+			}
+		}
+		
 		remove(object) {
 			delete this.contents[liquid.idExpression(object.const.id)];
 		}

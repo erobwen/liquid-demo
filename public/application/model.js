@@ -61,7 +61,7 @@
 		getRootCategories() {
 			let result = [];
 			this.ownedCategories.forEach(function(category) {
-				if (category.getParents().length === 0) {
+				if (category.parents.length === 0) {
 					result.push(category);
 				}
 			});
@@ -123,7 +123,7 @@
 		}
 	}
 	liquid.createIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
-	liquid.createIncomingProperty(Category, "parents", Category, "subCategories"); 
+	liquid.createIncomingSetProperty(Category, "parents", Category, "subCategories"); 
 	
 	function defined(entity) {
 		return typeof(entity) !== 'undefined';
