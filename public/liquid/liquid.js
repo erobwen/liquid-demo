@@ -491,32 +491,29 @@
 		 * }
 		 */
 		function serializeObject(object, forUpstream = false) {
-			function serializeReferences(object) {
-				if (liquid.isObject(object)) {
-					if (forUpstream) {
-						if (object._upstreamId !== null) {
-							return object.className() + ":id:" + object._upstreamId;
-						} else {
-							return object.className() + ":downstreamId:" + object.const.id;
-						}
+			function serializeReference(object) {
+				let className = getClassName(object);
+				if (forUpstream) {
+					if (object.const._upstreamId !== null) {
+						return className + ":id:" + object.const._upstreamId;
 					} else {
-						let className = getClassName(object);
-						// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
-						return "__ref__" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+						return className + ":downstreamId:" + object.const.id;
 					}
-				} else if (typeof(object) === 'object' || typeof(object) === 'function'){
-					return null;
 				} else {
-					return object;
-				}
-			};
+					// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
+					return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+				}				
+			}
 			
-			serialized = {};
-			serialized._ = object.__();
-			serialized.className = getClassName(object);
+			serialized = {
+				_ : object.__(),
+				className : getClassName(object),
+				references : {},
+				values : {}
+			};
 			if (forUpstream) {
-				if (object._upstreamId !== null) {
-					serialized.id = object._upstreamId;
+				if (object.const._upstreamId !== null) {
+					serialized.id = object.const._upstreamId;
 				} else {
 					serialized.downstreamId = object.const.id;
 				}
@@ -529,7 +526,12 @@
 			}
 			Object.keys(object).forEach(function(key) {
 				if (!omittedKeys[key]) {
-					serialized[key] = serializeReferences(object[key]);					
+					let value = object[key];
+					if (liquid.isObject(value)) {
+						serialized.references[key] = serializeReference(value);
+					} else if (typeof(value) !== 'object' && typeof(value) !== 'function'){
+						serialized.values[key] = value; 											
+					}
 				} 
 			});
 			return serialized;
@@ -934,8 +936,8 @@
 				action: event.action
 			};
 		
-			if (event.object._upstreamId !== null) {
-				serialized.objectId = event.object._upstreamId;
+			if (event.object.const._upstreamId !== null) {
+				serialized.objectId = event.object.const._upstreamId;
 			} else {
 				serialized.objectDownstreamId = event.object.const.id;
 			}
@@ -1003,7 +1005,7 @@
 				// Find data that needs to be pushed upstream
 				var requiredObjects = {};
 				function addRequiredCascade(object, requiredObjects) {
-					if (object._upstreamId === null && typeof(requiredObjects[object.id]) === 'undefined') {
+					if (object.const._upstreamId === null && typeof(requiredObjects[object.id]) === 'undefined') {
 						requiredObjects[object.id] = object;
 						object.forAllOutgoingRelationsAndObjects(function(definition, instance, relatedObject) {
 							addRequiredCascade(relatedObject);
@@ -1016,7 +1018,7 @@
 					// var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
 					// if (!eventIsFromUpstream) {
 						// // trace('serialize', "processing event required objects");
-						// if (event.object._upstreamId !== null && event.action == 'addingRelation' && event.relatedObject._upstreamId === null) {
+						// if (event.object.const._upstreamId !== null && event.action == 'addingRelation' && event.relatedObject._upstreamId === null) {
 							// addRequiredCascade(event.relatedObject, requiredObjects);
 						// }
 					// }
@@ -1035,7 +1037,7 @@
 					// var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
 					// if (!event.redundant && !eventIsFromUpstream) {
 						// // trace('serialize', "not from upstream");
-						// if (event.object._upstreamId !== null && typeof(event.definition) !== 'undefined' && !event.definition.clientOnly) {
+						// if (event.object.const._upstreamId !== null && typeof(event.definition) !== 'undefined' && !event.definition.clientOnly) {
 							// serializedEvents.push(serializeEventForUpstream(event));
 						// } else if (typeof(requiredObjects[event.object.const.id]) !== 'undefined') {
 							// serializedEvents.push(serializeEventForUpstream(event));
@@ -1066,21 +1068,11 @@
 		
 		upstreamIdObjectMap = {};
 		
-		function unserializeUpstreamReferences(reference) {
-			if (reference === null) {
-				return null;
-			}
-			if (typeof(reference) === "string") {
-				if (reference.startsWith("__ref__")) {
-					var fragments = reference.substr(7).split(":");
-					var className = fragments[0];
-					var id = parseInt(fragments[1]);
-					var locked = fragments[2] === 'true' ? true : false;
-					// console.log("What the hell!!!");
-					// console.log(fragments);
-					// console.log(locked);						
-				}
-			}
+		function unserializeUpstreamReference(reference) {
+			var fragments = reference.split(":");
+			var className = fragments[0];
+			var id = parseInt(fragments[1]);
+			var locked = fragments[2] === 'true' ? true : false;
 			return ensureEmptyObjectExists(id, className, locked);
 		}
 		
@@ -1095,7 +1087,7 @@
 		function ensureEmptyObjectExists(upstreamId, className, isLocked) {
 			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
 				var newObject = create(className);
-				newObject._upstreamId = upstreamId;
+				newObject.const._upstreamId = upstreamId;
 				upstreamIdObjectMap[upstreamId] = newObject;
 				if (typeof(newObject.__) === 'function') {
 					newObject._ = newObject.__();					
@@ -1123,16 +1115,16 @@
 			var targetObject = upstreamIdObjectMap[upstreamId];
 			// console.log(targetObject);
 			if (targetObject.isPlaceholderObject) {
-				let ignoreKeys = {
-					"_" : true,
-					"id" : true,
-					"className" : true
+				// let ignoreKeys = {
+					// "_" : true,
+					// "id" : true,
+					// "className" : true
+				// }
+				for(key in serializedObject.references) {
+					targetObject[key] = unserializeUpstreamReference(serializedObject.references[key]);
 				}
-				for(key in serializedObject) {
-					if (!ignoreKeys[key]) {
-						targetObject[key] = unserializeUpstreamReferences(serializedObject[key]);
-						// unserializeUpstreamReference
-					}
+				for(key in serializedObject.values) {
+					targetObject[key] = serializedObject.values[key];
 				}
 				targetObject.isPlaceholderObject = false;
 				if (typeof(targetObject._) === 'function') {

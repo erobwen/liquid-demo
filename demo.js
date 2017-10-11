@@ -6,6 +6,9 @@ liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we ma
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
 let create = liquid.create;
 
+let objectlog = require("./objectlog.js");
+let log = objectlog.log;
+
 /**--------------------------------------------------------------
  *            Initialize database if necessary
  *----------------------------------------------------------------*/
@@ -21,7 +24,10 @@ if (!liquid.persistent.demoInitialized) {
 		liquid.persistent.users = create("LiquidIndex");
 		
 		// Create user and add to index.
+		log("==========================================================");
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		log(user);
+		log("==========================================================");
 		demoUser = user; 
 		liquid.persistent.users[user.email] = user; // Add to user index. 
 

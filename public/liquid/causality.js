@@ -1576,6 +1576,9 @@
 					createdTarget = {}; // Just in case of similar situations to above for some Javascript interpretors... 
 				} else {
 					let classOrPrototype = classRegistry[createdTarget];
+					if (typeof(classOrPrototype) !== 'function') {
+						throw new Error("No class found: " +  createdTarget);
+					}
 					// console.log(Object.keys(classRegistry));
 					// console.log(createdTarget);
 					// console.log(classOrPrototype);

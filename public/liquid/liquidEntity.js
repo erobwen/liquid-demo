@@ -291,11 +291,34 @@
 		}
 
 		initialize(data) {
+			// log("LiquidEntity.initialize");
 			this.assign(data);
 		}
 		
-		get(data, property, defaultValue) {
-			return (typeof(data[property] !== 'undefined')) ? data[property] : defaultValue;
+		isUndefined(property) {
+			return typeof(this[property]) === 'undefined';
+		}
+		
+		ensureDefault(property, defaultValue) {
+			if (typeof(this[property]) === 'undefined') {
+				this[property] = defaultValue;
+			}
+		}
+		
+		set(property, data, defaultValue) {
+			if (typeof(data[property]) !== 'undefined') {
+				this[property] = data[property];
+			} else {
+				this[property] = defaultValue;
+			}
+		}
+		
+		get(value, defaultValue) {
+			if (typeof(value) !== 'undefined') {
+				return value;
+			} else {
+				return defaultValue;
+			}
 		}
 		
 		assign(data) {
@@ -356,19 +379,39 @@
 		}
 					
 		selectAll(selection) {
+			log("selectAll:");
+			logGroup();
+			log(this);
+			function selectAllObjects(object) {
+				if (typeof(selection[object.const.id]) === 'undefined' && liquid.canRead(object)) {
+					selection[object.const.id] = object; 
+					Object.keys(object).forEach(function(key) {
+						let value = object[key];
+						if (liquid.isObject(value)) {
+							selectAllObjects(value);
+						}
+					});
+				}
+			}
+			
 			// trace('selection', liquid.canRead(this));
 			if (typeof(selection[this.const.id]) === 'undefined' && liquid.canRead(this)) {
 				// console.log("Selecting " + this.__());
 				selection[this.const.id] = this;
-				for (property in this) {
+				
+				Object.keys(this).forEach(function(key) {
 					console.log("selecting property: ");
-					console.log(property);
-					let value = this[property];
+					console.log(key);
+					let value = this[key];
 					if (value instanceof LiquidEntity) { //liquid.isObject(value)
 						value.selectAll(selection);
+					} else if (liquid.isObject(value)) {
+						// Warning: potentially dangerous. Could select A LOT...
+						selectAllObjects(value); 
 					}
-				}
+				}.bind(this));
 			}
+			logUngroup();
 		}
 		
 		isLoaded() {
@@ -478,13 +521,6 @@
 	 *         Page 
 	 *---------------------------*/
 
-	function get(value, defaultValue) {
-		if (typeof(value) !== 'undefined') {
-			return value;
-		} else {
-			return defaultValue;
-		}
-	}
 	
 	class LiquidPage extends LiquidEntity {
 		constructor () {
@@ -501,18 +537,21 @@
 		}
 		
 		initialize(data) {
-			this.session = null; // TODO: will this override stuff in data?
-			this.receivedSubscriptions = create([]); 
-			
-			this.session = get(data.session, null); 
-			this.service = this.createPageService();
+			super.initialize(data);
+			this.ensureDefault("session", null);
+			if (this.isUndefined("receivedSubscriptions")) {
+				this.receivedSubscriptions = create([]); 				
+			}
+			if (this.isUndefined("session")) {
+				this.session = this.get(data.session, null);				
+			}
+			if (this.isUndefined("service")) {
+				this.service = this.createPageService();				
+			}
 			this.service.orderedSubscriptions.push(create({selector: "Basics", object: this})); // Consider: Really have this? Or is it enough 
-			
-			this.assignWeak(data);
-			
+						
 			// Register page 
 			liquid.registerPage(this);
-			
 		}
 		
 		createPageService() {
@@ -629,6 +668,7 @@
 
 	class LiquidPageService extends LiquidEntity {
 		initialize() {
+			// log("LiquidPageService.initialize");
 			this.orderedSubscriptions = [];
 			
 			// createIncomingProperty(LiquidPageService, "page", LiquidPage, "service");
@@ -712,9 +752,10 @@
 
 	class LiquidUser extends LiquidEntity {
 		initialize(data) {
+			// log("LiquidUser.initialize");
 			super.initialize(data);
-			this.loginName = "";
-			this.alternativeLoginName = "";
+			this.ensureDefault("loginName", "");
+			this.ensureDefault("alternativeLoginName", "");
 			
 			let encryptedPassword = null;
 			if (typeof(data.password) !== 'undefined') {
@@ -725,7 +766,7 @@
 				encryptedPassword = data.serverEncryptedPassword;
 			}
 			
-			this.passwordVault = create("LiquidUserPasswordVault", { encryptedPassword: encryptedPassword });			
+			this.passwordVault = create("LiquidUserPasswordVault", { encryptedPassword: encryptedPassword });
 		}
 		
 		getEncryptedPassword() {

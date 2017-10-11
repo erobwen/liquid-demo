@@ -16,11 +16,11 @@
 	// console.log("in model...");
 	let liquid = require("../liquid/liquid.js")();
 	
-	// Debugging
-	let objectlog = require('../../objectlog.js');
-	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
+	// Debugging (todo: use console.log on client)
+	// let objectlog = require('../../objectlog.js');
+	// let log = objectlog.log;
+	// let logGroup = objectlog.enter;
+	// let logUngroup = objectlog.exit;
 	
 	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
@@ -45,11 +45,16 @@
 	
 	class User extends LiquidUser {
 		initialize(data) {
-			super.initialize(data);
-			this.name = '';
-			this.email = '';
-			this.addedReferences = create('LiquidIndex');
-			this.ownedCategories = create('LiquidIndex');
+			// log("User.initialize");
+			super.initialize(data);			
+			this.ensureDefault("name", '');
+			this.ensureDefault("email", '');
+			if (this.isUndefined("addedReferences")) {
+				this.addedReferences = create('LiquidIndex');				
+			}
+			if (this.isUndefined("ownedCategories")) {
+				this.ownedCategories = create('LiquidIndex');				
+			}
 		}
 		
 		selectAllCategories(selection) {
