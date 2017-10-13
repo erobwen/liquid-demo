@@ -148,9 +148,7 @@
 				
 				// Check if this is an index assignment. 
 				if (newValue.indexParent === dbImage) {
-					disableIncomingRelations(function() {
-						dbImage[property] = newValue;
-					});
+					imageCausality.setIndex(dbImage, property, newValue);
 				} else {
 					dbImage[property] = newValue; 
 				}

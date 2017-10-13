@@ -334,6 +334,9 @@
 			while (typeof(objectProxy.indexParent) !==  'undefined') {
 				referringRelation = objectProxy.indexParentRelation;
 				objectProxy = objectProxy.indexParent;
+				log("moving up");
+				log(referringRelation);
+				log(objectProxy);
 			}
 			
 			// Tear down structure to old value

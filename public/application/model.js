@@ -50,10 +50,10 @@
 			this.ensureDefault("name", '');
 			this.ensureDefault("email", '');
 			if (this.isUndefined("addedReferences")) {
-				this.addedReferences = create('LiquidIndex');				
+				this.attatchIndex("addedReferences", create('LiquidIndex'));
 			}
 			if (this.isUndefined("ownedCategories")) {
-				this.ownedCategories = create('LiquidIndex');				
+				this.attatchIndex("ownedCategories", create('LiquidIndex'));
 			}
 		}
 		

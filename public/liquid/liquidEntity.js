@@ -332,6 +332,10 @@
 			}
 		}
 		
+		attatchIndex(property, index) {
+			liquid.setIndex(this, property, index); // Has to use liquid to do this, since incoming needs to be disabled during this operation. 
+		}
+
 		assign(data) {
 			for(property in data) {
 				this[property] = data[property];
@@ -471,7 +475,8 @@
 	/*---------------------------
 	 *         Index 
 	 *---------------------------*/
-
+	// Note: the only reason we have to have indexParentRelation in the object, is so that it survives streaming etc.... Otherwise it ould have been in const. 
+	 
 	class LiquidIndex extends LiquidEntity {	
 		constructor() {
 			super();
@@ -482,7 +487,7 @@
 		initialize(data) {
 			super.initialize(data);
 			this.sorter = data.sorter;
-			this.contents = create({});
+			this.attatchIndex("contents", create({}));
 		}
 		
 		setContents(objectArray) {
