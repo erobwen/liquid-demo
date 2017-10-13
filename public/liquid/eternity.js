@@ -90,7 +90,7 @@
 							} else if (event.type === 'delete') {
 								markOldValueAsUnstable(dbImage, event);
 																
-								delete dbImage[event.property];
+								delete dbImage[event.property]; // TODO: Do we need something special when deleting indicies?
 							}
 						}
 					});
@@ -121,7 +121,7 @@
 				log(imageCausality.state);
 			}
 			
-			if (objectCausality.isObject(objectValue)) {
+			if (objectCausality.isObject(objectValue)) {             
 				let newValue = objectValue;
 				// Get existing or create new image. 
 				if (typeof(newValue.const.dbImage) === 'object') {
@@ -146,11 +146,17 @@
 					newValue = newValue.const.dbImage;
 				}
 				
+				
+				
 				// Check if this is an index assignment. 
-				if (newValue.indexParent === dbImage) {
+				if (newValue.indexParent === dbImage && newValue.indexParentProperty === property) {
 					imageCausality.setIndex(dbImage, property, newValue);
 				} else {
-					dbImage[property] = newValue; 
+					if (property === "indexParent") {
+						imageCausality.setIndex(newValue, property, dbImage); // Consider: redundant? 
+					} else {
+						dbImage[property] = newValue; 
+					}
 				}
 			} else {
 				if (trace.eternity) log("wtf...");
@@ -2167,7 +2173,7 @@
 			incomingChunkRemovedCallback : incomingChunkRemovedForImage,
 			useIncomingStructures: true,
 			incomingReferenceCounters : true, 
-			incomingStructuresAsCausalityObjects : true,
+			incomingStructuresAsCausalityObjects : true, // Is this static or non static objects? 
 			blockInitializeForIncomingReferenceCounters: true,
 		});
 		imageCausality.addPostPulseAction(postImagePulseAction);

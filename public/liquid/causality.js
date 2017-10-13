@@ -334,9 +334,9 @@
 			while (typeof(objectProxy.indexParent) !==  'undefined') {
 				referringRelation = objectProxy.indexParentRelation;
 				objectProxy = objectProxy.indexParent;
-				log("moving up");
-				log(referringRelation);
-				log(objectProxy);
+				// log("moving up");
+				// log(referringRelation);
+				// log(objectProxy);
 			}
 			
 			// Tear down structure to old value
@@ -503,6 +503,8 @@
 				if (configuration.incomingStructuresAsCausalityObjects) {
 					// Disable incoming relations here? otherwise we might end up with incoming structures between 
 					incomingStructure = create(incomingStructure);
+					log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
+					log(incomingStructure);
 				}
 				incomingStructures[property] = incomingStructure;
 			}

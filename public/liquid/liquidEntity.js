@@ -110,8 +110,8 @@
 					this[incomingProperty] = this;
 				} else {
 					console.log(newObject);
-					console.log(newObject.const.id);
-					throw new Error("Expected an object when assigning an incoming property.");
+					// console.log(newObject.const.id);
+					throw new Error("Expected an object when assigning an incoming property '" + name + "'.");
 				}
 			}
 		});

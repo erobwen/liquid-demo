@@ -1,3 +1,4 @@
+Error.stackTraceLimit = Infinity;
 
 // Setup liquid and add models to it
 let liquid = require("./public/liquid/liquid.js")(
@@ -37,17 +38,21 @@ let demoUser = null;
 if (!liquid.persistent.demoInitialized) {
 	liquid.pulse(function() {
 		// Create a simple user index. (no advanced index).
-		liquid.persistent.users = create("LiquidIndex");
-		
+		// liquid.persistent.users = create("LiquidIndex");
+		// liquid.setIndex(liquid.persistent, "users", create("LiquidIndex"));
 		// Create user and add to index.
-		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
-		demoUser = user; 
-		liquid.persistent.users[user.email] = user; // Add to user index. 
-
+		// var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		
+		// demoUser = user; 
+		// liquid.persistent.users[user.email] = user; // Add to user index. 
+		// var favourite = 
+		
 		log("==========================================================");
-		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
+		let demoUser = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		liquid.persistent.demoUser = demoUser;
+		create('Category', {name: 'Favourite', description: '', owner: demoUser}); // Adds it to users own category index.
 		log("-----------");
-		log(user.ownedCategories.contents);
+		log(demoUser.ownedCategories.contents);
 		log("==========================================================");
 		return;
 		
