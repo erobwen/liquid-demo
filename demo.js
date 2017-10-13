@@ -1,6 +1,22 @@
 
 // Setup liquid and add models to it
-let liquid = require("./public/liquid/liquid.js")({name: "serverLiquid", usePersistency: true, isServer: true, eternityConfiguration : {databaseFileName: "demoDb.mongoDb"}});
+let liquid = require("./public/liquid/liquid.js")(
+	{
+		name: "serverLiquid", 
+		usePersistency: true, 
+		isServer: true, 
+		eternityConfiguration : {
+			allowPlainObjectReferences : false,
+			databaseFileName: "demoDb.mongoDb",
+			causalityConfiguration : {
+				useIncomingStructures : true				
+			}
+		}
+	}
+);
+console.log("demo.liquid state: ");
+console.log(liquid.state);
+
 liquid.setAsDefaultConfiguration();
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
@@ -24,14 +40,17 @@ if (!liquid.persistent.demoInitialized) {
 		liquid.persistent.users = create("LiquidIndex");
 		
 		// Create user and add to index.
-		log("==========================================================");
 		var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
-		log(user);
-		log("==========================================================");
 		demoUser = user; 
 		liquid.persistent.users[user.email] = user; // Add to user index. 
 
+		log("==========================================================");
 		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
+		log("-----------");
+		log(user.ownedCategories.contents);
+		log("==========================================================");
+		return;
+		
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		var politics = create('Category', {name: 'Politics', description: '', owner: user});
 		var georgism = create('Category', {name: 'Georgism', description: '', owner: user});

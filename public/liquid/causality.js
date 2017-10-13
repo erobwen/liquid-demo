@@ -342,7 +342,10 @@
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
 				removeIncomingStructure(objectProxy.const.id, previousStructure); // TODO: Fix BUG. This really works?
 				if (typeof(previousValue.const.incoming) !== 'undefined') {
-					notifyChangeObservers(previousValue.const.incoming[referringRelation]);
+					let incoming = previousValue.const.incoming;
+					if (typeof(incoming[referringRelation]) !== 'undefined') {
+						notifyChangeObservers(incoming[referringRelation]);						
+					}
 				}
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize--;
 			}
@@ -351,7 +354,10 @@
 			if (isObject(value)) {
 				let referencedValue = createIncomingStructure(objectProxy, objectProxy.const.id, referringRelation, value);
 				if (typeof(value.const.incoming) !== 'undefined') {
-					notifyChangeObservers(value.const.incoming[referringRelation]);
+					let incoming = value.const.incoming;
+					if (typeof(incoming[referringRelation]) !== 'undefined') {
+						notifyChangeObservers(value.const.incoming[referringRelation]);						
+					}
 				}
 				value = referencedValue;
 			}

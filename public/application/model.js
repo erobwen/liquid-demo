@@ -76,6 +76,7 @@
 
 	class Category extends LiquidEntity {
 		initialize(data) {
+			console.log("initialize Category");
 			this.name = this.get(data, "name", '');
 			this.description = this.get(data, "description", '');
 			// this.owner;  Incoming: User.categories
@@ -97,8 +98,9 @@
 			}
 
 			// User
-			if (typeof(data.user) !== 'undefined') {
-				this.setOwner(data.user)
+			if (typeof(data.owner) !== 'undefined') {
+				console.log("setting owner!");
+				this.owner = data.owner;
 			}
 			// assignWeak(data);
 			super.initialize();
@@ -127,7 +129,7 @@
 			}
 		}
 	}
-	liquid.createIncomingSetProperty(Category, "owner", User, "ownedCategories"); 
+	liquid.createIncomingProperty(Category, "owner", User, "ownedCategories"); 
 	liquid.createIncomingSetProperty(Category, "parents", Category, "subCategories"); 
 	
 	function defined(entity) {

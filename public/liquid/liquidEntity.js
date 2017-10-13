@@ -76,24 +76,35 @@
 		
 		Object.defineProperty(object, name, {
 			get: function() {
+				console.log("inside getter");
 				return liquid.getSingleIncomingReference(this, incomingProperty, filter);
 			},
 			set: function(newObject) {
+				console.log("Inside set incoming property");
 				let result = liquid.isObject(newObject);
-				// console.log(result);
+				console.log(result);
 				if (result) {
+					log("getting previous");
 					let previousObject = this[name];
-					// log("Previous and new object: ");
-					// log(previousObject);
-					// log(newObject);
+					log("Previous and new object: ");
+					log(previousObject);
+					log(newObject);
+					log(filter(newObject));
 					if (newObject !== previousObject && filter(newObject)) {
 						if (previousObject !== null) {
-							if (previousObject[incomingProperty] instanceof LiquidIndex) {
-								previousObject[incomingProperty].remove(this);
+							let previousOutgoingValue = previousObject[incomingProperty];
+							if (previousOutgoingValue instanceof LiquidIndex) {
+								previousOutgoingValue.remove(this);
 							} else {
-								previousObject[incomingProperty] = null; // Or delete by choice? 
-							}							
+								previousOutgoingValue = null; // Or delete by choice? 
+							}
 						}
+						let nextOutgoingValue = newObject[incomingProperty];
+						if (nextOutgoingValue instanceof LiquidIndex) {
+							nextOutgoingValue.add(this);
+						} else {
+							nextOutgoingValue = this; // Or delete by choice? 
+						}							
 					}
 					return true;
 					this[incomingProperty] = this;
@@ -379,7 +390,7 @@
 		}
 					
 		selectAll(selection) {
-			log("selectAll:");
+			log("selectAll:" + this.const.id);
 			logGroup();
 			log(this);
 			function selectAllObjects(object) {

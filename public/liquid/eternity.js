@@ -63,6 +63,8 @@
 				log("transferChangesToImage");
 				logGroup();
 			}
+			log("objectCausalityState: ");
+			log(objectCausality.state);
 			if (events.length > 0) {
 				// log("... Model pulse complete, update image and flood create images & flood unstable ");
 				// log("events.length = " + events.length);
@@ -585,13 +587,11 @@
 	
 		// should disableIncomingRelations
 		function serializeDbImage(dbImage) {
-			
 			// imageCausality.disableIncomingRelations(function() {
 			// log(dbImage, 2);
 			// log(imageCausality.isObject(dbImage));
 			let serialized = (dbImage instanceof Array) ? [] : {};
 			for (let property in dbImage) {
-				// TODO: convert idExpressions
 				if (property !== 'const') {
 					// && property != 'incoming'
 					// recursiveCounter = 0;
@@ -627,6 +627,31 @@
 					return getTmpDbId(entity);
 				}
 			} else if (entity !== null && typeof(entity) === 'object') {
+				
+				if (!configuration.allowPlainObjectReferences) { 
+				
+					let typeCorrect = typeof(entity) === 'object';
+					let notNull = entity !== null;
+					let hasConst = false;			
+					let rightCausalityInstance = false;
+					
+					if (typeCorrect && notNull) {
+						hasConst = typeof(entity.const) !== 'undefined';
+						// console.log("rightafter")
+						// console.log(hasConst);
+					
+						if (hasConst === true) {
+							rightCausalityInstance = entity.const.causalityInstance === imageCausality;
+						}
+					}
+					
+					console.log(typeCorrect);
+					console.log(notNull);
+					console.log(hasConst);
+					console.log(rightCausalityInstance);
+					log(entity, 1);
+					throw new Error("Plain object references not allowed!"); 
+				}
 				// log("===========");
 				// log(entity, 3);
 				// log("===========");
@@ -2277,7 +2302,8 @@
 			maxNumberOfLoadedObjects : 10000,
 			persistentIncomingChunkSize : 500,
 			twoPhaseComit : true,
-			causalityConfiguration : {}
+			causalityConfiguration : {},
+			allowPlainObjectReferences : true
 		}
 	}
 	
