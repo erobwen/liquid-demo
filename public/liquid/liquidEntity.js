@@ -76,40 +76,39 @@
 		
 		Object.defineProperty(object, name, {
 			get: function() {
-				console.log("inside getter");
+				// console.log("inside getter");
 				return liquid.getSingleIncomingReference(this, incomingProperty, filter);
 			},
 			set: function(newObject) {
-				console.log("Inside set incoming property");
+				// console.log("Inside set incoming property");
 				let result = liquid.isObject(newObject);
-				console.log(result);
+				// console.log(result);
 				if (result) {
-					log("getting previous");
+					// log("getting previous");
 					let previousObject = this[name];
-					log("Previous and new object: ");
-					log(previousObject);
-					log(newObject);
-					log(filter(newObject));
+					// log("Previous and new object: ");
+					// log(previousObject);
+					// log(newObject);
+					// log(filter(newObject));
 					if (newObject !== previousObject && filter(newObject)) {
 						if (previousObject !== null) {
 							let previousOutgoingValue = previousObject[incomingProperty];
 							if (previousOutgoingValue instanceof LiquidIndex) {
 								previousOutgoingValue.remove(this);
 							} else {
-								previousOutgoingValue = null; // Or delete by choice? 
+								previousObject[incomingProperty] = null; // Or delete by choice? 
 							}
 						}
 						let nextOutgoingValue = newObject[incomingProperty];
 						if (nextOutgoingValue instanceof LiquidIndex) {
 							nextOutgoingValue.add(this);
 						} else {
-							nextOutgoingValue = this; // Or delete by choice? 
+							newObject[incomingProperty] = this; // Or delete by choice? 
 						}							
 					}
 					return true;
-					this[incomingProperty] = this;
 				} else {
-					console.log(newObject);
+					// console.log(newObject);
 					// console.log(newObject.const.id);
 					throw new Error("Expected an object when assigning an incoming property '" + name + "'.");
 				}
@@ -480,6 +479,7 @@
 	class LiquidIndex extends LiquidEntity {	
 		constructor() {
 			super();
+			this.isLiquidIndex = true;
 			// this.const.isIndex = true; // is this working.... maybe not... TODO: figure out something else.
 			this.const.isIndex = true;
 			// this._const_isIndex = true; // Tell causality to put something in the const? 

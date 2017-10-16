@@ -63,8 +63,8 @@
 				log("transferChangesToImage");
 				logGroup();
 			}
-			log("objectCausalityState: ");
-			log(objectCausality.state);
+			// log("objectCausalityState: ");
+			// log(objectCausality.state);
 			if (events.length > 0) {
 				// log("... Model pulse complete, update image and flood create images & flood unstable ");
 				// log("events.length = " + events.length);
@@ -86,7 +86,7 @@
 								if (trace.eternity) log("set event");
 								markOldValueAsUnstable(dbImage, event);
 									
-								setPropertyOfImageAndFloodCreateNewImages(dbImage, event.property, event.newValue);
+								setPropertyOfImageAndFloodCreateNewImages(event.object, event.property, event.newValue);
 							} else if (event.type === 'delete') {
 								markOldValueAsUnstable(dbImage, event);
 																
@@ -114,57 +114,67 @@
 			}
 		}
 		
-		function setPropertyOfImageAndFloodCreateNewImages(dbImage, property, objectValue) {
+		function setPropertyOfImageAndFloodCreateNewImages(object, property, objectValue) {
+			// log("setPropertyOfImage: " + property + " = ...");
 			if (trace.eternity) {
-				log("setPropertyOfImage: " + property + " = ...");
 				log(objectCausality.state);
 				log(imageCausality.state);
 			}
 			
 			if (objectCausality.isObject(objectValue)) {             
-				let newValue = objectValue;
+				let imageValue; 
 				// Get existing or create new image. 
-				if (typeof(newValue.const.dbImage) === 'object') {
-					let referedDbImage = newValue.const.dbImage;
-					if (unstableOrBeeingKilledInGcProcess(referedDbImage)) {
+				if (typeof(objectValue.const.dbImage) === 'object') {
+					imageValue = objectValue.const.dbImage;
+					if (unstableOrBeeingKilledInGcProcess(imageValue)) {
 						// log("here...filling");
-						referedDbImage._eternityParent = dbImage;
-						referedDbImage._eternityParentProperty = property;
-						if (inList(deallocationZone, referedDbImage)) {
-							fillDbImageFromCorrespondingObject(newValue); 							
+						imageValue._eternityParent = object.const.dbImage;
+						imageValue._eternityParentProperty = property;
+						if (inList(deallocationZone, imageValue)) {
+							fillDbImageFromCorrespondingObject(imageValue); 							
 						}
-						addFirstToList(gcState, pendingForChildReattatchment, referedDbImage);
+						addFirstToList(gcState, pendingForChildReattatchment, imageValue);
 						
-						removeFromAllGcLists(referedDbImage);
-					} else {
-						// log("say what...");
-						// log(referedDbImage);
-						newValue = referedDbImage;
+						removeFromAllGcLists(imageValue);
 					}
 				} else {
-					createDbImageForObject(newValue, dbImage, property);					
-					newValue = newValue.const.dbImage;
+					createDbImageForObject(objectValue, object.const.dbImage, property);					
+					imageValue = objectValue.const.dbImage;
 				}
-				
-				
 				
 				// Check if this is an index assignment. 
-				if (newValue.indexParent === dbImage && newValue.indexParentProperty === property) {
-					imageCausality.setIndex(dbImage, property, newValue);
+				if (objectValue.indexParent === object && objectValue.indexParentRelation === property && typeof(object.const.dbImage[property] === 'undefined')) {
+					// throw new Error("here A");
+					imageCausality.setIndex(object.const.dbImage, property, imageValue);
 				} else {
-					if (property === "indexParent") {
-						imageCausality.setIndex(newValue, property, dbImage); // Consider: redundant? 
-					} else {
-						dbImage[property] = newValue; 
+					// if (property === "indexParent" && typeof(imageValue[property] === 'undefined')) {
+						// // throw new Error("here B");
+						// imageCausality.setIndex(imageValue, property, object.const.dbImage);
+					// } else {
+					if (property !== 'indexParent' && property !== 'indexParentRelation') {
+						object.const.dbImage[property] = imageValue; 
 					}
+					// }
 				}
 			} else {
-				if (trace.eternity) log("wtf...");
-				logGroup();
-				// imageCausality.trace.basic = true;
-				dbImage[property] = objectValue;
-				delete imageCausality.trace.basic;
-				logUngroup();
+				// log("no object value");
+				// if (trace.eternity) log("wtf...");
+				// log("a");
+				// logGroup();
+				// if (property === 'indexParentRelation') {
+					// imageCausality.trace.basic++;
+					// log("relationName: " + objectValue);
+				// }
+				// log("b");
+				// log(property);
+				if (property !== 'indexParent' && property !== 'indexParentRelation') {
+					object.const.dbImage[property] = objectValue;
+				}
+				// if (property === 'indexParentRelation') imageCausality.trace.basic--;
+				// log("c");
+				// delete imageCausality.trace.basic;
+				// logUngroup();
+				// log("...");
 			}
 		}
 
@@ -229,9 +239,9 @@
 		}
 		
 		function fillDbImageFromCorrespondingObject(object) {
-			let dbImage = object.const.dbImage;
 			for (let property in object) { 
-				setPropertyOfImageAndFloodCreateNewImages(dbImage, property, object[property]);
+				setPropertyOfImageAndFloodCreateNewImages(object, property, object[property]);
+				// log("after in small loop");
 			}			
 			loadedObjects++;
 			// log("fillDbImageFromCorrespondingObject, and poking...");

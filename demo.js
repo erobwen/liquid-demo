@@ -1,10 +1,10 @@
-Error.stackTraceLimit = Infinity;
+// Error.stackTraceLimit = Infinity;
 
 // Setup liquid and add models to it
 let liquid = require("./public/liquid/liquid.js")(
 	{
 		name: "serverLiquid", 
-		usePersistency: true, 
+		usePersistency: false, 
 		isServer: true, 
 		eternityConfiguration : {
 			allowPlainObjectReferences : false,
@@ -15,8 +15,8 @@ let liquid = require("./public/liquid/liquid.js")(
 		}
 	}
 );
-console.log("demo.liquid state: ");
-console.log(liquid.state);
+// console.log("demo.liquid state: ");
+// console.log(liquid.state);
 
 liquid.setAsDefaultConfiguration();
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
@@ -33,62 +33,63 @@ let log = objectlog.log;
 // Custom setup server script
 // require('./include');
 // include('./liquid/application/serverConfiguration.js');
-let demoUser = null;
+let user = null;
 
-if (!liquid.persistent.demoInitialized) {
+// if (!liquid.persistent.demoInitialized) {
+
 	liquid.pulse(function() {
-		// Create a simple user index. (no advanced index).
-		// liquid.persistent.users = create("LiquidIndex");
+		// Name of persistent object
+		// liquid.persistent.name = "persistent";
+		
+		// Create a simple user index. 
 		// liquid.setIndex(liquid.persistent, "users", create("LiquidIndex"));
+		
+		// log("==========================================================");
 		// Create user and add to index.
-		// var user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		// liquid.persistent.users.add(user);
 		
-		// demoUser = user; 
-		// liquid.persistent.users[user.email] = user; // Add to user index. 
-		// var favourite = 
+		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
+		// log(user.ownedCategories.contents);
 		
-		log("==========================================================");
-		let demoUser = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
-		liquid.persistent.demoUser = demoUser;
-		create('Category', {name: 'Favourite', description: '', owner: demoUser}); // Adds it to users own category index.
-		log("-----------");
-		log(demoUser.ownedCategories.contents);
-		log("==========================================================");
-		return;
+		// log("==========================================================");
+
 		
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		var politics = create('Category', {name: 'Politics', description: '', owner: user});
 		var georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		politics.subCategories.add(georgism);
-
-		setTimeout(function() {
-			liquid.pulse(function() {
-
-				var myPolitics = create('Category', {name: 'MyPoliticalCommitments', description: '', owner: user});
-				politics.subCategories.add(myPolitics);
-
-				var directDemocracy = create('Category', {name: 'Direct Democracy', description: '', owner: user});
-				politics.subCategories.add(directDemocracy);
-
-				var liquidDemocracy = create('Category', {name: 'Liquid Democracy', description: '', owner: user});
-				directDemocracy.subCategories.add(liquidDemocracy);
-
-				var direktdemokraterna = create('Category', {name: 'Direktdemokraterna', description: '', owner: user});
-				liquidDemocracy.subCategories.add(direktdemokraterna);
-				myPolitics.subCategories.add(direktdemokraterna);
-			});
-		}, 10000);
-
-		// liquid.addToLocalRegistry(user); //????
-		// Create References
+		
 		var created = 0;
 		while (created++ < 3) {
 			var reference1 = create('Reference', {url : 'http://foo.com/' + created, owner: user, categories: [georgism]});
 		}
 		
-		liquid.persistent.demoInitialized = true;
+		// liquid.persistent.demoInitialized = true;
+		// setTimeout(function() {
+			// liquid.pulse(function() {
+
+				// var myPolitics = create('Category', {name: 'MyPoliticalCommitments', description: '', owner: user});
+				// politics.subCategories.add(myPolitics);
+
+				// var directDemocracy = create('Category', {name: 'Direct Democracy', description: '', owner: user});
+				// politics.subCategories.add(directDemocracy);
+
+				// var liquidDemocracy = create('Category', {name: 'Liquid Democracy', description: '', owner: user});
+				// directDemocracy.subCategories.add(liquidDemocracy);
+
+				// var direktdemokraterna = create('Category', {name: 'Direktdemokraterna', description: '', owner: user});
+				// liquidDemocracy.subCategories.add(direktdemokraterna);
+				// myPolitics.subCategories.add(direktdemokraterna);
+			// });
+		// }, 10000);
+
+		// liquid.addToLocalRegistry(user); //????
+		// Create References
+
+		// log(user, 3);
 	});
-}
+// }
 
 /* ------------------------------------------
  *    Initialize http server using express
@@ -98,10 +99,11 @@ if (!liquid.persistent.demoInitialized) {
 	'' : "LiquidPage",
 	'index': 'LiquidPage',
 	'demo': function(req) { // Note: req follows express conventions.
+		console.log("in demo controller");
 		var session = liquid.createOrGetSessionObject(req.session.token);
-		session.user = demoUser; 
+		session.user = user; 
 		var page = create('LiquidPage', {session: session});
-		page.service.orderedSubscriptions.push(create({object: demoUser, selector:'All'})); //object: user,
+		page.service.orderedSubscriptions.push(create({object: user, selector:'All'})); //object: user,
 		return page;
 	},
 	'someurl/:someargument' : 'PageWithArgument'
@@ -117,7 +119,6 @@ expressHttpServer.use(cookieParser());
 expressHttpServer.use(session({secret: '12345QWER67890TY'}));
 // expressHttpServer.get('/fie', function(req, res) {res.send("Found me!");}); // Test server alive...
 var expressControllers = createExpressControllers(liquidControllers);
-
 for (controllerName in expressControllers) {
 	expressHttpServer.get('/' + controllerName, expressControllers[controllerName]);
 }
@@ -155,6 +156,7 @@ function createExpressControllerFromClassName(className) {
 
 function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
+		console.log(req);
 		liquid.pulse(function() {
 			// Setup session object (that we know is the same object identity on each page request)
 			var page = pageCreatorFunction(req)

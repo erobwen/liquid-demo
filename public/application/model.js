@@ -76,13 +76,13 @@
 
 	class Category extends LiquidEntity {
 		initialize(data) {
-			console.log("initialize Category");
+			// console.log("initialize Category");
 			this.name = this.get(data, "name", '');
 			this.description = this.get(data, "description", '');
 			// this.owner;  Incoming: User.categories
 
 			// Sub categories
-			this.subCategories = create("LiquidIndex");
+			this.attatchIndex("subCategories", create("LiquidIndex"));
 			if (typeof(data['subCategories']) !== 'undefined') {
 				data['subCategories'].forEach(function(subCategory) {
 					this.subCategories.add(subCategory);					
@@ -90,7 +90,7 @@
 			}
 			
 			// References
-			this.references = create("LiquidIndex");
+			this.attatchIndex("references", create("LiquidIndex"));
 			if (typeof(data['references']) !== 'undefined') {
 				data['references'].forEach(function(subCategory) {
 					this.references.add(subCategory);					
@@ -99,7 +99,7 @@
 
 			// User
 			if (typeof(data.owner) !== 'undefined') {
-				console.log("setting owner!");
+				// console.log("setting owner!");
 				this.owner = data.owner;
 			}
 			// assignWeak(data);

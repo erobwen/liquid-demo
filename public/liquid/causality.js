@@ -135,7 +135,7 @@
 			state.incomingStructuresDisabled++;
 			
 			let previousValue = object[property];
-			if (typeof(previousValue) === 'object') {
+			if (isObject(previousValue)) {
 				delete previousValue.indexParent;
 				delete previousValue.indexParentRelation;				
 			}
@@ -327,16 +327,21 @@
 		
 		
 		function createAndRemoveIncomingRelations(objectProxy, key, value, previousValue, previousStructure) {
-			if (trace.basic) log("createAndRemoveIncomingRelations");
+			let referringRelation = key;
+			if (trace.basic) {
+				log("createAndRemoveIncomingRelations");
+				log(referringRelation);
+				log(objectProxy);
+			}
 			
 			// Get refering object 
-			let referringRelation = key;
 			while (typeof(objectProxy.indexParent) !==  'undefined') {
 				referringRelation = objectProxy.indexParentRelation;
-				objectProxy = objectProxy.indexParent;
-				// log("moving up");
-				// log(referringRelation);
-				// log(objectProxy);
+				objectProxy = objectProxy.indexParent;				
+				if (trace.basic) {
+					log(referringRelation);
+					log(objectProxy);
+				}
 			}
 			
 			// Tear down structure to old value
@@ -503,6 +508,9 @@
 				if (configuration.incomingStructuresAsCausalityObjects) {
 					// Disable incoming relations here? otherwise we might end up with incoming structures between 
 					incomingStructure = create(incomingStructure);
+					if (incomingStructure.property === "indexParent") {
+						throw new Error("What is this, should not have incoming structure for indexParent....");
+					}
 					log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
 					log(incomingStructure);
 				}
@@ -929,11 +937,8 @@
 					return true;
 				}
 			}
-
-			// If cumulative assignment, inside recorder and value is undefined, no assignment.
-			if (configuration.cumulativeAssignment && inActiveRecording && (isNaN(value) || typeof(value) === 'undefined')) {
-				return true;
-			}
+			
+			// Start pulse if can write
 			if (!canWrite(this.const.object)) return;
 			inPulse++;
 			observerNotificationPostponed++; // TODO: Do this for backwards references from arrays as well...
@@ -1279,6 +1284,7 @@
 		
 		
 		function setHandlerObject(target, key, value) {
+			// log("setHandlerObject" + key);
 			// Ensure initialized
 			if (trace.basic > 0) {
 				log("setHandlerObject: " + this.const.name + "." + key + "= ");
@@ -1343,13 +1349,6 @@
 					if (trace.basic > 0) logUngroup();
 					return true;
 				}
-			}
-			
-			// If cumulative assignment, inside recorder and value is undefined, no assignment.
-			if (configuration.cumulativeAssignment && inActiveRecording && (isNaN(value) || typeof(value) === 'undefined')) {
-				// if (configuration.name === 'objectCausality')  log("CUMULATIVE");
-				if (trace.basic > 0) logUngroup();
-				return true;
 			}
 			
 			// Pulse start
@@ -1554,9 +1553,13 @@
 		function createImmutable(initial) {
 			inPulse++;
 			if (typeof(initial.const) === 'undefined') {			
-				initial.const = {id : nextId++};
+				initial.const = {
+					id : nextId++,
+					causalityInstance : causalityInstance
+				};
 			} else {
 				initial.const.id = nextId++;
+				initial.const.causalityInstance = causalityInstance;
 			}
 			
 			emitImmutableCreationEvent(initial);
@@ -3408,7 +3411,6 @@
 			blockInitializeForIncomingStructures: false, 
 			blockInitializeForIncomingReferenceCounters: false, 
 			
-			cumulativeAssignment : false,
 			directStaticAccess : false,
 			objectActivityList : false,
 			recordPulseEvents : false
