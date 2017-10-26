@@ -23,8 +23,10 @@ liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we ma
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
 let create = liquid.create;
 
-let objectlog = require("./objectlog.js");
+let objectlog = require("./public/liquid/objectlog.js");
 let log = objectlog.log;
+let logGroup = objectlog.enter;
+let logUngroup = objectlog.exit;
 
 /**--------------------------------------------------------------
  *            Initialize database if necessary
@@ -34,6 +36,8 @@ let log = objectlog.log;
 // require('./include');
 // include('./liquid/application/serverConfiguration.js');
 let user = null;
+let georgism = null;
+var politics = null;
 
 // if (!liquid.persistent.demoInitialized) {
 
@@ -52,13 +56,17 @@ let user = null;
 		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		// log(user.ownedCategories.contents);
 		
-		// log("==========================================================");
 
 		
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
-		var politics = create('Category', {name: 'Politics', description: '', owner: user});
-		var georgism = create('Category', {name: 'Georgism', description: '', owner: user});
+		politics = create('Category', {name: 'Politics', description: '', owner: user});
+		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
+		log("==========================================================");
+		log (" Adding... ");
+		liquid.trace.basic++;
 		politics.subCategories.add(georgism);
+		liquid.trace.basic--;
+		log("==========================================================");
 		
 		var created = 0;
 		while (created++ < 3) {
@@ -90,6 +98,31 @@ let user = null;
 		// log(user, 3);
 	});
 // }
+
+log("experiments");
+logGroup();
+// let selection = {};
+// user.selectAll(selection);
+// liquid.logSelection(selection);
+// log(user.getRootCategories());
+log("================================");
+log(politics);
+log(politics.subCategories);
+log(politics.subCategories.get(), 2);
+log(georgism.const.incoming);
+log(georgism.const.incoming.subCategories);
+log(georgism.incoming.subCategories);
+log("================================");
+// liquid.trace.basic = true;
+// log(georgism.parents);
+// liquid.trace.basic = false;
+// log("================================");
+
+
+// log(user.addedReferences.getContents(), 3);
+// log(user.ownedCategories.getContents(), 3);
+logUngroup();
+
 
 /* ------------------------------------------
  *    Initialize http server using express
@@ -156,7 +189,7 @@ function createExpressControllerFromClassName(className) {
 
 function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
-		console.log(req);
+		// console.log(req);
 		liquid.pulse(function() {
 			// Setup session object (that we know is the same object identity on each page request)
 			var page = pageCreatorFunction(req)

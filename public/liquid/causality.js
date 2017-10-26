@@ -9,14 +9,13 @@
 	}
 }(this, function () {	
 	// Debugging
-	let objectlog = require('../../objectlog.js');
+	let objectlog = require('./objectlog.js');
 	let log = objectlog.log;
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
 	
 	
 	function createCausalityInstance(configuration) {
-		
 		// Class registry
 		let classRegistry =  {};
 		
@@ -209,7 +208,8 @@
 		 ***************************************************************/
 		  
 		
-		function getSingleIncomingReference(object, property, filter) {	
+		function getSingleIncomingReference(object, property, filter) {
+			trace.basic && log("getSingleIncomingReference");
 			let result = null;
 			forAllIncoming(object, property, function(foundObject) {
 				if (result === null) {
@@ -222,6 +222,8 @@
 		}
 		
 		function getIncomingReferences(object, property, filter) {
+			log(trace)
+			trace.basic && log("getIncomingReferences");
 			if (typeof(object) === 'undefined') {
 				throw new Error("No object given to 'getIncomingReferences'");
 			}
@@ -241,13 +243,15 @@
 		}
 		
 		function forAllIncoming(object, property, callback, filter) {
-			if(trace.basics) log("forAllIncoming");
+			if(trace.basic) log("forAllIncoming");
+			if(trace.basic) log(object.const.incoming, 2);
 			registerAnyChangeObserver(getSpecifier(getSpecifier(object.const, "incoming"), property));
 			withoutRecording(function() { // This is needed for setups where incoming structures are made out of causality objects. 
-				if (typeof(object.incoming) !== 'undefined') {
-					if(trace.basics) log("incoming exists!");
-					let relations = object.incoming;
+				if (typeof(object.const.incoming) !== 'undefined') {
+					if(trace.basic) log("incoming exists!");
+					let relations = object.const.incoming;
 					if (typeof(relations[property]) !== 'undefined') {
+						trace.basic && log("property exists");
 						let relation = relations[property];
 						let contents = relation.contents;
 						for (id in contents) {
@@ -339,6 +343,7 @@
 				referringRelation = objectProxy.indexParentRelation;
 				objectProxy = objectProxy.indexParent;				
 				if (trace.basic) {
+					log("Moving up one step:")
 					log(referringRelation);
 					log(objectProxy);
 				}
@@ -361,10 +366,8 @@
 			// Setup structure to new value
 			if (isObject(value)) {
 				let referencedValue = createIncomingStructure(objectProxy, objectProxy.const.id, referringRelation, value);
-				if (typeof(value.const.incoming) !== 'undefined') {
-					let incoming = value.const.incoming;
-					if (typeof(incoming[referringRelation]) !== 'undefined') {
-						notifyChangeObservers(value.const.incoming[referringRelation]);						
+				if (typeof(value.const.incoming[referringRelation]['observers']) !== 'undefined') {
+						notifyChangeObservers(value.const.incoming[referringRelation]['observers']);						
 					}
 				}
 				value = referencedValue;
@@ -463,20 +466,22 @@
 		}
 		
 		function createIncomingStructure(referingObject, referingObjectId, property, object) {
-			// log("createIncomingStructure");
+			trace.basic && log("createIncomingStructure");
 			let incomingStructure = getIncomingRelationStructure(object, property);
-			// log(incomingStructure);
+			trace.basic && log(incomingStructure);
 			if (typeof(incomingStructure) === 'undefined') throw new Error("WTF");
 			let incomingRelationChunk = intitializeAndConstructIncomingStructure(incomingStructure, referingObject, referingObjectId);
 			if (incomingRelationChunk !== null) {
 				return incomingRelationChunk;
 			} else {
-				return object;
+				return object; // TODO:  this will return if already added in root? not a problem because of refusal to set same value twice?
 			}
 		} 
 		
 		
 		function getIncomingRelationStructure(referencedObject, property) {
+			trace.basic && log("getIncomingRelationStructure");
+			
 			// Sanity test TODO: remove 
 			if (state.incomingStructuresDisabled === 0) {
 				referencedObject.foo.bar;
@@ -484,14 +489,14 @@
 			
 			// Create incoming structure
 			let incomingStructures;
-			if (typeof(referencedObject.incoming) === 'undefined') {
+			if (typeof(referencedObject.const.incoming) === 'undefined') {
 				incomingStructures = { name: "isIncomingStructures", isIncomingStructures : true, referredObject: referencedObject, last: null, first: null };
 				if (configuration.incomingStructuresAsCausalityObjects) {
 					incomingStructures = create(incomingStructures);
 				}
-				referencedObject.incoming = incomingStructures;
+				referencedObject.const.incoming = incomingStructures;
 			} else {
-				incomingStructures = referencedObject.incoming;
+				incomingStructures = referencedObject.const.incoming;
 			}
 			
 			// Create incoming for this particular property
@@ -1149,7 +1154,7 @@
 						let descriptor = Object.getOwnPropertyDescriptor(scan, key);
 						if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
 							if (trace.get > 0) logUngroup();
-							if (trace.basic) log("returning bound thing...");
+							// if (trace.basic) log("returning bound thing...");
 							return descriptor.get.bind(this.const.object)();
 						}
 						scan = Object.getPrototypeOf( scan );
@@ -1300,12 +1305,14 @@
 				if (trace.basic > 0) logUngroup();
 				return overlayHandler.set.apply(overlayHandler, [overlayHandler.target, key, value]);
 			} else {
-				if (trace.basic > 0) log("no forward");
+				// if (trace.basic > 0) log("no forward");
+				// if (trace.basic) log("no forward");
+				trace.basic && log("no forward");
 			}
 			
 			// logGroup();
 			if (configuration.objectActivityList) registerActivity(this);
-			if (trace.basic > 0) log("configuration.objectActivityList: " + configuration.objectActivityList);
+			// if (trace.basic > 0) log("configuration.objectActivityList: " + configuration.objectActivityList);
 			
 			// Write protection
 			if (!canWrite(this.const.object)) {
@@ -1345,6 +1352,7 @@
 			// If same value as already set, do nothing.
 			if (key in target) {
 				if (previousValue === value || (Number.isNaN(previousValue) && Number.isNaN(value)) ) {
+					trace.basic && log("cannot set same value");
 					// if (configuration.name === 'objectCausality')  log("ALREAD SET");
 					if (trace.basic > 0) logUngroup();
 					return true;
@@ -1358,11 +1366,15 @@
 					
 			// Perform assignment with regards to incoming structures.
 			let incomingStructureValue;
+			trace.basic && log(state);
+			trace.basic && log(configuration);
 			if (state.useIncomingStructures) {
+				trace.basic && log("use incoming structures...");
 				activityListFrozen++;
 				decreaseIncomingCounter(previousValue);
 				increaseIncomingCounter(value);
 				if (state.incomingStructuresDisabled === 0) { // && !isIndexParentOf(this.const.object, value)
+					trace.basic && log("incoming structures not disbled...");
 					state.incomingStructuresDisabled++;
 					incomingStructureValue = createAndRemoveIncomingRelations(this.const.object, key, value, previousValue, previousIncomingStructure);
 					decreaseIncomingCounter(previousIncomingStructure);
@@ -1374,12 +1386,14 @@
 				}
 				activityListFrozen--;
 			} else if (configuration.incomingReferenceCounters){
+				trace.basic && log("just use incoming reference counters...");
 				activityListFrozen++;
 				increaseIncomingCounter(value);
 				decreaseIncomingCounter(previousValue);
 				activityListFrozen--;
 				target[key] = value;
 			} else {
+				trace.basic && log("plain assignment... ");
 				target[key] = value;
 			}
 			
@@ -2371,7 +2385,9 @@
 
 		function notifyChangeObserver(observer) {
 			if (observer != microContext) {
-				observer.remove(); // Cannot be any more dirty than it already is!
+				if (typeof(observer.remove) === 'function') {
+					observer.remove(); // Cannot be any more dirty than it already is!					
+				}
 				if (observerNotificationPostponed > 0) {
 					if (lastObserverToNotifyChange !== null) {
 						lastObserverToNotifyChange.nextToNotify = observer;
@@ -2433,7 +2449,7 @@
 			return refreshRepeater(createImmutable({
 				description: description,
 				action: repeaterAction,
-				remove: function() {
+				remove : function() {
 					// console.log("removeRepeater: " + repeater.const.id + "." + repeater.description);
 					removeChildContexts(this);
 					detatchRepeater(this);
@@ -3297,6 +3313,8 @@
 			uponChangeDo : uponChangeDo,
 			repeatOnChange : repeatOnChange,
 			repeat: repeatOnChange,
+			getObjectAttatchedCache : getObjectAttatchedCache,
+			callAndCacheForUniqueArgumentLists : callAndCacheForUniqueArgumentLists, 
 			
 			// Global modifiers
 			withoutSideEffects : withoutSideEffects,

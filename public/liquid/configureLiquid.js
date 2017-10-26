@@ -5,7 +5,7 @@
 		causalityConfiguration : {}
 	});
 	liquid.setAsDefaultConfiguration();
-	console.log("configured liquid");
-	console.log(liquid);
-	console.log(liquid.classRegistry)
+	// console.log("configured liquid");
+	// console.log(liquid);
+	// console.log(liquid.classRegistry)
 })();

@@ -9,20 +9,19 @@
     }
 }(this, function () {
 	//...
-		// Helper
+	// Helper
 	let argumentsToArray = function(arguments) {
 		return Array.prototype.slice.call(arguments);
 	};
 	
-	// Neat logging
-	let objectlog = require('./objectlog.js');
-	let log = objectlog.log;
-	// function log() {
-		// throw new Error("quit talking");
-	// }
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
-	function createLiquidInstance(configuration) {
+	function createLiquidInstance(configuration) {			
+		// Debugging
+		let objectlog = require('./objectlog.js');
+		if (configuration.isClient) objectlog.useConsoleDefault = true;
+		let log = objectlog.log;
+		let logGroup = objectlog.enter;
+		let logUngroup = objectlog.exit;		
+		
 		// console.log("createLiquidInstance");
 		pagesMap = {};
 		sessionsMap = {};
@@ -33,6 +32,7 @@
 		if (configuration.usePersistency) {
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
+			log(configuration);
 			liquid = require("./causality.js")(configuration.causalityConfiguration);
 		}
 		let create = liquid.create;
@@ -245,8 +245,34 @@
 		 *              Selection
 		 *----------------------------------------------------------------*/
 
+		function logValue(value) {
+			log("value:");
+			if (liquid.isObject(value)) {
+				log(objectDigest(value));
+			} else {
+				log(value);
+			}
+		} 
+		 
+		function objectDigest(object) {
+			let objectDigest = {};
+			objectDigest.id = object.const.id;
+			objectDigest.className = getClassName(object);
+			if(typeof(object.const.name) === 'string') {
+				objectDigest.name = object.const.name;
+			}
+			if(typeof(object.name) === 'string') {
+				objectDigest.name = object.name;
+			}
+			return objectDigest;
+		} 
+		 
 		function logSelection(selection) {
-			log(Object.keys(selection));
+			let digest = [];
+			for (key in selection) {
+				digest.push(objectDigest(selection[key]));
+			}
+			log(digest, 4);
 		}
 		 
 		function addToSelection(selection, object) {
@@ -297,6 +323,7 @@
 			}
 		}
 		
+		
 		let isSelecting;
 		let dirtyPageSubscritiptions = {};
 		function getSubscriptionUpdate(page) {
@@ -336,7 +363,7 @@
 						}
 					});
 					log("pageSelection");
-					log(selection, 3);
+					logSelection(selection); 
 					// console.log("consolidate");
 					// console.log(selection);
 					page.const._previousSelection = page.const._selection;
@@ -448,7 +475,7 @@
 			// trace('serialize', "Subscription update: ", result);
 			// console.groupEnd();
 			// traceGroupEnd();
-			log(result, 10);
+			// log(result, 10);
 			logUngroup();
 
 			return result;
@@ -1195,6 +1222,9 @@
 		
 		// Publish some functions 
 		Object.assign(liquid, {
+			logSelection : logSelection,
+			logValue : logValue,
+			objectDigest : objectDigest,
 			receiveInitialDataFromUpstream : receiveInitialDataFromUpstream,
 			createOrGetSessionObject: createOrGetSessionObject,
 			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback,
@@ -1231,14 +1261,30 @@
 	}
 
 	// Default configuration of liquid
-	function getDefaultConfiguration() {
-		return {
-			eternityConfiguration : {
-				causalityConfiguration : {
-					
+	function getDefaultConfiguration(usePersistency) {
+		if (usePersistency) {
+			return {
+				eternityConfiguration : {
+					causalityConfiguration : {
+						useIncomingStructures : true
+					}
 				}
-			}
+			}			
+		} else {
+			return {
+				causalityConfiguration : {
+					useIncomingStructures : true
+				}
+			}					
 		}
+	}
+	
+	function getDefaultCausalityConfiguration() {
+		
+	}
+	
+	function getDefaultEternityConfiguration() {
+		
 	}
 	
 	// User defined default configuration 
@@ -1255,7 +1301,7 @@
 			}		
 		}
 		
-		let defaultConfiguration = getDefaultConfiguration();
+		let defaultConfiguration = getDefaultConfiguration(requestedConfiguration.usePersistency);
 		Object.assign(defaultConfiguration, requestedConfiguration);
 		let configuration = sortedKeys(defaultConfiguration);
 		let signature = JSON.stringify(configuration);

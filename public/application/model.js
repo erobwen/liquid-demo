@@ -13,19 +13,17 @@
 		// }
     }
 }(this, function () {
+	let objectlog = require("../liquid/objectlog.js");
+	let log = objectlog.log;
+	let logGroup = objectlog.enter;
+	let logUngroup = objectlog.exit;
+
 	// console.log("in model...");
 	let liquid = require("../liquid/liquid.js")();
-	
-	// Debugging (todo: use console.log on client)
-	// let objectlog = require('../../objectlog.js');
-	// let log = objectlog.log;
-	// let logGroup = objectlog.enter;
-	// let logUngroup = objectlog.exit;
-	
 	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
 	let LiquidEntity = liquid.LiquidEntity;
-	
+
 	// Reference service
 	var defined = function(something) {
 		return typeof(something) !== 'undefined';
@@ -77,8 +75,8 @@
 	class Category extends LiquidEntity {
 		initialize(data) {
 			// console.log("initialize Category");
-			this.name = this.get(data, "name", '');
-			this.description = this.get(data, "description", '');
+			this.name = this.get(data["name"], '');
+			this.description = this.get(data["description"], '');
 			// this.owner;  Incoming: User.categories
 
 			// Sub categories

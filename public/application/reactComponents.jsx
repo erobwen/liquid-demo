@@ -27,10 +27,10 @@ window.LiquidApplication = React.createClass(liquidClassData({
 			console.log("RENDERING!!!");
 			console.log(page);
 			let activeUser = page.getActiveUser();
-					// <UserView user = { activeUser }/>
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
 					<LoginUI page = { page }/>
+					<UserView user = { activeUser }/>
 				</div>
 			);
 		}.bind(this));
@@ -82,7 +82,7 @@ var LoginUI = React.createClass(liquidClassData({
 				);
 			} else {
 				return (
-					<div style={{display: 'flex', 'flex-direction': 'column', border: '1px', margin: '1em', padding: '1em'}}>
+					<div style={{display: 'flex', 'flexDirection': 'column', border: '1px', margin: '1em', padding: '1em'}}>
 						<span>Logged in as <PropertyField object = { user } propertyName = "name"/></span>
 						<button onClick={ this.logout } >Logout</button>
 					</div>

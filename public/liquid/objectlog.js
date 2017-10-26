@@ -186,15 +186,39 @@
 		if (outer) context.finishOpenLine();
 	}
 	
-	return {
-		log : logPattern,
-		enter : function() {
-			indentLevel++;
+	
+	let objectlog = {
+		findLogs : false,
+		useConsoleDefault : false,
+		log : function(entity, pattern) {
+			if (objectlog.findLogs) throw new Error("No logs allowed!");
+			if (objectlog.useConsoleDefault) {
+				console.log(entity);
+			} else {
+				logPattern(entity, pattern);
+			}
+		},
+		enter : function(entity, pattern) {
+			if (objectlog.findLogs) throw new Error("No logs allowed!");
+			if (objectlog.useConsoleDefault) {
+				console.group(entity);
+			} else {
+				if (typeof(entity) !== 'undefined') {
+					logPattern(entity, pattern);
+				}
+				indentLevel++;
+			}
 		},
 		exit : function() {
-			indentLevel--;
-		} 
-	};
+			if (objectlog.findLogs) throw new Error("No logs allowed!");
+			if (objectlog.useConsoleDefault) {
+				console.groupEnd();
+			} else {
+				indentLevel--;
+			}
+		} 		
+	}
+	return objectlog;
 }));
 
 

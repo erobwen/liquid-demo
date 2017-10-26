@@ -8,16 +8,17 @@
 		root.liquidEntity = factory();
     }
 }(this, function () {
-	// Debugging
-	let objectlog = require('../../objectlog.js');
-	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
-
 	// let liquid = require("./liquid.js");  // Cannot do! see coment below.
 	// This has to follow the injected dependency pattern to avoid circular package dependencies. This is since reallyDumbRequire cannot deal with circularity, dumb as it is...
 	let liquid; 
 	let create;
+	
+	// Debugging
+	let objectlog = require('./objectlog.js');
+	let log = objectlog.log;
+	let logGroup = objectlog.enter;
+	let logUngroup = objectlog.exit;
+	
 	function injectLiquid(injectedLiquid) {
 		liquid = injectedLiquid;
 		create = liquid.create;
@@ -138,15 +139,17 @@
 		// Add getters and setters
 		Object.defineProperty(object, name, {
 			get: function() {
-				// log("Inside getter!!!");
-				// log(this);
+				log("createIncomingSetProperty: get");
+				log(this);
 				let objects = liquid.getIncomingReferences(this, incomingProperty, filter);
+				log(objects);
 				if (typeof(sorter) !== 'undefined') {
 					objects.sort(sorter);
 				}
 				return objects;
 			},
 			set: function(newObjects) {
+				log("createIncomingSetProperty: set");
 				// log("Inside setter!!!");
 				// log(this.const);
 				if (newObjects instanceof Array) {
@@ -284,7 +287,11 @@
 			// }
 		// }
 	// }
-
+	
+	// Helper
+	function argumentsToArray(arguments) {
+		return Array.prototype.slice.call(arguments);
+	};
 	
 	/*---------------------------
 	 *         Entity 
@@ -393,9 +400,9 @@
 		}
 					
 		selectAll(selection) {
-			log("selectAll:" + this.const.id);
-			logGroup();
-			log(this);
+			log("selectAll");
+			logGroup();//console
+			log(liquid.objectDigest(this));
 			function selectAllObjects(object) {
 				if (typeof(selection[object.const.id]) === 'undefined' && liquid.canRead(object)) {
 					selection[object.const.id] = object; 
@@ -414,15 +421,18 @@
 				selection[this.const.id] = this;
 				
 				Object.keys(this).forEach(function(key) {
-					console.log("selecting property: ");
-					console.log(key);
+					log("selecting property: " + key);
+					logGroup();
+					log("indented");
 					let value = this[key];
+					liquid.logValue(value);
 					if (value instanceof LiquidEntity) { //liquid.isObject(value)
 						value.selectAll(selection);
 					} else if (liquid.isObject(value)) {
 						// Warning: potentially dangerous. Could select A LOT...
 						selectAllObjects(value); 
 					}
+					logUngroup();
 				}.bind(this));
 			}
 			logUngroup();
@@ -484,6 +494,7 @@
 			this.const.isIndex = true;
 			// this._const_isIndex = true; // Tell causality to put something in the const? 
 		}
+		
 		initialize(data) {
 			super.initialize(data);
 			this.sorter = data.sorter;
@@ -491,16 +502,27 @@
 		}
 		
 		setContents(objectArray) {
-			for (const prop of Object.keys(this.contents)) {
-				delete this.contents[prop];
-			}
+			let keys = Object.keys(this.contents);
+			keys.forEach(function(property) {
+				delete this.contents[property];
+			}.bind(this)); 
 			objectArray.forEach(function(object) {
 				this.add(object)
 			});
 		}
 		
+		getContents() {
+			let result = [];
+			let keys = Object.keys(this.contents);
+			keys.forEach(function(property) {
+				if (property !== 'indexParentRelation' && property !== 'indexParent')
+				result.push(this.contents[property]);
+			}.bind(this)); 
+			return result;
+		}
+		
 		forEach(callback) {
-			for(key in this.contents) {
+			for(let key in this.contents) {
 				callback(this.contents[key]);
 			}
 		}
@@ -511,6 +533,21 @@
 		
 		add(object) {
 			this.contents[liquid.idExpression(object.const.id)] = object;		 
+		}
+		
+		get() {
+			let result = [];
+			let keys = Object.keys(this.contents);
+			keys.forEach(function(property) {
+				if (property !== 'indexParentRelation' && property !== 'indexParent')
+				result.push(this.contents[property]);
+			}.bind(this)); 
+			return result;
+			// let result = [];
+			// for(let key in this.contents) {
+				// result.push(this.contents[key]);
+			// }
+			// return result;
 		}
 	 }
 	
