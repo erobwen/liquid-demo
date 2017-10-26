@@ -355,18 +355,9 @@
 			if (isObject(previousValue)) {
 				if (trace.basic) log("tear down previous... ");
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
-<<<<<<< HEAD
-				removeIncomingStructure(objectProxy.const.id, previousStructure); // TODO: Fix BUG. This really works?
-				if (typeof(previousValue.const.incoming) !== 'undefined') {
-					let incoming = previousValue.const.incoming;
-					if (typeof(incoming[referringRelation]) !== 'undefined') {
-						notifyChangeObservers(incoming[referringRelation]);						
-					}
-=======
 				removeIncomingStructure(objectProxy.const.id, previousStructure);
 				if (previousValue.const.incoming && previousValue.const.incoming[referringRelation]&& previousValue.const.incoming[referringRelation].observers) {
 					notifyChangeObservers(previousValue.const.incoming[referringRelation]);
->>>>>>> inject_incoming_fix_to_causality/eternity
 				}
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize--;
 			}
@@ -374,14 +365,8 @@
 			// Setup structure to new value
 			if (isObject(value)) {
 				let referencedValue = createIncomingStructure(objectProxy, objectProxy.const.id, referringRelation, value);
-<<<<<<< HEAD
-				if (typeof(value.const.incoming[referringRelation]['observers']) !== 'undefined') {
-						notifyChangeObservers(value.const.incoming[referringRelation]['observers']);						
-					}
-=======
 				if (value.const.incoming && value.const.incoming[referringRelation].observers) {
 					notifyChangeObservers(value.const.incoming[referringRelation].observers);
->>>>>>> inject_incoming_fix_to_causality/eternity
 				}
 				value = referencedValue;
 			}
@@ -481,12 +466,10 @@
 		function createIncomingStructure(referingObject, referingObjectId, property, object) {
 			trace.basic && log("createIncomingStructure");
 			let incomingStructure = getIncomingRelationStructure(object, property);
-<<<<<<< HEAD
+
 			trace.basic && log(incomingStructure);
 			if (typeof(incomingStructure) === 'undefined') throw new Error("WTF");
-=======
-			// log(incomingStructure);
->>>>>>> inject_incoming_fix_to_causality/eternity
+
 			let incomingRelationChunk = intitializeAndConstructIncomingStructure(incomingStructure, referingObject, referingObjectId);
 			if (incomingRelationChunk !== null) {
 				return incomingRelationChunk;
@@ -1163,10 +1146,7 @@
 						let descriptor = Object.getOwnPropertyDescriptor(scan, key);
 						if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
 							if (trace.get > 0) logUngroup();
-<<<<<<< HEAD
 							// if (trace.basic) log("returning bound thing...");
-=======
->>>>>>> inject_incoming_fix_to_causality/eternity
 							return descriptor.get.bind(this.const.object)();
 						}
 						scan = Object.getPrototypeOf( scan );
