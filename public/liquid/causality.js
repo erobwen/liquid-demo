@@ -243,31 +243,33 @@
 		}
 		
 		function forAllIncoming(object, property, callback, filter) {
-			if(trace.basic) log("forAllIncoming");
+			if(trace.basics) log("forAllIncoming");
 			if(trace.basic) log(object.const.incoming, 2);
-			registerAnyChangeObserver(getSpecifier(getSpecifier(object.const, "incoming"), property));
+			if (inActiveRecording) registerAnyChangeObserver(getSpecifier(getSpecifier(getSpecifier(object.const, "incoming"), property), "observers"));
 			withoutRecording(function() { // This is needed for setups where incoming structures are made out of causality objects. 
 				if (typeof(object.const.incoming) !== 'undefined') {
-					if(trace.basic) log("incoming exists!");
+					if(trace.basics) log("incoming exists!");
 					let relations = object.const.incoming;
 					if (typeof(relations[property]) !== 'undefined') {
 						trace.basic && log("property exists");
 						let relation = relations[property];
-						let contents = relation.contents;
-						for (id in contents) {
-							let referer = contents[id];
-							callback(referer);
-						}
-						let currentChunk = relation.first
-						while (currentChunk !== null) {
-							let contents = currentChunk.contents;
+						if (relation.initialized === true) {							
+							let contents = relation.contents;
 							for (id in contents) {
 								let referer = contents[id];
-								if (typeof(filter) === 'undefined' || filter(referer)) {
-									callback(referer);									
-								}
+								callback(referer);
 							}
-							currentChunk = currentChunk.next;
+							let currentChunk = relation.first
+							while (currentChunk !== null) {
+								let contents = currentChunk.contents;
+								for (id in contents) {
+									let referer = contents[id];
+									if (typeof(filter) === 'undefined' || filter(referer)) {
+										callback(referer);									
+									}
+								}
+								currentChunk = currentChunk.next;
+							}
 						}
 					}
 				}
@@ -353,12 +355,18 @@
 			if (isObject(previousValue)) {
 				if (trace.basic) log("tear down previous... ");
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
+<<<<<<< HEAD
 				removeIncomingStructure(objectProxy.const.id, previousStructure); // TODO: Fix BUG. This really works?
 				if (typeof(previousValue.const.incoming) !== 'undefined') {
 					let incoming = previousValue.const.incoming;
 					if (typeof(incoming[referringRelation]) !== 'undefined') {
 						notifyChangeObservers(incoming[referringRelation]);						
 					}
+=======
+				removeIncomingStructure(objectProxy.const.id, previousStructure);
+				if (previousValue.const.incoming && previousValue.const.incoming[referringRelation]&& previousValue.const.incoming[referringRelation].observers) {
+					notifyChangeObservers(previousValue.const.incoming[referringRelation]);
+>>>>>>> inject_incoming_fix_to_causality/eternity
 				}
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize--;
 			}
@@ -366,9 +374,14 @@
 			// Setup structure to new value
 			if (isObject(value)) {
 				let referencedValue = createIncomingStructure(objectProxy, objectProxy.const.id, referringRelation, value);
+<<<<<<< HEAD
 				if (typeof(value.const.incoming[referringRelation]['observers']) !== 'undefined') {
 						notifyChangeObservers(value.const.incoming[referringRelation]['observers']);						
 					}
+=======
+				if (value.const.incoming && value.const.incoming[referringRelation].observers) {
+					notifyChangeObservers(value.const.incoming[referringRelation].observers);
+>>>>>>> inject_incoming_fix_to_causality/eternity
 				}
 				value = referencedValue;
 			}
@@ -389,8 +402,8 @@
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
 				removeIncomingStructure(objectProxy.const.id, previousStructure);
 				// removeIncomingStructure(objectProxy.const.id, removedValue);
-				if (typeof(removedValue.const.incoming) !== 'undefined') {
-					notifyChangeObservers(removedValue.const.incoming[referringRelation]);
+				if (removedValue.const && removedValue.const.incoming && removedValue.const.incoming[referringRelation].observers) {
+					notifyChangeObservers(removedValue.const.incoming[referringRelation].observers);
 				}
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize--;
 			}
@@ -413,8 +426,8 @@
 					addedElement.const.incomingReferences++;
 					// log("added element is object");
 					let referencedValue = createIncomingStructure(arrayProxy, arrayProxy.const.id, referringRelation, addedElement);
-					if (typeof(addedElement.const.incoming) !== 'undefined') {
-						notifyChangeObservers(addedElement.const.incoming[referringRelation]);
+					if (typeof(addedElement.const.incoming[referringRelation].observers) !== 'undefined') {
+						notifyChangeObservers(addedElement.const.incoming[referringRelation].observers);
 					}
 					addedAdjusted.push(referencedValue);
 				} else {
@@ -428,8 +441,8 @@
 					if (isObject(removedElement)) {
 						if ((previousValue.const.incomingReferences -= 1) === 0)  removedLastIncomingRelation(removedElement);
 						removeIncomingStructure(proxy.const.id, removedElement);
-						if (typeof(removedElement.const.incoming) !== 'undefined') {
-							notifyChangeObservers(removedElement.const.incoming[referringRelation]);
+						if (typeof(removedElement.const.incoming[referringRelation].observers) !== 'undefined') {
+							notifyChangeObservers(removedElement.const.incoming[referringRelation].observers);
 						}
 					}					
 				});					
@@ -468,8 +481,12 @@
 		function createIncomingStructure(referingObject, referingObjectId, property, object) {
 			trace.basic && log("createIncomingStructure");
 			let incomingStructure = getIncomingRelationStructure(object, property);
+<<<<<<< HEAD
 			trace.basic && log(incomingStructure);
 			if (typeof(incomingStructure) === 'undefined') throw new Error("WTF");
+=======
+			// log(incomingStructure);
+>>>>>>> inject_incoming_fix_to_causality/eternity
 			let incomingRelationChunk = intitializeAndConstructIncomingStructure(incomingStructure, referingObject, referingObjectId);
 			if (incomingRelationChunk !== null) {
 				return incomingRelationChunk;
@@ -601,11 +618,7 @@
 					incomingStructureRoot.contents = create(incomingStructureRoot.contents);
 				}
 			}
-			if (typeof(incomingStructureRoot.contents) === 'undefined') {
-				log("What the hell!");
-				log(incomingStructureRoot, 3);
-			}
-			
+
 			// Already added in the root
 			if (typeof(incomingStructureRoot.contents[refererId]) !== 'undefined') {
 				return null;
@@ -1112,10 +1125,6 @@
 	*/
 		
 		function getHandlerObject(target, key) {
-			if (trace.basic > 0) {
-				// log("getHandlerObject: "  + this.const.name + "." + key);
-				// logGroup();
-			}
 			if (trace.get > 0) {
 				log("getHandlerObject: "  + this.const.name + "." + key);
 				logGroup();
@@ -1154,7 +1163,10 @@
 						let descriptor = Object.getOwnPropertyDescriptor(scan, key);
 						if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
 							if (trace.get > 0) logUngroup();
+<<<<<<< HEAD
 							// if (trace.basic) log("returning bound thing...");
+=======
+>>>>>>> inject_incoming_fix_to_causality/eternity
 							return descriptor.get.bind(this.const.object)();
 						}
 						scan = Object.getPrototypeOf( scan );
@@ -2318,7 +2330,6 @@
 		}
 		
 		function registerChangeObserver(observerSet) {
-			if (typeof(observerSet) === 'undefined') throw new Error("WTF");
 			// Find right place in the incoming structure.
 			let incomingRelationChunk = intitializeAndConstructIncomingStructure(observerSet, activeRecording, activeRecording.const.id);
 			if (incomingRelationChunk !== null) {
@@ -2359,6 +2370,7 @@
 
 
 		// Recorders is a map from id => recorder
+		// A bit like "for all incoming"...
 		function notifyChangeObservers(observers) {
 			if (typeof(observers.initialized) !== 'undefined') {
 				if (observerNotificationNullified > 0) {
