@@ -20,7 +20,8 @@
 		if (configuration.isClient) objectlog.useConsoleDefault = true;
 		let log = objectlog.log;
 		let logGroup = objectlog.enter;
-		let logUngroup = objectlog.exit;		
+		let logUngroup = objectlog.exit;
+		let logToString = objectlog.toString;
 		
 		// console.log("createLiquidInstance");
 		pagesMap = {};
@@ -50,6 +51,7 @@
 		 *
 		 ***************************************************************/
 		
+
 		let restrictAccessToThatOfPage = null;
 		
 		let readable = {
@@ -63,7 +65,13 @@
 			"readOnly" : false,
 			"noAccess" : false
 		}
-
+		
+		function restrictAccess(page, action) {
+			restrictAccessToThatOfPage = page;
+			action();
+			restrictAccessToThatOfPage = null;
+		}
+		
 		liquid.setCustomCanRead(function(object) {
 			return readable[getAccessLevel(object)];
 		});
@@ -74,7 +82,7 @@
 		
 		function getAccessLevel(object) {
 			if (restrictAccessToThatOfPage !== null) {
-				let accessLevel = null;
+				let accessLevel = "readAndWrite";
 				if (typeof(object.pageAccessLevel) !== 'undefined') {
 					accessLevel = object.pageAccessLevel(restrictAccessToThatOfPage);
 				} else if (typeof(object.redirectSecurityTo) !== 'undefined'){
@@ -341,6 +349,10 @@
 					var selection = {};// get
 					log(page.service.orderedSubscriptions, 2);
 					page.service.orderedSubscriptions.forEach(function(subscription) {
+						log("process a subscription ... ");
+						log(subscription, 2);
+						logGroup();
+						
 						// Perform a selection with dependency recording!
 						var subscriptionSelection = {};
 						
@@ -358,9 +370,13 @@
 						isSelecting = false;
 						restrictAccessToThatOfPage = null;
 						
+						log("subscriptionSelection");
+						logSelection(selection); 
+					
 						for (id in subscriptionSelection) {
 							selection[id] = subscriptionSelection[id];
 						}
+						logUngroup();
 					});
 					log("pageSelection");
 					logSelection(selection); 
@@ -533,7 +549,7 @@
 			}
 			
 			serialized = {
-				_ : object.__(),
+				_ : logToString(liquid.objectDigest(object)),
 				className : getClassName(object),
 				references : {},
 				values : {}
@@ -703,7 +719,7 @@
 					var data = serializedObject[definition.name];
 					newObject[definition.setterName](data);
 				}
-				newObject._ = newObject.__();
+				newObject._ = logToString(objectDigest(newObject)); //.__();
 
 				return newObject;
 			}
@@ -1116,9 +1132,7 @@
 				var newObject = create(className);
 				newObject.const._upstreamId = upstreamId;
 				upstreamIdObjectMap[upstreamId] = newObject;
-				if (typeof(newObject.__) === 'function') {
-					newObject._ = newObject.__();					
-				}
+				newObject._ = logToString(objectDigest(newObject)); //.__();					
 				newObject.isPlaceholderObject = true;
 				newObject.isLocked = isLocked;
 			}
@@ -1153,10 +1167,8 @@
 				for(key in serializedObject.values) {
 					targetObject[key] = serializedObject.values[key];
 				}
+				targetObject._ = logToString(objectDigest(targetObject)); // .__();					
 				targetObject.isPlaceholderObject = false;
-				if (typeof(targetObject._) === 'function') {
-					targetObject._ = targetObject.__();					
-				}
 			} else {
 				// trace('unserialize', "Loaded data that was already loaded!!!");
 				// console.log("Loaded data that was already loaded!!!");
@@ -1237,7 +1249,8 @@
 			addToSelection : addToSelection,
 			upstreamIdObjectMap : upstreamIdObjectMap,
 			disconnect : disconnect,
-			configuration : configuration
+			configuration : configuration,
+			restrictAccess : restrictAccess
 		}); 
 
 		

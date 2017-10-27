@@ -301,13 +301,14 @@
 		constructor() {
 			this.const = {};
 			// Client only (reactive) properties:
-			if (liquid.configuration.isClient) { // TODO!!! 
-				this.isPlaceholderObject = false;
-				this.isLockedObject = false;			
-			}
+			// if (liquid.configuration.isClient) { // TODO!!! 
+				// this.isPlaceholderObject = false;
+				// this.isLockedObject = false;			
+			// }
 		}
 
 		initialize(data) {
+			this._ = ""
 			// log("LiquidEntity.initialize");
 			this.assign(data);
 		}
@@ -400,15 +401,22 @@
 		}
 					
 		selectAll(selection) {
-			log("selectAll");
-			logGroup();//console
+			log("selectAll: ");
 			log(liquid.objectDigest(this));
+			logGroup();//console
 			function selectAllObjects(object) {
-				if (typeof(selection[object.const.id]) === 'undefined' && liquid.canRead(object)) {
+				log("try selecting a plain liquid-object (no class)");
+				if (!liquid.canRead(object)) {
+					log("no read access...");
+				}
+				
+				if (typeof(selection[object.const.id]) === 'undefined') {
 					selection[object.const.id] = object; 
 					Object.keys(object).forEach(function(key) {
 						let value = object[key];
-						if (liquid.isObject(value)) {
+						if (value instanceof LiquidEntity) { //liquid.isObject(value)
+							value.selectAll(selection);
+						} if (liquid.isObject(value)) {
 							selectAllObjects(value);
 						}
 					});
@@ -416,16 +424,21 @@
 			}
 			
 			// trace('selection', liquid.canRead(this));
-			if (typeof(selection[this.const.id]) === 'undefined' && liquid.canRead(this)) {
+			if (!liquid.canRead(this)) {
+				log("no read access...");
+				return;
+			}
+			
+			if (typeof(selection[this.const.id]) === 'undefined') {
 				// console.log("Selecting " + this.__());
 				selection[this.const.id] = this;
 				
 				Object.keys(this).forEach(function(key) {
 					log("selecting property: " + key);
 					logGroup();
-					log("indented");
+					// log("indented");
 					let value = this[key];
-					liquid.logValue(value);
+					// liquid.logValue(value);
 					if (value instanceof LiquidEntity) { //liquid.isObject(value)
 						value.selectAll(selection);
 					} else if (liquid.isObject(value)) {
@@ -489,7 +502,7 @@
 	class LiquidIndex extends LiquidEntity {	
 		constructor() {
 			super();
-			this.isLiquidIndex = true;
+			// this.isLiquidIndex = true;
 			// this.const.isIndex = true; // is this working.... maybe not... TODO: figure out something else.
 			this.const.isIndex = true;
 			// this._const_isIndex = true; // Tell causality to put something in the const? 

@@ -21,8 +21,9 @@
 		return string;
 	}
 
-	function createContext() {
+	function createContext(toString) {
 		return {
+			result : "",
 			rootLevel : true,
 			horizontal : false,
 			indentLevel : indentLevel,
@@ -39,11 +40,19 @@
 			// },
 			log : function(string) {
 				if (this.unfinishedLine) {
-					process.stdout.write(string); 
+					if (toString) {
+						this.result += string;
+					} else {
+						process.stdout.write(string); 						
+					}
 					this.unfinishedLine = true;
 				} else {
 					let indent = indentString(this.indentLevel);
-					process.stdout.write(indent + string); 
+					if (toString) {
+						this.result += indent + string;
+					} else {
+						process.stdout.write(indent + string); 						
+					}
 					this.unfinishedLine = true;
 				}
 			},
@@ -188,6 +197,11 @@
 	
 	
 	let objectlog = {
+		toString: function(entity, pattern) {
+			let context = createContext(true);
+			logPattern(entity, pattern, context);
+			return context.result;
+		}, 
 		findLogs : false,
 		useConsoleDefault : false,
 		log : function(entity, pattern) {

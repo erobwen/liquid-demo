@@ -74,6 +74,7 @@
 
 	class Category extends LiquidEntity {
 		initialize(data) {
+			this._ = "";
 			// console.log("initialize Category");
 			this.name = this.get(data["name"], '');
 			this.description = this.get(data["description"], '');
@@ -104,22 +105,22 @@
 			super.initialize();
 		}
 			
-		__() {
-			liquid.withoutRecording(function() {
-				return "(" + this._className() + "." + this._idString() + ":" + unloadedOrName + ")";				
-			});
-			// Old:
-			// return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";
+		// __() {
+			// liquid.withoutRecording(function() {
+				// return "(" + this._className() + "." + this._idString() + ":" + unloadedOrName + ")";				
+			// });
+			// // Old:
+			// // return "(" + this.className + "." + this._idString() + ":" + unloadedOrName + ")";
 
-			// New: TODO: Create a without observation syntax?
+			// // New: TODO: Create a without observation syntax?
 			
-			// var unloadedOrName = this._propertyInstances['name'].data; //this.getName(); //+ liquid.onClient && !liquid. ?;
-		}
+			// // var unloadedOrName = this._propertyInstances['name'].data; //this.getName(); //+ liquid.onClient && !liquid. ?;
+		// }
 		
 		// Return values, "noAccess", "readOnly", "readAndWrite".
 		accessLevel(user) {
 			// trace('security', "Considering security: ", page, " access level to ",  this);
-			var pageUserIsOwner = this.getOwner() === user;
+			var pageUserIsOwner = this.owner === user;
 			if (pageUserIsOwner)  {
 				return "readAndWrite";
 			} else {
@@ -136,6 +137,8 @@
 	
 	class Reference extends LiquidEntity {
 		initialize(data) {
+			this._ = "";
+			
 			this.url = "";
 			this.pageExtractedTitle = "";
 			this.pageExtractedSummary = "";

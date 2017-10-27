@@ -61,12 +61,12 @@ var politics = null;
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		politics = create('Category', {name: 'Politics', description: '', owner: user});
 		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
-		log("==========================================================");
-		log (" Adding... ");
-		liquid.trace.basic++;
+		// log("==========================================================");
+		// log (" Adding... ");
+		// liquid.trace.basic++;
 		politics.subCategories.add(georgism);
-		liquid.trace.basic--;
-		log("==========================================================");
+		// liquid.trace.basic--;
+		// log("==========================================================");
 		
 		var created = 0;
 		while (created++ < 3) {
@@ -106,12 +106,24 @@ logGroup();
 // liquid.logSelection(selection);
 // log(user.getRootCategories());
 log("================================");
-log(politics);
-log(politics.subCategories);
-log(politics.subCategories.get(), 2);
-log(georgism.const.incoming);
-log(georgism.const.incoming.subCategories);
-log(georgism.incoming.subCategories);
+let testPage = create("LiquidPage", { user: user});
+// log(politics);
+// log("subCategories:");
+// log(politics.subCategories);
+// log("politics.subCategories.get()");
+// log(politics.subCategories.get(), 1);
+// log("georgism.const.incoming.subCategories");
+// log(georgism.const.incoming.subCategories, 1);
+log("user.ownedCategories.getContents()");
+log(user.ownedCategories.getContents(), 2);
+let selection = {};
+liquid.restrictAccess(testPage, 
+	function() {
+		user.selectAll(selection);	
+	}
+);
+log("selection");
+liquid.logSelection(selection);
 log("================================");
 // liquid.trace.basic = true;
 // log(georgism.parents);

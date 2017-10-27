@@ -139,6 +139,7 @@
 				delete previousValue.indexParentRelation;				
 			}
 			
+			index.name = property;
 			index.indexParent = object;
 			index.indexParentRelation = property;
 			object[property] = index;
