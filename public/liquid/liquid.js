@@ -564,7 +564,7 @@
 				serialized.id = object.const.id;
 			}
 			let omittedKeys = {
-				isPlaceholderObject : true,
+				isPlaceholder : true,
 				isLockedObject : true
 			}
 			Object.keys(object).forEach(function(key) {
@@ -1129,11 +1129,13 @@
 		
 		function ensureEmptyObjectExists(upstreamId, className, isLocked) {
 			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
+				liquid.state.blockInitialize = true;
 				var newObject = create(className);
+				liquid.state.blockInitialize = false;
 				newObject.const._upstreamId = upstreamId;
 				upstreamIdObjectMap[upstreamId] = newObject;
 				newObject._ = logToString(objectDigest(newObject)); //.__();					
-				newObject.isPlaceholderObject = true;
+				newObject.isPlaceholder = true;
 				newObject.isLocked = isLocked;
 			}
 			return upstreamIdObjectMap[upstreamId];
@@ -1147,32 +1149,52 @@
 		// }
 		
 		function unserializeUpstreamObject(serializedObject) {
-			// console.log("unserializeObject: " + serializedObject.className);
+			// log("unserializeUpstreamObject: " + serializedObject.id);
+			// logGroup();
+			// log(serializedObject);
+			// log(upstreamIdObjectMap[upstreamId]);
 			// console.log(serializedObject);
 			var upstreamId = serializedObject.id;
 			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
+				// log("ensureEmptyObjectExists!");
 				ensureEmptyObjectExists(upstreamId, serializedObject.className, false);
+				// log(Object.keys(upstreamIdObjectMap[upstreamId]));
+				// log(Object.keys(upstreamIdObjectMap[upstreamId])[0]);
+				// log(Object.keys(upstreamIdObjectMap[upstreamId])[1]);
+				// log(Object.keys(upstreamIdObjectMap[upstreamId])[2]);
+				// log("...");
 			}
 			var targetObject = upstreamIdObjectMap[upstreamId];
+			// log(Object.keys(targetObject));
 			// console.log(targetObject);
-			if (targetObject.isPlaceholderObject) {
+			if (targetObject.isPlaceholder) {
+				// log(Object.keys(targetObject));
 				// let ignoreKeys = {
 					// "_" : true,
 					// "id" : true,
 					// "className" : true
 				// }
 				for(key in serializedObject.references) {
-					targetObject[key] = unserializeUpstreamReference(serializedObject.references[key]);
+					let unserializedReference = unserializeUpstreamReference(serializedObject.references[key]);
+					// log("setting key: " + key);
+					// log(serializedObject.references[key]);
+					if (key !== 'indexParent') {
+						if (typeof(targetObject[key]) !== 'undefined') throw new Error("Key " + key + " already set to " + objectlog.toString(targetObject[key]) + " on " + objectlog.toString(liquid.objectDigest(targetObject)));
+						targetObject[key] = unserializedReference;	
+					} else {
+						liquid.setIndex(unserializedReference, serializedObject.values['indexParentRelation'], targetObject);
+					}
 				}
 				for(key in serializedObject.values) {
 					targetObject[key] = serializedObject.values[key];
 				}
 				targetObject._ = logToString(objectDigest(targetObject)); // .__();					
-				targetObject.isPlaceholderObject = false;
+				targetObject.isPlaceholder = false;
 			} else {
 				// trace('unserialize', "Loaded data that was already loaded!!!");
 				// console.log("Loaded data that was already loaded!!!");
 			}
+			// logUngroup();
 		}
 		
 		

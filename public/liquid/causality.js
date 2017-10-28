@@ -22,7 +22,8 @@
 		// State
 		let state = { 
 			useIncomingStructures : configuration.useIncomingStructures,
-			incomingStructuresDisabled : 0
+			incomingStructuresDisabled : 0,
+			blockInitialize : false
 		};
 
 		/***************************************************************
@@ -346,10 +347,14 @@
 				referringRelation = objectProxy.indexParentRelation;
 				objectProxy = objectProxy.indexParent;				
 				if (trace.basic) {
-					log("Moving up one step:")
+					log("Moving up one step:");
 					log(referringRelation);
 					log(objectProxy);
 				}
+			}
+			if (!isObject(objectProxy)) {
+				log(objectProxy);
+				throw new Error("object proxy not an object!");
 			}
 			
 			// Tear down structure to old value
@@ -1259,7 +1264,10 @@
 			if (configuration.blockInitializeForIncomingReferenceCounters) blockingInitialize++;
 			if (isObject(value)) {
 				value.const.incomingReferencesCount--;
-				if (value.const.incomingReferencesCount < 0) throw Error("WTAF");
+				if (value.const.incomingReferencesCount < 0) {
+					console.log(value);
+					throw Error("WTAF");					
+				}
 				if (value.const.incomingReferencesCount === 0) {
 					removedLastIncomingRelation(value);
 				}
@@ -1370,7 +1378,7 @@
 					trace.basic && log("incoming structures not disbled...");
 					state.incomingStructuresDisabled++;
 					incomingStructureValue = createAndRemoveIncomingRelations(this.const.object, key, value, previousValue, previousIncomingStructure);
-					decreaseIncomingCounter(previousIncomingStructure);
+					if (typeof(previousIncomingStructure) !== 'undefined') decreaseIncomingCounter(previousIncomingStructure);
 					increaseIncomingCounter(incomingStructureValue);
 					target[key] = incomingStructureValue;
 					state.incomingStructuresDisabled--;
@@ -1761,7 +1769,7 @@
 			
 			if (trace.basic > 0) logUngroup();
 			
-			if(typeof(proxy.initialize) === 'function') {
+			if(!state.blockInitialize && typeof(proxy.initialize) === 'function' ) {
 				if (initialData === null) {
 					initialData = {};
 				}

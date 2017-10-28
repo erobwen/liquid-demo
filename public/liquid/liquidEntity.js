@@ -302,7 +302,7 @@
 			this.const = {};
 			// Client only (reactive) properties:
 			// if (liquid.configuration.isClient) { // TODO!!! 
-				// this.isPlaceholderObject = false;
+				// this.isPlaceholder = false;
 				// this.isLockedObject = false;			
 			// }
 		}
@@ -401,13 +401,14 @@
 		}
 					
 		selectAll(selection) {
-			log("selectAll: ");
-			log(liquid.objectDigest(this));
-			logGroup();//console
+			// log("selectAll: ");
+			// log(liquid.objectDigest(this));
+			// logGroup();//console
 			function selectAllObjects(object) {
-				log("try selecting a plain liquid-object (no class)");
+				// log("try selecting a plain liquid-object (no class)");
 				if (!liquid.canRead(object)) {
-					log("no read access...");
+					// log("no read access...");
+					return;
 				}
 				
 				if (typeof(selection[object.const.id]) === 'undefined') {
@@ -425,7 +426,7 @@
 			
 			// trace('selection', liquid.canRead(this));
 			if (!liquid.canRead(this)) {
-				log("no read access...");
+				// log("no read access...");
 				return;
 			}
 			
@@ -434,8 +435,8 @@
 				selection[this.const.id] = this;
 				
 				Object.keys(this).forEach(function(key) {
-					log("selecting property: " + key);
-					logGroup();
+					// log("selecting property: " + key);
+					// logGroup();
 					// log("indented");
 					let value = this[key];
 					// liquid.logValue(value);
@@ -445,10 +446,10 @@
 						// Warning: potentially dangerous. Could select A LOT...
 						selectAllObjects(value); 
 					}
-					logUngroup();
+					// logUngroup();
 				}.bind(this));
 			}
-			logUngroup();
+			// logUngroup();
 		}
 		
 		isLoaded() {
@@ -503,7 +504,7 @@
 		'indexParent' : true, 
 		'name' : true,
 		'_' : true,
-		'isPlaceholderObject' : true, 
+		'isPlaceholder' : true, 
 		'isLocked' : true
 	}
 	

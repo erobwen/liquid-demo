@@ -53,18 +53,18 @@ var politics = null;
 		user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
 		// liquid.persistent.users.add(user);
 		
-		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
+		// var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		// log(user.ownedCategories.contents);
 		
 
 		
-		var funny = create('Category', {name: 'Funny', description: '', owner: user});
+		// var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		politics = create('Category', {name: 'Politics', description: '', owner: user});
 		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		// log("==========================================================");
 		// log (" Adding... ");
 		// liquid.trace.basic++;
-		politics.subCategories.add(georgism);
+		// politics.subCategories.add(georgism);
 		// liquid.trace.basic--;
 		// log("==========================================================");
 		
@@ -126,6 +126,7 @@ log(user.ownedCategories.getContents(), 2);
 // liquid.logSelection(selection);
 log("================================");
 log(user.getRootCategories(), 2);
+log(user.getRootCategories().length);
 log("================================");
 // liquid.trace.basic = true;
 // log(georgism.parents);

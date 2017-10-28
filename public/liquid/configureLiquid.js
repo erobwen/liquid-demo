@@ -2,7 +2,9 @@
 	let liquid = require("liquid")({
 		usePersistency: false, 
 		isClient: true,
-		causalityConfiguration : {}
+		causalityConfiguration : {
+			useIncomingStructures : true				
+		}
 	});
 	liquid.setAsDefaultConfiguration();
 	// console.log("configured liquid");

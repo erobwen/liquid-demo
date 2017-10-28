@@ -15,6 +15,25 @@
 	log("upstreamIdObjectMap");
 	log(liquid.upstreamIdObjectMap);
 	
+	// Setup global variables. 
+	
+	function lowerCaseFirstLetter(string){
+		return string.substr(0, 1).toLowerCase() + string.slice(1);
+	}
+
+	function nameToVariable(string) {
+		return lowerCaseFirstLetter(string.replace(/\s/g, ''));
+	}
+
+	for (id in liquid.upstreamIdObjectMap) {
+		let object = liquid.upstreamIdObjectMap[id];
+		if (object instanceof LiquidEntity && !(object instanceof LiquidIndex)) {
+			if (typeof(object.name) !== 'undefined' && typeof(root[object.name]) === 'undefined') {
+				root[nameToVariable(object.name)] = object; 
+			}
+		}
+	}
+	
 	root.page = liquid.instancePage;
 		
 	// Setup socket io.
