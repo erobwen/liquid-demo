@@ -105,7 +105,6 @@ logGroup();
 // user.selectAll(selection);
 // liquid.logSelection(selection);
 // log(user.getRootCategories());
-log("================================");
 let testPage = create("LiquidPage", { user: user});
 // log(politics);
 // log("subCategories:");
@@ -116,14 +115,17 @@ let testPage = create("LiquidPage", { user: user});
 // log(georgism.const.incoming.subCategories, 1);
 log("user.ownedCategories.getContents()");
 log(user.ownedCategories.getContents(), 2);
-let selection = {};
-liquid.restrictAccess(testPage, 
-	function() {
-		user.selectAll(selection);	
-	}
-);
-log("selection");
-liquid.logSelection(selection);
+
+// let selection = {};
+// liquid.restrictAccess(testPage, 
+	// function() {
+		// user.selectAll(selection);	
+	// }
+// );
+// log("selection");
+// liquid.logSelection(selection);
+log("================================");
+log(user.getRootCategories(), 2);
 log("================================");
 // liquid.trace.basic = true;
 // log(georgism.parents);

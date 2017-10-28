@@ -64,6 +64,10 @@
 		getRootCategories() {
 			let result = [];
 			this.ownedCategories.forEach(function(category) {
+				if (typeof(category.parents) === 'undefined') {
+					log("got a strange parents list... ");
+					console.log(category);
+				}
 				if (category.parents.length === 0) {
 					result.push(category);
 				}

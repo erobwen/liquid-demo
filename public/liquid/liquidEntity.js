@@ -139,17 +139,17 @@
 		// Add getters and setters
 		Object.defineProperty(object, name, {
 			get: function() {
-				log("createIncomingSetProperty: get");
-				log(this);
+				// log("createIncomingSetProperty: get");
+				// log(this);
 				let objects = liquid.getIncomingReferences(this, incomingProperty, filter);
-				log(objects);
+				// log(objects);
 				if (typeof(sorter) !== 'undefined') {
 					objects.sort(sorter);
 				}
 				return objects;
 			},
 			set: function(newObjects) {
-				log("createIncomingSetProperty: set");
+				// log("createIncomingSetProperty: set");
 				// log("Inside setter!!!");
 				// log(this.const);
 				if (newObjects instanceof Array) {
@@ -481,7 +481,7 @@
 		}
 
 		readable() {
-			return liquid.allowWrite(this);
+			return liquid.canWrite(this);
 		}
 		
 		pageAllowCallOnServer(page) {
@@ -498,7 +498,15 @@
 	 *         Index 
 	 *---------------------------*/
 	// Note: the only reason we have to have indexParentRelation in the object, is so that it survives streaming etc.... Otherwise it ould have been in const. 
-	 
+	let nonContentProperties = {
+		'indexParentRelation' : true,
+		'indexParent' : true, 
+		'name' : true,
+		'_' : true,
+		'isPlaceholderObject' : true, 
+		'isLocked' : true
+	}
+	
 	class LiquidIndex extends LiquidEntity {	
 		constructor() {
 			super();
@@ -524,19 +532,21 @@
 			});
 		}
 		
+
+		
 		getContents() {
 			let result = [];
 			let keys = Object.keys(this.contents);
 			keys.forEach(function(property) {
-				if (property !== 'indexParentRelation' && property !== 'indexParent')
-				result.push(this.contents[property]);
+				if (!nonContentProperties[property])
+					result.push(this.contents[property]);
 			}.bind(this)); 
 			return result;
 		}
 		
 		forEach(callback) {
 			for(let key in this.contents) {
-				callback(this.contents[key]);
+				if (!nonContentProperties[key]) callback(this.contents[key]);
 			}
 		}
 		

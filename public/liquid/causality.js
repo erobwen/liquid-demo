@@ -223,7 +223,7 @@
 		}
 		
 		function getIncomingReferences(object, property, filter) {
-			log(trace)
+			// log(trace)
 			trace.basic && log("getIncomingReferences");
 			if (typeof(object) === 'undefined') {
 				throw new Error("No object given to 'getIncomingReferences'");
@@ -3301,6 +3301,7 @@
 			
 			// Security
 			canRead : canRead, // TODO: change to allow read/write?
+			canWrite : canWrite, // TODO: change to allow read/write?
 			
 			// Reactive primitives
 			uponChangeDo : uponChangeDo,
