@@ -64,7 +64,7 @@ var politics = null;
 		// log("==========================================================");
 		// log (" Adding... ");
 		// liquid.trace.basic++;
-		// politics.subCategories.add(georgism);
+		politics.subCategories.add(georgism);
 		// liquid.trace.basic--;
 		// log("==========================================================");
 		

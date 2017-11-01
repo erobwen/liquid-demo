@@ -96,18 +96,17 @@ var UserView = React.createClass(liquidClassData({
 	render: function() {
 		return invalidateUponLiquidChange("UserView", this, function() {
 			// trace('react', "Render in user view. ");
-			// var rootCategories = this.props.user.cached('getRootCategories');
+			var rootCategories = this.props.user.cached('getRootCategories');
 			// console.log("rootCategories");
-			// var rootCategories = this.props.user.ownedCategories;
-					// <CategoriesView
-						// key = { this.props.user.const.id }
-						// categories = { rootCategories }  // This should evaluate to a new list upon change. This would not work with a relation... Should we create a new object on every change? However, it still means that both components needs reevaluation
-					// />
 			return (
 				<div className="UserView">
 					<span>{ this.props.user.name }'s categories</span>
 					<div style={{height: "1em"}}></div>
 					<button onClick= { function() { performScript(); }} >Execute script</button>
+					<CategoriesView
+						key = { this.props.user.const.id }
+						categories = { rootCategories }  // This should evaluate to a new list upon change. This would not work with a relation... Should we create a new object on every change? However, it still means that both components needs reevaluation
+					/>
 				</div>
 			);
 		}.bind(this));
