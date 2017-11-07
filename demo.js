@@ -53,12 +53,12 @@ var politics = null;
 		user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
 		// liquid.persistent.users.add(user);
 		
-		// var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
+		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		// log(user.ownedCategories.contents);
 		
 
 		
-		// var funny = create('Category', {name: 'Funny', description: '', owner: user});
+		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		politics = create('Category', {name: 'Politics', description: '', owner: user});
 		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		// log("==========================================================");
@@ -239,31 +239,44 @@ var liquidSocket = socketIo.sockets;
 liquidSocket.on('connection', function (socket) {
 	// trace('serialize', 'Connected a socket!');
 	
-	socket.on('registerPageTokenTurnaround', function(pageToken) {
-		liquid.registerPageTokenTurnaround(pageToken).then(function(page) {
+	socket.on('connectPageWithSocket', function(pageToken) {
+		log("socket.on: connectPageWithSocket " + pageToken);
+		try {
+			let page = liquid.getPage(pageToken);
 			page.const._socket = socket;
 			// liquid.pushDataDownstream(); // In case this page had subscription updates that never got pushed. ???
-		}).catch(function() {
-			socket.emit('invalidPageToken'); // TODO: Consider create new page?
-		});
+		} catch (error) {
+			socket.emit('couldNotConnectPageWithSocket');
+		}
 	});
 
-	socket.on('pushDownstreamPulse', function(pageToken, pulseData) {
-		liquid.pushDownstreamPulse(pageToken, pulseData).catch(function() {
-			socket.emit('invalidPageToken'); // TODO: Consider create new page?			
-		});
-	});
-
-	socket.on('makeCallOnServer', function(pageToken, callInfo) {
-		liquid.makeCallOnServer(pageToken, callInfo);
+	socket.on("message", function(pageToken, message) {
+		log("socket.on: message");
+		liquid.messageFromDownstream(pageToken, message);
 	});
 
 	socket.on('disconnect', function(pageToken) {
+		log("socket.on: disconnect");
 		liquid.disconnect(pageToken);
 	});
 });
 
-liquid.setPushMessageDownstreamCallback(function(page, messageType, data) {
-	page.const._socket.emit(messageType, data);	
-});		
+liquid.setPushMessageDownstreamCallback(function(page, message) { //messageType, data
+	log("socket.emit: message");
+	page.const._socket.emit("message", message);	
+});
+
+// .catch(function() {
+			// socket.emit('invalidPageToken'); // TODO: Consider create new page?			
+		// });
+
+	// socket.on('processPulseFromDownstream', function(pageToken, pulseData) {
+		// liquid.processPulseFromDownstream(pageToken, pulseData).catch(function() {
+			// socket.emit('invalidPageToken'); // TODO: Consider create new page?			
+		// });
+	// });
+
+	// socket.on('makeCallOnServer', function(pageToken, callInfo) {
+		// liquid.makeCallOnServer(pageToken, callInfo);
+	// });
 

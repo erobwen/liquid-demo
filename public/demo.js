@@ -41,24 +41,36 @@
 		var socket = io('http://localhost:8080');
 
 		socket.on('connect', function(){
-			// trace('serialize', "received CONNECT");
-			// trace('serialize', liquid.instancePage, " Page token:", liquid.instancePage.token);
-			socket.emit("registerPageId", liquid.instancePage.token);
+			log("socket.on: connect");
+			log(liquid.instancePage);
+			socket.emit("connectPageWithSocket", liquid.instancePage.token);
 		});
+		
+		socket.on('couldNotConnectPageWithSocket', function() {
+			log("socket.on: couldNotConnectPageWithSocket");
+			throw new Error("Could not connect propertly with server.");
+		});
+
+		socket.on('message', function(message) {
+			log("socket.on: message");
+			liquid.messageFromUpstream(message);
+		});
+
+		liquid.setPushMessageUpstreamCallback(function(message) {
+			log("socket.emit: message");
+			socket.emit('message', liquid.instancePage.token, message);	
+		});		
 
 		socket.on('disconnect', function(){
-			// trace('serialize', "Disconnected");
-		});
-
-		socket.on('pushChangesFromUpstream', function(changes){
-			liquid.receiveChangesFromUpstream(changes);
-		});
-
-		liquid.setPushMessageUpstreamCallback(function(messageType, pageToken, data) {
-			socket.emit(messageType, pageToken, data);	
+			log("socket.on: disconnect");
+			throw new Error("Unexpected dissconnect.");
 		});		
 	})();
 
+
+		// socket.on('pushChangesFromUpstream', function(changes){
+			// liquid.receiveChangesFromUpstream(changes);
+		// });
 	
 	// Setup global variables
 	// root.find = liquid.find;

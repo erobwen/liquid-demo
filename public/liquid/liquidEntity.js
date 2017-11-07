@@ -492,6 +492,30 @@
 		allowCallOnServer(user) {
 			return false;
 		}
+		
+		callOnServer() {
+			// Split arguments
+			var argumentsArray = argumentsToArray(arguments);
+			var methodName = argumentsArray.shift();
+			var methodArguments = argumentsArray;
+			var callData = {
+				callId: callId++,
+				objectId: this._upstreamId,
+				methodName: methodName,
+				argumentList: cloneAndMapLiquidObjectsDeep(argumentsArray, function(liquidObject) {
+					if (liquidObject._upstreamId != null) {
+						return { id : liquidObject._upstreamId };
+					} else {
+						return null; // TODO: consider, should we push data to server?
+					}
+				})
+			};
+			// traceGroup('serialize', "=== Call on server ===");
+			// trace('serialize', callData.callId, callData.objectId, callData.methodName);
+			// trace('serialize', callData.argumentList);
+			// traceGroupEnd();
+			liquid.makeCallOnServer(callData);
+		}
 	}
 
 

@@ -373,7 +373,7 @@ window.CategoryView = React.createClass(liquidClassData({
 			}.bind(this));
 
 			var collapseButton = 
-				(this.props.category.subCategories.contents.length > 0) ? 
+				(this.props.category.subCategories.getContents().length > 0) ? 
 					(<span 
 						onClick={ this.collapseOrExpand } 
 						style={{marginRight: "0.61em"}} 

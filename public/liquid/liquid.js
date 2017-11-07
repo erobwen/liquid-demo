@@ -136,7 +136,7 @@
 			// return liquid.sessions[connection];
 		// }
 		liquid.callOnServer = false;
-		function makeCallOnServer(pageToken, callInfo) {
+		function receiveCallOnServer(pageToken, callInfo) {
 			// trace('serialize', "Make call on server");
 			// trace('serialize', pageToken);
 			// trace('serialize', callInfo);
@@ -219,19 +219,21 @@
 			return sessionsMap[hardToGuessSessionId];
 		}
 		
-		function registerPageTokenTurnaround(pageToken) {
-			return new Promise((resolve, reject) => {						
-				let page = getPage(pageToken);
-				if (typeof(page) !== 'undefined') {
-				} else {
-				}
-				const xhr = new XMLHttpRequest();
-				xhr.open("GET", url);
-				xhr.onload = () => resolve(xhr.responseText);
-				xhr.onerror = () => reject(xhr.statusText);
-				xhr.send();
-			});
-		}
+		// function connectPageWithSocket(pageToken) {
+			// return new Promise((resolve, reject) => {
+				// let page = getPage(pageToken);
+				// if (typeof(page) === 'undefined') {
+					// reject("Not a valid page token!");
+				// } else {
+					// resolve(page);
+				// }
+				// // const xhr = new XMLHttpRequest();
+				// // xhr.open("GET", url);
+				// // xhr.onload = () => resolve(xhr.responseText);
+				// // xhr.onerror = () => reject(xhr.statusText);
+				// // xhr.send();
+			// });
+		// }
 		
 		let pushMessageDownstreamCallback = null;
 		function setPushMessageDownstreamCallback(callback) {
@@ -781,6 +783,14 @@
 		 *              Receive changes from upstream
 		 *----------------------------------------------------------------*/
 		
+		function messageFromUpstream(message) {
+			if (message.type = "pulse") {
+				receiveChangesFromUpstream(message.changes);
+			} else if (message.type = "callOnServerReturn") {
+				
+			}
+		}
+		
 		function receiveChangesFromUpstream(changes) {
 			liquid.pulse(function() {
 				// Consolidate ids:
@@ -837,33 +847,61 @@
 			
  		
 		function getPage(pageToken) {
-				// trace('serialize', "Register page connection:" + pageToken);
-				// trace('serialize', pageToken);
-				if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(pagesMap[pageToken]) !== 'undefined') {
-					return pagesMap[pageToken];
-				}
+			log("getPage:" + pageToken);
+			log(pagesMap, 2);
+			// trace('serialize', "Register page connection:" + pageToken);
+			// trace('serialize', pageToken);
+			if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(pagesMap[pageToken]) !== 'undefined') {
+				return pagesMap[pageToken];
+			}
+			throw new Error("Invalid page token");
 		}
 
-
-		
 		let pushingDownstreamData = false;
-		function pushDownstreamPulse(pageToken, pulseData) {
-			new Promise((resolve, reject) => {
-				let page = liquid.getPage(pageToken);
-				if (typeof(page) !== 'undefined') {
-					pushingDownstreamData = true; // What happens on asynchronous wait?? 
-					Fiber(function() {
+
+		function messageFromDownstream(pageToken, message) {
+			let page = getPage(pageToken);
+			if (typeof(page) !== 'undefined') {
+				Fiber(function() {
+					pushingDownstreamData = true; // What happens on asynchronous wait?? move this to liquid.state. 
+					if (message.type === 'pulse') {
 						liquid.pulse(function() {
 							liquid.unserializeDownstreamPulse(page, pulseData);
-						});
-					}).run();
+						});							
+					} else if (message.type === 'call') {
+						
+					}
 					pushingDownstreamData = false;
-					resolve();
-				} else {
-					reject();
-				}
-			});
+				}).run();
+			} else {
+				throw new Error("Invalid page token"); // Consider: Should be soft landing?
+			}
 		}
+		
+		
+		// new Promise((resolve, reject) => {
+			// let page = liquid.getPage(pageToken);
+			// if (typeof(page) !== 'undefined') {
+				// Fiber(function() {
+					// pushingDownstreamData = true; // What happens on asynchronous wait?? move this to liquid.state. 
+					// if (message.type === 'pulse') {
+						// liquid.pulse(function() {
+							// liquid.unserializeDownstreamPulse(page, pulseData);
+						// });							
+					// } else if (message.type === 'call') {
+						
+					// }
+					// pushingDownstreamData = false;
+				// }).run();
+				// resolve();
+			// } else {
+				// reject();
+			// }
+		// });
+
+		
+		// function processPulseFromDownstream(pageToken, pulseData) {
+		// }
 
 
 		/***************************************************************
@@ -1017,18 +1055,18 @@
 		}
 		
 		
-		function tryPushMessageUpstream(message, data) {
+		function tryPushMessageUpstream(message) {
 			if (typeof(pushMessageUpstreamCallback) !== 'undefined') {
-				pushMessageUpstreamCallback(message, instancePage.getHardToGuessPageId(), data);
+				pushMessageUpstreamCallback(message);
 			}
 		}
 		
-		function tryPushSerializedPulseUpstream(serializedPulse) {
-			tryPushMessageUpstream("pushDownstreamPulse", serializedPulse);
-		}
+		// function tryPushSerializedPulseUpstream(serializedPulse) {
+			// tryPushMessageUpstream({type: "pulse", data: serializedPulse});
+		// }
 
-		function tryMakeCallOnServer(callData) {
-			tryPushMessageUpstream("makeCallOnServer", callData);
+		function trySendCallToServer(callData) {
+			tryPushMessageUpstream({type: "call", data: callData});
 		}
 		
 		var pushMessageUpstreamCallback;
@@ -1108,8 +1146,9 @@
 		
 				if (serializedPulse.serializedEvents.length > 0 || serializedPulse.serializedObjects.length > 0) {
 					// trace('serialize', "Push upstream:", serializedPulse);
-					// console.log(serializedPulse);
-					tryPushSerializedPulseUpstream(serializedPulse);
+					// console.log(serializedPulse);			
+					tryPushMessageUpstream({type: "pulse", data: serializedPulse});
+					// tryPushSerializedPulseUpstream(serializedPulse);
 				}
 		
 				// console.groupEnd();
@@ -1301,6 +1340,7 @@
 			objectDigest : objectDigest,
 			receiveInitialDataFromUpstream : receiveInitialDataFromUpstream,
 			createOrGetSessionObject: createOrGetSessionObject,
+			getPage : getPage, 
 			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback,
 			setPushMessageUpstreamCallback : setPushMessageUpstreamCallback, 
 			getSubscriptionUpdate : getSubscriptionUpdate, 
