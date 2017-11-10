@@ -10,7 +10,8 @@ let liquid = require("./public/liquid/liquid.js")(
 			allowPlainObjectReferences : false,
 			databaseFileName: "demoDb.mongoDb",
 			causalityConfiguration : {
-				useIncomingStructures : true				
+				useIncomingStructures : true, 
+				recordPulseEvents : true
 			}
 		}
 	}

@@ -115,11 +115,8 @@
 					isIncomingStructure : true,   // This is a reuse of this object as incoming node as well.
 					// name : "incomingStructure" // This fucked up things for incoming relations of name "name"
 				}
-				if (configuration.incomingStructuresAsCausalityObjects) {
-					javascriptObject[specifierName] = createImmutable(specifier);
-				} else {
-					javascriptObject[specifierName] = specifier;				
-				}
+				if (configuration.incomingStructuresAsCausalityObjects) specifier = createImmutable(specifier);
+				javascriptObject[specifierName] = specifier;
 			}
 			return javascriptObject[specifierName];
 		} 
@@ -149,8 +146,10 @@
 			return index;
 		}
 		 
-		 function createImmutableArrayIndex(object, property) {
-			let index = createImmutable([]);
+		
+		function createReactiveArrayIndex(object, property) {
+			let index = [];
+			if (configuration.reactiveStructuresAsCausalityObjects) index = createImmutable(index);
 
 			index.indexParent = object;
 			index.indexParentRelation = property;
@@ -522,8 +521,8 @@
 					if (incomingStructure.property === "indexParent") {
 						throw new Error("What is this, should not have incoming structure for indexParent....");
 					}
-					log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
-					log(incomingStructure);
+					// log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
+					// log(incomingStructure);
 				}
 				incomingStructures[property] = incomingStructure;
 			}
@@ -1409,8 +1408,8 @@
 				}
 			}
 
-			// Emit event
-			if (state.useIncomingStructures && state.incomingStructuresDisabled === 0) {// && !isIndexParentOf(this.const.object, value)) {
+			// Emit event   && 
+			if (state.useIncomingStructures && state.incomingStructuresDisabled === 0 && (previousValue !== previousIncomingStructure || value !== incomingStructureValue)) {// && !isIndexParentOf(this.const.object, value)) {
 				// Emit extra event 
 				state.incomingStructuresDisabled++
 				emitSetEvent(this, key, incomingStructureValue, previousIncomingStructure);
@@ -2056,8 +2055,12 @@
 		let contextsScheduledForPossibleDestruction = [];
 
 		function postPulseCleanup() {
+			// logGroup("postPulseCleanup");
+			// log("postPulseCleanup");
 			inPulse++; // block new pulses!
+			
 			postPulseProcess++; // Blocks any model writing during post pulse cleanup
+			// log(pulseEvents);
 			contextsScheduledForPossibleDestruction.forEach(function(context) {
 				if (!context.directlyInvokedByApplication) {
 					if (emptyObserverSet(context.contextObservers)) {
@@ -2070,6 +2073,7 @@
 				callback(pulseEvents);
 			});
 			pulseEvents = [];
+			// logUngroup();
 			postPulseProcess--;
 			inPulse--;
 		}
@@ -2206,22 +2210,38 @@
 				return arguments[0];
 			} else if (argumentsLength === 2){
 				if (arguments[0] instanceof Array) {
-					return createImmutable({
-						functionPath : createImmutable(arguments.unshift()),
-						arguments : createImmutable(arguments) 
-					});
+					let action = {
+						functionPath : arguments.unshift(),
+						arguments : arguments
+					};
+					if (configuration.reactiveStructuresAsCausalityObjects) {
+						action.functionPath = createImmutable(action.functionPath);						
+						action.arguments = createImmutable(action.arguments);
+						action = createImmutable(action);
+					}
+					return action;
 				} else {
-					return createImmutable({
+					let action = {
 						functionName : arguments.unshift(),
-						arguments : createImmutable(arguments)
-					});
+						arguments : arguments
+					};
+					if (configuration.reactiveStructuresAsCausalityObjects) {
+						action.arguments = createImmutable(action.arguments);
+						action = createImmutable(action);
+					}
+					return action;
 				}
 			} else if (argumentsLength === 3) {
-				return createImmutable({
+				let action = {
 					object : arguments.unshift(),
 					methodName : arguments.unshift(),
-					arguments : createImmutable(arguments)
-				});
+					arguments : arguments
+				};
+				if (configuration.reactiveStructuresAsCausalityObjects) {
+					action.arguments = createImmutable(action.arguments);
+					action = createImmutable(action);
+				}
+				return action;
 			}
 		}
 		
@@ -2258,6 +2278,7 @@
 		 **********************************/
 
 		function uponChangeDo() { // description(optional), doFirst, doAfterChange. doAfterChange cannot modify model, if needed, use a repeater instead. (for guaranteed consistency)
+			// TODO: Consider, should this start a pulse?
 			// Arguments
 			let doFirst;
 			let doAfterChange;
@@ -2270,21 +2291,25 @@
 				doFirst       = arguments[0];
 				doAfterChange = arguments[1];
 			}
-
+			// log("createImmutable...");
 			// Recorder context
-			let context = createImmutable({
+			let context = {
 				nextToNotify: null,
 				description: description,
 				uponChangeAction: doAfterChange,
 				remove : function() {
+					let id = typeof(this.const) !== 'undefined' ? this.const.id : this.id;
 					this.sources.forEach(function(observerSet) {
-						removeIncomingStructure(context.const.id, observerSet);
+						removeIncomingStructure(id, observerSet);
 					});
 					this.sources.lenght = 0;  // From repeater itself.
 				}
-			});
-			createImmutableArrayIndex(context, "sources");
+			};
+			if (configuration.reactiveStructuresAsCausalityObjects) context = createImmutable(context);
+			// log("createReactiveArrayIndex...");
+			createReactiveArrayIndex(context, "sources");
 			
+			// log("enterContext...");
 			enterContext('recording', context);
 			let returnValue = performAction(doFirst);
 			leaveContext();
@@ -2318,9 +2343,17 @@
 			}
 		}
 		
+		let nextObserverSetId = 0;
 		function registerChangeObserver(observerSet) {
 			// Find right place in the incoming structure.
-			let incomingRelationChunk = intitializeAndConstructIncomingStructure(observerSet, activeRecording, activeRecording.const.id);
+			let activeRecordingId; 
+			if (typeof(activeRecording.const) !== 'undefined') {
+				activeRecordingId = activeRecording.const.id;
+			} else {
+				if (typeof(activeRecording.id) === 'undefined') activeRecording.id = nextObserverSetId++;
+				activeRecordingId = activeRecording.id;
+			}
+			let incomingRelationChunk = intitializeAndConstructIncomingStructure(observerSet, activeRecording, activeRecordingId);
 			if (incomingRelationChunk !== null) {
 				activeRecording.sources.push(incomingRelationChunk);
 			}
@@ -2447,7 +2480,7 @@
 			}
 
 			// Activate!
-			return refreshRepeater(createImmutable({
+			let repeater = {
 				description: description,
 				action: repeaterAction,
 				remove : function() {
@@ -2458,7 +2491,9 @@
 				},
 				nextDirty : null,
 				previousDirty : null
-			}));
+			}
+			if (configuration.reactiveStructuresAsCausalityObjects) repeater = createImmutable(repeater)
+			return refreshRepeater(repeater);
 		}
 
 		function refreshRepeater(repeater) {
@@ -2558,12 +2593,15 @@
 			// object = object.const.handler;
 			// let functionCaches = getMap(object, cacheStoreName, functionName);
 			if (typeof(object[cacheStoreName]) === 'undefined') {
-				let cacheStore = createImmutable({});
-				cacheStore.const.exclusiveReferer = object; // Only refered to by object. TODO: implement in more places...
+				let cacheStore = {};
+				if (configuration.reactiveStructuresAsCausalityObjects) cacheStore = createImmutable(cacheStore);
+				// cacheStore.const.exclusiveReferer = object; // Only refered to by object. TODO: implement in more places...
 				object[cacheStoreName] = cacheStore; // TODO: These are actually not immutable, more like unobservable. They can change, but changes needs to register manually.... 
 			}
 			if (typeof(object[cacheStoreName][functionName]) === 'undefined') {
-				object[cacheStoreName][functionName] = createImmutable({});
+				let cacheFunctionStore = {};
+				if (configuration.reactiveStructuresAsCausalityObjects) cacheFunctionStore = createImmutable(cacheFunctionStore);
+				object[cacheStoreName][functionName] = cacheFunctionStore;
 			}
 			return object[cacheStoreName][functionName];
 		}
@@ -2646,18 +2684,21 @@
 				
 				createNewRecord : function() {
 					if (uniqueHash) {
-						let newCacheRecord = createImmutable({});
+						let newCacheRecord = {};
+						if (configuration.reactiveStructuresAsCausalityObjects) newCacheRecord = createImmutable(newCacheRecord); 
 						functionCaches[argumentsHash] = newCacheRecord;
 						emitUnobservableEvent({object: functionCaches, type: 'set', property: argumentsHash, oldValueUndefined: true , value: newCacheRecord});
 						return functionCaches[argumentsHash];
 					} else {
 						if (typeof(functionCaches[argumentsHash]) === 'undefined') {
-							let cacheBucket = createImmutable([]);
+							let cacheBucket = [];
+							if (configuration.reactiveStructuresAsCausalityObjects) cacheBucket = createImmutable(cacheBucket);
 							functionCaches[argumentsHash] = cacheBucket;
 							emitUnobservableEvent({object: functionCaches, type: 'set', property: argumentsHash , oldValueUndefined: true , value: cacheBucket});
 						}
 						let hashBucket = functionCaches[argumentsHash];
-						let newCacheRecord = createImmutable({});
+						let newCacheRecord = {};
+						if (configuration.reactiveStructuresAsCausalityObjects) newCacheRecord = createImmutable(newCacheRecord);
 						hashBucket.push(newCacheRecord);
 						emitUnobservableEvent({object: hashBucket, type: 'splice', index: "foo", removed: null , added: [newCacheRecord]});
 						return newCacheRecord;
@@ -3429,7 +3470,9 @@
 			incomingStructuresAsCausalityObjects: false,
 			incomingReferenceCounters : false, 
 			blockInitializeForIncomingStructures: false, 
-			blockInitializeForIncomingReferenceCounters: false, 
+			blockInitializeForIncomingReferenceCounters: false,
+			
+			reactiveStructuresAsCausalityObjects: false, 
 			
 			directStaticAccess : false,
 			objectActivityList : false,

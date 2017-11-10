@@ -3,7 +3,9 @@
 		usePersistency: false, 
 		isClient: true,
 		causalityConfiguration : {
-			useIncomingStructures : true				
+			useIncomingStructures : true,
+			recordPulseEvents : true,
+			reactiveStructuresAsCausalityObjects: false
 		}
 	});
 	liquid.setAsDefaultConfiguration();
