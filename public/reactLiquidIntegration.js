@@ -3,6 +3,10 @@
 var reactRootComponentInstance = null;
 
 let liquid = require('./liquid.js')();
+let objectlog = require("../liquid/objectlog.js");
+let log = objectlog.log;
+let logGroup = objectlog.enter;
+let logUngroup = objectlog.exit;
 
 /*--------------------------------------*
 *              Focus    
@@ -138,16 +142,23 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 	// stackDump();
 	// console.log(componentsNeedOfForceUpdate);
 	component._ = "<" + className + " />";
+	log("uponChangeDo...");
 	return liquid.uponChangeDo("Component:" + className,
 	function() {
-		// console.log("Actually rendering!");
-		var element = renderFunction();
+		logGroup("Actually rendering! " + className);
+		let element;
+		liquid.pulse(function() {
+			log("renderFunction...");
+			element = renderFunction();			
+			log("...");
+		});
 		// console.groupEnd();
 		// traceGroupEnd();
+		logUngroup();
 		return element;
 	},
 	function() {
-		// console.log("Component:" + className + " in need of update");
+		log("Component:" + className + " in need of update");
 		// trace('react', "Component:" + className + " in need of update");
 		componentsNeedOfForceUpdate.push(component);
 	});

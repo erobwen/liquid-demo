@@ -5,7 +5,7 @@
 		causalityConfiguration : {
 			useIncomingStructures : true,
 			recordPulseEvents : true,
-			reactiveStructuresAsCausalityObjects: false
+			reactiveStructuresAsCausalityObjects: false // Already default
 		}
 	});
 	liquid.setAsDefaultConfiguration();

@@ -844,7 +844,10 @@
 				});
 			});			
 		}
-			
+		
+		function disconnect(page) {
+			delete pagesMap[page.token];
+		}
  		
 		function getPage(pageToken) {
 			log("getPage:" + pageToken);
@@ -854,7 +857,7 @@
 			if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(pagesMap[pageToken]) !== 'undefined') {
 				return pagesMap[pageToken];
 			}
-			throw new Error("Invalid page token");
+			throw new Error("Invalid page token: " + pageToken);
 		}
 
 		let pushingDownstreamData = false;

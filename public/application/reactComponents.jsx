@@ -22,6 +22,7 @@
 
 window.LiquidApplication = React.createClass(liquidClassData({
 	render: function() {
+		log("render: LiquidApplication");
 		return invalidateUponLiquidChange("LiquidApplication", this, function() {
 			let page = window.page;
 			console.log("RENDERING!!!");
@@ -66,6 +67,7 @@ var LoginUI = React.createClass(liquidClassData({
 	},
 	
 	render : function() {
+		log("render: LoginUI");
 		return invalidateUponLiquidChange("LoginUI", this, function() {
 			// console.log(this.props.page);
 			var page = this.props.page; // same as window.page'
@@ -94,6 +96,7 @@ var LoginUI = React.createClass(liquidClassData({
 
 var UserView = React.createClass(liquidClassData({
 	render: function() {
+		log("render: UserView");
 		return invalidateUponLiquidChange("UserView", this, function() {
 			// trace('react', "Render in user view. ");
 			var rootCategories = this.props.user.cached('getRootCategories');
@@ -119,26 +122,34 @@ var PropertyField = React.createClass(liquidClassData({
 		return { focused : false };
 	},
 	clickOnName: function(event) {
+		logGroup("clickOnName:");
 		focusComponent(this);
 		event.stopPropagation();
+		logUngroup();
 	},
 	clickOnField: function(event) {
+		logGroup("clickOnField:");
 		event.stopPropagation();
 		return false;
+		logUngroup();
 	},
 	propertyChanged: function(event) {
 		this.props.object[this.props.propertyName] = event.target.value;
 	},	
 	render: function() {
-		return invalidateUponLiquidChange("PropertyField", this, function() {
+		logGroup("render: PropertyField");
+		let element = invalidateUponLiquidChange("PropertyField", this, function() {
+			log("labelString...");
 			var labelString = (typeof(this.props.label) !== 'undefined' && this.props.label !== null) ? (this.props.label + ": ") : "";
 			if (this.state.focused) {
+				log("focused...");
 				return (
 					<span onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
 						<span>{ labelString }<input type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
 					</span>
 				);
 			} else {
+				log("unfocused...");
 				return (
 					<span onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
 						<span>{ labelString }{this.props.object[this.props.propertyName]}</span>
@@ -146,12 +157,15 @@ var PropertyField = React.createClass(liquidClassData({
 				);
 			}
 		}.bind(this));
+		logUngroup();
+		return element;
 	}
 }));
 
 
 var CategoriesView = React.createClass(liquidClassData({	
 	render: function() {
+		log("render: CategoriesView");
 		return invalidateUponLiquidChange("CategoriesView", this, function() {
 			var categoriesElements = [];
 			this.props.categories.forEach(function(category) {
@@ -316,6 +330,7 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	render: function() {
+		log("render: CategoryView");
 		return invalidateUponLiquidChange("CategoryView", this, function() {
 			var subCategories = [];
 			var categoryViewElementName ="CategoryView"

@@ -245,6 +245,7 @@ liquidSocket.on('connection', function (socket) {
 		try {
 			let page = liquid.getPage(pageToken);
 			page.const._socket = socket;
+			socket._liquidPage = page; 
 			// liquid.pushDataDownstream(); // In case this page had subscription updates that never got pushed. ???
 		} catch (error) {
 			socket.emit('couldNotConnectPageWithSocket');
@@ -256,9 +257,9 @@ liquidSocket.on('connection', function (socket) {
 		liquid.messageFromDownstream(pageToken, message);
 	});
 
-	socket.on('disconnect', function(pageToken) {
-		log("socket.on: disconnect");
-		liquid.disconnect(pageToken);
+	socket.on('disconnect', function(message) {
+		log("socket.on: disconnect: " + message);
+		liquid.disconnect(socket._liquidPage);
 	});
 });
 
