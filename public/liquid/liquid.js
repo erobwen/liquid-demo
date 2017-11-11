@@ -913,13 +913,17 @@
 		 *  
 		 *
 		 ***************************************************************/
+	
+		let pusingPulseFromUpstream = false; // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
 
 		function receiveInitialDataFromUpstream(serializedData) {
+			pusingPulseFromUpstream = true;
 			console.log("receiveInitialDataFromUpstream");
 			console.log(serializedData);
 			liquid.unserializeObjectsFromUpstream(serializedData.subscriptionInfo.addedSerialized)
 			liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
 			console.log(liquid);
+			pusingPulseFromUpstream = false;
 		}
 
 	
@@ -1093,54 +1097,57 @@
 		 * idToUpstreamId
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
-		function pushDataUpstream() {
-			// console.log("Not yet!");
+		function pushDataUpstream(events) {
+			log("pushDataUpstream");// console.log("Not yet!");
+			log(events);
 			// return;
-			if (typeof(liquid.upstreamSocket) !== undefined) {
-				// console.group("Consider push data upstream");
+			if (typeof(pushMessageUpstreamCallback) !== undefined && !pusingPulseFromUpstream) {
+				log("Consider push data upstream");
 		
 				// Find data that needs to be pushed upstream
 				var requiredObjects = {};
-				function addRequiredCascade(object, requiredObjects) {
-					if (object.const._upstreamId === null && typeof(requiredObjects[object.id]) === 'undefined') {
-						requiredObjects[object.id] = object;
-						object.forAllOutgoingRelationsAndObjects(function(definition, instance, relatedObject) {
-							addRequiredCascade(relatedObject);
+				function addRequiredCascade(object) {
+					if (object.const._upstreamId === null && typeof(requiredObjects[object.const.id]) === 'undefined') {
+						requiredObjects[object.const.id] = object;
+						Object.keys(object).forEach(function(key) { // TODO: consider, for loop? How to avoid inherited... 
+							let value = object[key];
+							if (liquid.isObject(value)) {
+								addRequiredCascade(value);								
+							}
 						});
 					}
 				}
 		
 				// TODO: What to do with this?... get events as argument?... 
-				// liquid.activePulse.events.forEach(function(event) {
-					// var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
-					// if (!eventIsFromUpstream) {
-						// // trace('serialize', "processing event required objects");
-						// if (event.object.const._upstreamId !== null && event.action == 'addingRelation' && event.relatedObject._upstreamId === null) {
-							// addRequiredCascade(event.relatedObject, requiredObjects);
-						// }
-					// }
-				// });
+				events.forEach(function(event) {
+					var eventIsFromUpstream = pusingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
+					if (!eventIsFromUpstream) {
+						// log("processing event required objects");
+						if (event.object.const._upstreamId !== null && event.type == 'set' && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
+							addRequiredCascade(event.value);
+						}
+					}
+				});
 		
 				var serializedObjects = [];
 				for(id in requiredObjects) {
-					var serializedObject = liquid.serializeObject(requiredObjects[id], true);
+					var serializedObject = serializeObject(requiredObjects[id], true);
 					serializedObjects.push(serializedObject);
 				}
 		
 				var serializedEvents = [];
-				// TODO: get events from argument
-				// liquid.activePulse.events.forEach(function(event) {
-					// // console.log(event);
-					// var eventIsFromUpstream = liquid.activePulse.originator === 'upstream' && event.isDirectEvent;
-					// if (!event.redundant && !eventIsFromUpstream) {
-						// // trace('serialize', "not from upstream");
-						// if (event.object.const._upstreamId !== null && typeof(event.definition) !== 'undefined' && !event.definition.clientOnly) {
-							// serializedEvents.push(serializeEventForUpstream(event));
-						// } else if (typeof(requiredObjects[event.object.const.id]) !== 'undefined') {
+				events.forEach(function(event) {
+					var eventIsFromUpstream = pusingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
+					if (!eventIsFromUpstream && event.type === 'set' && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
+						// trace('serialize', "not from upstream");
+						if (event.object.const._upstreamId !== null) {
+							serializedEvents.push(serializeEventForUpstream(event));
+						} 
+						// else if (typeof(requiredObjects[event.object.const.id]) !== 'undefined') { // This seems unecessary... these objects will be streamed in their entirety... 
 							// serializedEvents.push(serializeEventForUpstream(event));
 						// }
-					// }
-				// });
+					}
+				});
 		
 				var serializedPulse = {
 					serializedEvents : serializedEvents,
@@ -1307,18 +1314,19 @@
 			notifyUICallbacks.push(callback);
 		}
 		
-		function streamInRelevantDirections() { // Stream in your general direction.
+		function streamInRelevantDirections(events) { // Stream in your general direction.
+			logGroup("streamInRelevantDirections");
 			// Notify UI
 			notifyUICallbacks.forEach(function(callback) {
-				callback();
+				callback(events);
 			});
 				
 			// Push data downstream
-			pushDataDownstream();
+			pushDataDownstream(events);
 			
 			// Push data upstream
-			pushDataUpstream();
-			
+			pushDataUpstream(events);
+			logUngroup();
 			// Store to database, do nothing, leave to eternity, see calling function
 		}
 		
