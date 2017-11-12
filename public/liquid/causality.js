@@ -1290,6 +1290,8 @@
 		
 		function setHandlerObject(target, key, value) {
 			// log("setHandlerObject" + key);
+			if (configuration.reactiveStructuresAsCausalityObjects && key === '_cachedCalls') throw new Error("Should not be happening!");
+			
 			// Ensure initialized
 			if (trace.basic > 0) {
 				log("setHandlerObject: " + this.const.name + "." + key + "= ");
@@ -2169,8 +2171,8 @@
 			}
 		}
 		
-		function emitUnobservableEvent(event) {
-			if (configuration.recordPulseEvents) {
+		function emitUnobservableEvent(event) { // TODO: move reactiveStructuresAsCausalityObjects upstream in the call chain..  
+			if (configuration.reactiveStructuresAsCausalityObjects && configuration.recordPulseEvents) {
 				pulseEvents.push(event);
 			}
 		}
@@ -2814,7 +2816,7 @@
 			let functionName = argumentsList.shift();
 			
 			return callAndCacheForUniqueArgumentLists(
-				getObjectAttatchedCache(this, "_cachedCalls", functionName), 
+				getObjectAttatchedCache(configuration.reactiveStructuresAsCausalityObjects ? this : this.const, "_cachedCalls", functionName), 
 				argumentsList,
 				function() {
 					return this[functionName].apply(this, argumentsList);
@@ -2886,7 +2888,7 @@
 			let functionName = argumentsList.shift();
 
 			// Cached
-			let cache = getObjectAttatchedCache(this, "_cachedCalls", functionName);
+			let cache = getObjectAttatchedCache(configuration.reactiveStructuresAsCausalityObjects ? this : this.const, "_cachedCalls", functionName);
 			let functionCacher = getFunctionCacher(cache, argumentsList);
 
 			if (functionCacher.cacheRecordExists()) {

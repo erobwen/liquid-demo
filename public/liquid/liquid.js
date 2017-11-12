@@ -531,6 +531,47 @@
 			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
 		}
 		
+		function serializeReference(object, forUpstream) {
+			let className = getClassName(object);
+			if (forUpstream) {
+				if (object.const._upstreamId !== null) {
+					return className + ":id:" + object.const._upstreamId;
+				} else {
+					return className + ":downstreamId:" + object.const.id;
+				}
+			} else {
+				// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
+				return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+			}				
+		}
+		
+		function serializeValue(value, forUpstream) {
+			let type = typeof(value);
+			if (type === 'object') {
+				if (liquid.isObject(value)) {
+					let object = value;
+					let className = getClassName(value);
+					if (forUpstream) {
+						if (object.const._upstreamId !== null) {
+							return type + ":" + className + ":id:" + object.const._upstreamId;
+						} else {
+							return type + ":" + className + ":downstreamId:" + object.const.id;
+						}
+					} else {
+						return type + ":" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+					}									
+				} else if (value === null) {
+					return type + ":null";
+				} else {
+					log(value, 2);
+					throw new Error("No support for streaming non-liquid objects.");
+				}
+			} else {
+				return type + ":" + value;
+			}
+		}
+		
+		
 		/**
 		 * Example output:
 		 * 
@@ -542,24 +583,9 @@
 		 * }
 		 */
 		function serializeObject(object, forUpstream = false) {
-			function serializeReference(object) {
-				let className = getClassName(object);
-				if (forUpstream) {
-					if (object.const._upstreamId !== null) {
-						return className + ":id:" + object.const._upstreamId;
-					} else {
-						return className + ":downstreamId:" + object.const.id;
-					}
-				} else {
-					// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
-					return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
-				}				
-			}
-			
 			serialized = {
 				_ : logToString(liquid.objectDigest(object)),
 				className : getClassName(object),
-				references : {},
 				values : {}
 			};
 			if (forUpstream) {
@@ -579,17 +605,13 @@
 			}
 			if (typeof(object.indexParent) !== 'undefined') {
 				// Add these first in references object. 
-				serialized.indexParent = serializeReference(object.indexParent);
+				serialized.indexParent = serializeReference(object.indexParent, forUpstream);
 				serialized.indexParentRelation = object.indexParentRelation;
 			}
 			Object.keys(object).forEach(function(key) {
 				if (!omittedKeys[key]) {
 					let value = object[key];
-					if (liquid.isObject(value)) {
-						serialized.references[key] = serializeReference(value);
-					} else if (typeof(value) !== 'object' && typeof(value) !== 'function'){
-						serialized.values[key] = value; 											
-					}
+					serialized.values[key] = serializeValue(value, forUpstream); 											
 				} 
 			});
 			return serialized;
@@ -1042,22 +1064,29 @@
 			} else {
 				serialized.objectDownstreamId = event.object.const.id;
 			}
-		
-			if (event.definition.type === 'relation') {
-				serialized.relationQualifiedName = event.definition.qualifiedName;
-		
-				if (typeof(event.relatedObject) !== 'undefined') {
-					if (event.relatedObject._upstreamId !== null) {
-						serialized.relatedObjectId = event.relatedObject._upstreamId;
-					} else {
-						serialized.relatedObjectDownstreamId = event.relatedObject.const.id;
-					}
-				}
-			} else {
-				serialized.propertyName = event.definition.name;
-				serialized.newValue = event.newValue;
+
+			serialized.type = event.type;
+			if (typeof(event.value) !== 'undefined') {
+				serialized.value = serializedValue(event.value, true);
 			}
-		
+			if (typeof(event.previousValue) !== 'undefined') {
+				serialized.previousValue = serializedValue(event.previousValue, true);
+			}
+			if (typeof(event.added) !== 'undefined') {
+				let serializedAdded = [];
+				event.added.forEach(function(added) {
+					serializedAdded.push(serializedValue(added, true));					
+				});
+				serialized.added = serializedAdded;
+			}
+			if (typeof(event.removed) !== 'undefined') {
+				let serializedRemoved = [];
+				event.removed.forEach(function(removed) {
+					serializedRemoved.push(serializedValue(removed, true));					
+				});
+				serialized.removed = serializedRemoved;
+			}
+
 			return serialized;
 		}
 		
@@ -1179,13 +1208,29 @@
 			return id;
 		}
 		
-		function unserializeUpstreamReference(reference) {
-			var fragments = reference.split(":");
-			var className = fragments[0];
-			var id = parseInt(fragments[1]);
-			var locked = fragments[2] === 'true' ? true : false;
-			return ensureEmptyObjectExists(id, className, locked);
+		function unserializeValue(value, forUpstream) {
+			let fragments = value.split(":");
+			let type = fragments[0];
+			if (type === 'object') {
+				if (forUpstream) {
+					// TODO...
+				} else {
+					if (fragments[1] === 'null') {
+						return null;
+					} else {
+						let className = fragments[1];
+						let id = parseInt(fragments[2]);
+						let locked = fragments[3] === 'true' ? true : false;
+						return ensureEmptyObjectExists(id, className, locked);																		
+					}
+				}
+			} else if (type === 'integer'){
+				return parseInt(fragments[1]);
+			} else {
+				return fragments[1];
+			}
 		}
+
 		
 		// Note: this function can only be used when we know that there is at least a placeholder. 
 		function getUpstreamEntity(upstreamId) {
@@ -1256,15 +1301,8 @@
 					liquid.setIndex(parentObject, serializedObject.indexParentRelation, targetObject);
 				}
 				
-				for(key in serializedObject.references) {
-					let unserializedReference = unserializeUpstreamReference(serializedObject.references[key]);
-					// log("setting key: " + key);
-					// log(serializedObject.references[key]);
-					if (typeof(targetObject[key]) !== 'undefined') throw new Error("Key " + key + " already set to " + objectlog.toString(targetObject[key]) + " on " + objectlog.toString(liquid.objectDigest(targetObject)));
-					targetObject[key] = unserializedReference;	
-				}
 				for(key in serializedObject.values) {
-					targetObject[key] = serializedObject.values[key];
+					targetObject[key] = unserializeValue(serializedObject.values[key], false);
 				}
 				targetObject._ = logToString(objectDigest(targetObject)); // .__();					
 				targetObject.isPlaceholder = false;
@@ -1315,19 +1353,21 @@
 		}
 		
 		function streamInRelevantDirections(events) { // Stream in your general direction.
-			logGroup("streamInRelevantDirections");
-			// Notify UI
-			notifyUICallbacks.forEach(function(callback) {
-				callback(events);
-			});
+			if (events.length > 0) {				
+				logGroup("streamInRelevantDirections");
+				// Notify UI
+				notifyUICallbacks.forEach(function(callback) {
+					callback(events);
+				});
+					
+				// Push data downstream
+				pushDataDownstream(events);
 				
-			// Push data downstream
-			pushDataDownstream(events);
-			
-			// Push data upstream
-			pushDataUpstream(events);
-			logUngroup();
-			// Store to database, do nothing, leave to eternity, see calling function
+				// Push data upstream
+				pushDataUpstream(events);
+				logUngroup();
+				// Store to database, do nothing, leave to eternity, see calling function
+			}
 		}
 		
 		if (configuration.usePersistency) {

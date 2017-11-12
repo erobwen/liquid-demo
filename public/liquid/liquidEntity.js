@@ -392,7 +392,7 @@
 			let functionName = argumentsList.shift();
 			
 			return liquid.callAndCacheForUniqueArgumentLists(
-				liquid.getObjectAttatchedCache(this, "_cachedCalls", functionName), 
+				liquid.getObjectAttatchedCache(liquid.configuration.reactiveStructuresAsCausalityObjects ? this : this.const, "_cachedCalls", functionName), 
 				argumentsList,
 				function() {
 					return this[functionName].apply(this, argumentsList);
@@ -770,7 +770,7 @@
 	class LiquidPageService extends LiquidEntity {
 		initialize() {
 			// log("LiquidPageService.initialize");
-			this.orderedSubscriptions = [];
+			this.orderedSubscriptions = create([]);
 			
 			// createIncomingProperty(LiquidPageService, "page", LiquidPage, "service");
 		}
