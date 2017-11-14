@@ -96,6 +96,140 @@
 		
 		/***************************************************************
 		 *
+		 *  General Serialize
+		 *
+		 ***************************************************************/
+	
+		function getClassName(object) {
+			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
+		}
+		
+		function serializeReference(object, forUpstream) {
+			let className = getClassName(object);
+			if (forUpstream) {
+				if (object.const._upstreamId !== null) {
+					return className + ":id:" + object.const._upstreamId;
+				} else {
+					return className + ":downstreamId:" + object.const.id;
+				}
+			} else {
+				// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
+				return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+			}				
+		}
+		
+		function serializeValue(value, forUpstream) {
+			let type = typeof(value);
+			if (type === 'object') {
+				if (liquid.isObject(value)) {
+					let object = value;
+					let className = getClassName(value);
+					if (forUpstream) {
+						if (object.const._upstreamId !== null) {
+							return type + ":" + className + ":id:" + object.const._upstreamId;
+						} else {
+							return type + ":" + className + ":downstreamId:" + object.const.id;
+						}
+					} else {
+						return type + ":" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+					}									
+				} else if (value === null) {
+					return type + ":null";
+				} else {
+					log(value, 2);
+					throw new Error("No support for streaming non-liquid objects.");
+				}
+			} else if (type === 'number' || type === 'string') {
+				return type + ":" + value;
+			} else {
+				throw new Error("Unsupported type for serialization: " + type);
+			}
+		}
+		
+		
+		/**
+		 * Example output:
+		 * 
+		 * {
+		 * 	 id: 34
+		 * 	 className: 'Dog'
+		 *	 values: { owner : "object:Human:23", name : "string:A string" }
+		 * }
+		 */
+		function serializeObject(object, forUpstream = false) {
+			serialized = {
+				_ : logToString(liquid.objectDigest(object)),
+				className : getClassName(object),
+				values : {}
+			};
+			if (forUpstream) {
+				if (object.const._upstreamId !== null) {
+					serialized.id = object.const._upstreamId;
+				} else {
+					serialized.downstreamId = object.const.id;
+				}
+			} else {
+				serialized.id = object.const.id;
+			}
+			let omittedKeys = {
+				isPlaceholder : true,
+				isLockedObject : true,
+				indexParent : true, 
+				indexParentRelation : true
+			}
+			if (typeof(object.indexParent) !== 'undefined') {
+				// Add these first in references object. 
+				serialized.indexParent = serializeReference(object.indexParent, forUpstream);
+				serialized.indexParentRelation = object.indexParentRelation;
+			}
+			Object.keys(object).forEach(function(key) {
+				if (!omittedKeys[key]) {
+					let value = object[key];
+					if (typeof(value) === 'undefined') {
+						log(key);
+						log(object, 2);
+						throw new Error("WTF");
+					}
+					serialized.values[key] = serializeValue(value, forUpstream); 											
+				} 
+			});
+			return serialized;
+		};
+		
+		
+		function unserializeValue(value, forUpstream) {
+			let fragments = value.split(":");
+			let type = fragments.shift();
+			if (type === 'object') {
+				if (forUpstream) {
+					// TODO...
+				} else {
+					if (fragments[0] === 'null') {
+						return null;
+					} else {
+						let className = fragments[0];
+						let id = parseInt(fragments[1]);
+						let locked = fragments[2] === 'true' ? true : false;
+						return ensurePlaceholderOrObjectExists(id, className, locked);																		
+					}
+				}
+			} else if (type === 'number'){
+				let number = fragments[0];
+				if (number.indexOf(".") > 0) {
+					return parseFloat(number);
+				} else {
+					return parseInt(number);					
+				}
+			} else if (type === 'string'){
+				return fragments.join(":");
+			} else {
+				throw new Error("Unsupported data type for streaming: " + type);
+			}
+		}
+
+		
+		/***************************************************************
+		 *
 		 *  Server oriented code
 		 *
 		 ***************************************************************/
@@ -198,7 +332,7 @@
 		function generateUniqueKey(keysMap) {
 			var newKey = null;
 			while(newKey == null) {
-				var newKey = Number.MAX_SAFE_INTEGER * Math.random();
+				var newKey = Math.floor(Number.MAX_SAFE_INTEGER * Math.random());
 				if (typeof(keysMap[newKey]) !== 'undefined') {
 					newKey = null;
 				}
@@ -207,16 +341,16 @@
 		}
 
 		// function createOrGetSessionObject(req) {
-			// var hardToGuessSessionId = req.session.id;
-		function createOrGetSessionObject(hardToGuessSessionId) {
+			// var token = req.session.id;
+		function createOrGetSessionObject(token) {
 			// throw new Error("Hard to guess!!!");
 			// log("createOrGetSessionObject");
-			// log(hardToGuessSessionId);
-			if (typeof(sessionsMap[hardToGuessSessionId]) === 'undefined') {
+			// log(token);
+			if (typeof(sessionsMap[token]) === 'undefined') {
 				// TODO: createPersistent instead
-				sessionsMap[hardToGuessSessionId] = liquid.create('LiquidSession', {hardToGuessSessionId: hardToGuessSessionId});
+				sessionsMap[token] = liquid.create('LiquidSession', {token: token});
 			}
-			return sessionsMap[hardToGuessSessionId];
+			return sessionsMap[token];
 		}
 		
 		// function connectPageWithSocket(pageToken) {
@@ -527,96 +661,7 @@
 			return serialized;
 		};
 		
-		function getClassName(object) {
-			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
-		}
-		
-		function serializeReference(object, forUpstream) {
-			let className = getClassName(object);
-			if (forUpstream) {
-				if (object.const._upstreamId !== null) {
-					return className + ":id:" + object.const._upstreamId;
-				} else {
-					return className + ":downstreamId:" + object.const.id;
-				}
-			} else {
-				// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
-				return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
-			}				
-		}
-		
-		function serializeValue(value, forUpstream) {
-			let type = typeof(value);
-			if (type === 'object') {
-				if (liquid.isObject(value)) {
-					let object = value;
-					let className = getClassName(value);
-					if (forUpstream) {
-						if (object.const._upstreamId !== null) {
-							return type + ":" + className + ":id:" + object.const._upstreamId;
-						} else {
-							return type + ":" + className + ":downstreamId:" + object.const.id;
-						}
-					} else {
-						return type + ":" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
-					}									
-				} else if (value === null) {
-					return type + ":null";
-				} else {
-					log(value, 2);
-					throw new Error("No support for streaming non-liquid objects.");
-				}
-			} else {
-				return type + ":" + value;
-			}
-		}
-		
-		
-		/**
-		 * Example output:
-		 * 
-		 * {
-		 * 	 id: 34
-		 * 	 className: 'Dog'
-		 *	 HumanOwner: 'Human:23'
-		 *	 property: "A string"	
-		 * }
-		 */
-		function serializeObject(object, forUpstream = false) {
-			serialized = {
-				_ : logToString(liquid.objectDigest(object)),
-				className : getClassName(object),
-				values : {}
-			};
-			if (forUpstream) {
-				if (object.const._upstreamId !== null) {
-					serialized.id = object.const._upstreamId;
-				} else {
-					serialized.downstreamId = object.const.id;
-				}
-			} else {
-				serialized.id = object.const.id;
-			}
-			let omittedKeys = {
-				isPlaceholder : true,
-				isLockedObject : true,
-				indexParent : true, 
-				indexParentRelation : true
-			}
-			if (typeof(object.indexParent) !== 'undefined') {
-				// Add these first in references object. 
-				serialized.indexParent = serializeReference(object.indexParent, forUpstream);
-				serialized.indexParentRelation = object.indexParentRelation;
-			}
-			Object.keys(object).forEach(function(key) {
-				if (!omittedKeys[key]) {
-					let value = object[key];
-					serialized.values[key] = serializeValue(value, forUpstream); 											
-				} 
-			});
-			return serialized;
-		};
-		
+
 		// Form for events:
 		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
 		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
@@ -636,7 +681,7 @@
 				}
 			} else {
 				serialized.propertyName = event.definition.name;
-				serialized.newValue = event.newValue;
+				serialized.value = event.value;
 			}
 
 			return serialized;
@@ -787,7 +832,7 @@
 							}
 						} else if (event.action === "settingProperty") {
 							var setterName = object._propertyDefinitions[event.propertyName].setterName;
-							object[setterName](event.newValue);
+							object[setterName](event.value);
 						}
 					}
 			
@@ -800,77 +845,6 @@
 			});
 		}
 
-		
-		/**--------------------------------------------------------------
-		 *              Receive changes from upstream
-		 *----------------------------------------------------------------*/
-		
-		function messageFromUpstream(message) {
-			if (message.type = "pulse") {
-				receiveChangesFromUpstream(message.changes);
-			} else if (message.type = "callOnServerReturn") {
-				
-			}
-		}
-		
-		function receiveChangesFromUpstream(changes) {
-			liquid.pulse(function() {
-				// Consolidate ids:
-				for (id in changes.idToUpstreamId) {
-					throw new Error("Not done yet!");
-					// TODO: Needs to keep a local map for all server synched objects...  
-					// liquid.getEntity(id)._upstreamId = changes.idToUpstreamId[id];
-				}
-				console.log(changes);
-				//result
-				unserializeFromUpstream(changes.addedSerialized);
-
-				liquid.blockUponChangeActions(function() {
-					liquid.allUnlocked++;
-					changes.events.forEach(function(event) {
-						if (event.action === 'addingRelation') {
-							var object = getUpstreamEntity(event.objectId);
-							var relatedObject = getUpstreamEntity(event.relatedObjectId);
-							var relation = object._relationDefinitions[event.relationName];
-							if (relation.isSet) {
-								object[relation.adderName](relatedObject);
-							} else {
-								object[relation.setterName](relatedObject);
-							}
-						} else if (event.action === 'deletingRelation') {
-							liquid.activeSaver = null;
-							var object = getUpstreamEntity(event.objectId);
-							var relatedObject = getUpstreamEntity(event.relatedObjectId);
-							var relation = object._relationDefinitions[event.relationName];
-							if (relation.isSet) {
-								object[relation.removerName](relatedObject);
-							} else {
-								object[relation.setterName](null);
-							}
-							liquid.activeSaver = liquid.defaultSaver;
-						} else if (event.action === 'settingProperty') {
-							liquid.activeSaver = null;
-							var object = getUpstreamEntity(event.objectId);
-							var setterName = object._propertyDefinitions[event.propertyName].setterName;
-							object[setterName](event.newValue);
-							liquid.activeSaver = liquid.defaultSaver;
-						}
-					});
-
-					// and create an "originators copy" of the data for safekeeping. 
-					for (upstreamId in changes.unsubscribedUpstreamIds) {
-						var object = getUpstreamEntity(upstreamId);
-						object.setIsLockedObject(true);
-					}
-					liquid.allUnlocked--;
-				});
-			});			
-		}
-		
-		function disconnect(page) {
-			delete pagesMap[page.token];
-		}
- 		
 		function getPage(pageToken) {
 			log("getPage:" + pageToken);
 			log(pagesMap, 2);
@@ -891,7 +865,7 @@
 					pushingDownstreamData = true; // What happens on asynchronous wait?? move this to liquid.state. 
 					if (message.type === 'pulse') {
 						liquid.pulse(function() {
-							liquid.unserializeDownstreamPulse(page, pulseData);
+							unserializeDownstreamPulse(page, message.data); // foo
 						});							
 					} else if (message.type === 'call') {
 						
@@ -958,6 +932,77 @@
 		
 
 		
+		/**--------------------------------------------------------------
+		 *              Receive changes from upstream
+		 *----------------------------------------------------------------*/
+		
+		function messageFromUpstream(message) {
+			if (message.type = "pulse") {
+				receiveChangesFromUpstream(message.changes);
+			} else if (message.type = "callOnServerReturn") {
+				
+			}
+		}
+		
+		function receiveChangesFromUpstream(changes) {
+			liquid.pulse(function() {
+				// Consolidate ids:
+				for (id in changes.idToUpstreamId) {
+					throw new Error("Not done yet!");
+					// TODO: Needs to keep a local map for all server synched objects...  
+					// liquid.getEntity(id)._upstreamId = changes.idToUpstreamId[id];
+				}
+				console.log(changes);
+				//result
+				unserializeFromUpstream(changes.addedSerialized);
+
+				liquid.blockUponChangeActions(function() {
+					liquid.allUnlocked++;
+					changes.events.forEach(function(event) {
+						if (event.action === 'addingRelation') {
+							var object = getUpstreamEntity(event.objectId);
+							var relatedObject = getUpstreamEntity(event.relatedObjectId);
+							var relation = object._relationDefinitions[event.relationName];
+							if (relation.isSet) {
+								object[relation.adderName](relatedObject);
+							} else {
+								object[relation.setterName](relatedObject);
+							}
+						} else if (event.action === 'deletingRelation') {
+							liquid.activeSaver = null;
+							var object = getUpstreamEntity(event.objectId);
+							var relatedObject = getUpstreamEntity(event.relatedObjectId);
+							var relation = object._relationDefinitions[event.relationName];
+							if (relation.isSet) {
+								object[relation.removerName](relatedObject);
+							} else {
+								object[relation.setterName](null);
+							}
+							liquid.activeSaver = liquid.defaultSaver;
+						} else if (event.action === 'settingProperty') {
+							liquid.activeSaver = null;
+							var object = getUpstreamEntity(event.objectId);
+							var setterName = object._propertyDefinitions[event.propertyName].setterName;
+							object[setterName](event.value);
+							liquid.activeSaver = liquid.defaultSaver;
+						}
+					});
+
+					// and create an "originators copy" of the data for safekeeping. 
+					for (upstreamId in changes.unsubscribedUpstreamIds) {
+						var object = getUpstreamEntity(upstreamId);
+						object.setIsLockedObject(true);
+					}
+					liquid.allUnlocked--;
+				});
+			});			
+		}
+		
+		function disconnect(page) {
+			delete pagesMap[page.token];
+		}
+ 		
+		
 		
 		// This was done on client... wierd... I think that active subscriptions should be updated by server and pushed in same pulse as newly loaded... 
 		// liquid.instancePage.setReceivedSubscriptions(liquid.instancePage.getPageService().getOrderedSubscriptions());
@@ -1010,7 +1055,6 @@
 		/**--------------------------------------------------------------
 		 *              Call on server
 		 *----------------------------------------------------------------*/
-		
 		
 		var callId = 0;
 		
@@ -1067,22 +1111,22 @@
 
 			serialized.type = event.type;
 			if (typeof(event.value) !== 'undefined') {
-				serialized.value = serializedValue(event.value, true);
+				serialized.value = serializeValue(event.value, true);
 			}
 			if (typeof(event.previousValue) !== 'undefined') {
-				serialized.previousValue = serializedValue(event.previousValue, true);
+				serialized.previousValue = serializeValue(event.previousValue, true);
 			}
 			if (typeof(event.added) !== 'undefined') {
 				let serializedAdded = [];
 				event.added.forEach(function(added) {
-					serializedAdded.push(serializedValue(added, true));					
+					serializedAdded.push(serializeValue(added, true));					
 				});
 				serialized.added = serializedAdded;
 			}
 			if (typeof(event.removed) !== 'undefined') {
 				let serializedRemoved = [];
 				event.removed.forEach(function(removed) {
-					serializedRemoved.push(serializedValue(removed, true));					
+					serializedRemoved.push(serializeValue(removed, true));					
 				});
 				serialized.removed = serializedRemoved;
 			}
@@ -1208,29 +1252,6 @@
 			return id;
 		}
 		
-		function unserializeValue(value, forUpstream) {
-			let fragments = value.split(":");
-			let type = fragments[0];
-			if (type === 'object') {
-				if (forUpstream) {
-					// TODO...
-				} else {
-					if (fragments[1] === 'null') {
-						return null;
-					} else {
-						let className = fragments[1];
-						let id = parseInt(fragments[2]);
-						let locked = fragments[3] === 'true' ? true : false;
-						return ensureEmptyObjectExists(id, className, locked);																		
-					}
-				}
-			} else if (type === 'integer'){
-				return parseInt(fragments[1]);
-			} else {
-				return fragments[1];
-			}
-		}
-
 		
 		// Note: this function can only be used when we know that there is at least a placeholder. 
 		function getUpstreamEntity(upstreamId) {
@@ -1240,7 +1261,7 @@
 			return upstreamIdObjectMap[upstreamId];
 		}
 		
-		function ensureEmptyObjectExists(upstreamId, className, isLocked) {
+		function ensurePlaceholderOrObjectExists(upstreamId, className, isLocked) {
 			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
 				liquid.state.blockInitialize = true;
 				var newObject = create(className);
@@ -1269,8 +1290,8 @@
 			// console.log(serializedObject);
 			var upstreamId = serializedObject.id;
 			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
-				// log("ensureEmptyObjectExists!");
-				ensureEmptyObjectExists(upstreamId, serializedObject.className, false);
+				// log("ensurePlaceholderOrObjectExists!");
+				ensurePlaceholderOrObjectExists(upstreamId, serializedObject.className, false);
 				// log(Object.keys(upstreamIdObjectMap[upstreamId]));
 				// log(Object.keys(upstreamIdObjectMap[upstreamId])[0]);
 				// log(Object.keys(upstreamIdObjectMap[upstreamId])[1]);
@@ -1396,6 +1417,7 @@
 			setPushMessageUpstreamCallback : setPushMessageUpstreamCallback, 
 			getSubscriptionUpdate : getSubscriptionUpdate, 
 			unserializeObjectsFromUpstream : unserializeObjectsFromUpstream,
+			messageFromDownstream : messageFromDownstream,
 			registerPage : registerPage,
 			addNotifyUICallback : addNotifyUICallback,
 			setAsDefaultConfiguration : setAsDefaultConfiguration,

@@ -2137,7 +2137,7 @@
 
 		function emitSetEvent(handler, key, value, previousValue) {
 			if (configuration.recordPulseEvents || typeof(handler.observers) !== 'undefined') {
-				emitEvent(handler, {type: 'set', property: key, newValue: value, oldValue: previousValue});
+				emitEvent(handler, {type: 'set', property: key, value: value, oldValue: previousValue});
 			}
 		}
 

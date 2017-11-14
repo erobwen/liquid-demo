@@ -543,7 +543,7 @@
 		
 		initialize(data) {
 			super.initialize(data);
-			this.sorter = data.sorter;
+			this.sorter = (data.sorter) ? data.sorter : null;
 			this.attatchIndex("contents", create({}));
 		}
 		

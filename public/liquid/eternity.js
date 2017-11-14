@@ -83,7 +83,7 @@
 								if (trace.eternity) log("set event");
 								markOldValueAsUnstable(dbImage, event);
 									
-								setPropertyOfImageAndFloodCreateNewImages(event.object, event.property, event.newValue);
+								setPropertyOfImageAndFloodCreateNewImages(event.object, event.property, event.value);
 							} else if (event.type === 'delete') {
 								markOldValueAsUnstable(dbImage, event);
 																
@@ -401,7 +401,7 @@
 				imageCausality.blockInitialize(function() {
 					// log(event, 1);
 					// if (event.type === 'set') {
-						// log(valueToString(event.object) + ".set " + event.property + " to " + valueToString(event.newValue) + (event.incomingStructureEvent ? " [incoming]" : ""));
+						// log(valueToString(event.object) + ".set " + event.property + " to " + valueToString(event.value) + (event.incomingStructureEvent ? " [incoming]" : ""));
 					// }
 				});
 			});
@@ -547,10 +547,10 @@
 								
 								// Serialized value with temporary db ids. 
 								// recursiveCounter = 0;
-								let newValue = convertReferencesToDbIdsOrTemporaryIds(event.newValue);
+								let value = convertReferencesToDbIdsOrTemporaryIds(event.value);
 								let property = event.property;
 								property = imageCausality.transformPossibleIdExpression(property, imageIdToDbIdOrTmpDbId);
-								imageUpdates[event.property] = newValue;
+								imageUpdates[event.property] = value;
 								if (typeof(imageUpdates["_eternityDeletedKeys"]) !== 'undefined') {
 									delete imageUpdates["_eternityDeletedKeys"][event.property];
 								} 
@@ -592,7 +592,7 @@
 		
 		
 		function imageEventHasObjectValue(event) {
-			return imageCausality.isObject(event.newValue) || imageCausality.isObject(event.oldValue);
+			return imageCausality.isObject(event.value) || imageCausality.isObject(event.oldValue);
 		}
 		
 	
