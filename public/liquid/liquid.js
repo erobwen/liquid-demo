@@ -100,6 +100,17 @@
 		 *
 		 ***************************************************************/
 	
+	
+		function serializeSelection(selection, forUpstream) {
+			var serialized = {};
+			for (id in selection) {
+				var object = selection[id];
+				serialized[object.const.id] = serializeObject(object, forUpstream);
+			}
+			return serialized;
+		};
+		
+		
 		function getClassName(object) {
 			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
 		}
@@ -269,39 +280,11 @@
 			// liquid.sessions[connection] = {};
 			// return liquid.sessions[connection];
 		// }
-		liquid.callOnServer = false;
-		function receiveCallOnServer(pageToken, callInfo) {
-			// trace('serialize', "Make call on server");
-			// trace('serialize', pageToken);
-			// trace('serialize', callInfo);
-			liquid.callOnServer = true;
-			Fiber(function() {
-				// trace('serialize', Object.keys(pagesMap));
-				if (typeof(pagesMap[pageToken]) !== 'undefined') {
-					var page = pagesMap[pageToken];
-					trace('serialize', "Make call on server ", page);
+		
 
-					liquid.pulse(function() {
-						var object = page.const._selection[callInfo.objectId];
-						var methodName = callInfo.methodName;
-						var argumentList = callInfo.argumentList; // TODO: Convert to
-						// trace('serialize', "Call: ", methodName);
-						// trace('serialize', "Call: ", argumentList);
-
-						// traceTags.event = true;
-						if (object.allowCallOnServer(page)) {
-							liquid.unlockAll(function() {
-								object[methodName].apply(object, argumentList);
-							});
-						}
-						// delete traceTags.event;
-
-						// trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
-					});
-				}
-			}).run();
-			liquid.callOnServer = false;
-		}
+		/**--------------------------------------------------------------
+		 *              Page and session setup
+		 *----------------------------------------------------------------*/
 		
 		
 		function disconnect() {
@@ -315,11 +298,6 @@
 				// trace('serialize', pageToken);
 			}).run();
 		}
-
-		/**--------------------------------------------------------------
-		 *              Page and session setup
-		 *----------------------------------------------------------------*/
-		
 		function registerPage(page) {
 			page.token = generatePageId();
 			pagesMap[page.token] = page;
@@ -590,7 +568,7 @@
 
 			// Serialize
 			liquid.state.pageSubject = page;
-			result.addedSerialized = serializeSelection(addedAndRemovedIds.added);
+			result.addedSerialized = serializeSelection(addedAndRemovedIds.added, false);
 			liquid.state.pageSubject = null;
 
 			result.unsubscribedUpstreamIds = addedAndRemovedIds.removed;
@@ -652,14 +630,6 @@
 			 */
 		};
 		
-		function serializeSelection(selection) {
-			var serialized = [];
-			for (id in selection) {
-				var object = selection[id];
-				serialized.push(serializeObject(object, false));
-			}
-			return serialized;
-		};
 		
 
 		// Form for events:
@@ -722,6 +692,39 @@
 		 *                 Receive from downstream
 		 ---------------------------------------------------------------*/
 
+		liquid.callOnServer = false;
+		function receiveCallOnServer(pageToken, callInfo) {
+			// trace('serialize', "Make call on server");
+			// trace('serialize', pageToken);
+			// trace('serialize', callInfo);
+			liquid.callOnServer = true;
+			Fiber(function() {
+				// trace('serialize', Object.keys(pagesMap));
+				if (typeof(pagesMap[pageToken]) !== 'undefined') {
+					var page = pagesMap[pageToken];
+					trace('serialize', "Make call on server ", page);
+
+					liquid.pulse(function() {
+						var object = page.const._selection[callInfo.objectId];
+						var methodName = callInfo.methodName;
+						var argumentList = callInfo.argumentList; // TODO: Convert to
+						// trace('serialize', "Call: ", methodName);
+						// trace('serialize', "Call: ", argumentList);
+
+						// traceTags.event = true;
+						if (object.allowCallOnServer(page)) {
+							liquid.unlockAll(function() {
+								object[methodName].apply(object, argumentList);
+							});
+						}
+						// delete traceTags.event;
+
+						// trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
+					});
+				}
+			}).run();
+			liquid.callOnServer = false;
+		}
 
 
 		// Form for events:
@@ -731,8 +734,8 @@
 		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
 
 		function unserializeDownstreamPulse(page, pulseData) {
-			// console.log(pulseData);
-
+			log(pulseData, 3);
+			throw new Error("What to do with all these data");
 			var downstreamIdToSerializedObjectMap = {};
 			pulseData.serializedObjects.forEach(function(serializedObject) {
 				downstreamIdToSerializedObjectMap[serializedObject.downstreamId] = serializedObject;
@@ -916,7 +919,7 @@
 			pusingPulseFromUpstream = true;
 			console.log("receiveInitialDataFromUpstream");
 			console.log(serializedData);
-			liquid.unserializeObjectsFromUpstream(serializedData.subscriptionInfo.addedSerialized)
+			unserializeObjectsFromUpstream(serializedData.subscriptionInfo.addedSerialized)
 			liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
 			console.log(liquid);
 			pusingPulseFromUpstream = false;
@@ -1336,22 +1339,19 @@
 		}
 		
 		let upstreamIdToSerializedMap;		
-		function unserializeFromUpstream(arrayOfSerialized) { // If optionalSaver is undefined it will be used to set saver for all unserialized objects.
+		function unserializeFromUpstream(serializedObjects) { // If optionalSaver is undefined it will be used to set saver for all unserialized objects.
 			liquid.turnOffShapeCheck++;
 			liquid.allUnlocked++;
 			
 			// Add all to a map for possible out of order unserialization (in case of indicies)
-			upstreamIdToSerializedMap = {};
-			arrayOfSerialized.forEach(function(serialized) {
-				upstreamIdToSerializedMap[serialized.id] = serialized; 
-			});
+			upstreamIdToSerializedMap = serializedObjects;
 			
 			// Unserialize all
-			arrayOfSerialized.forEach(function(serialized) {
-				// trace('unserialize', "unserializeFromUpstream: ", serialized.id);
-				// console.log("unserializeFromUpstream: " + serialized.id);
+			for (id in upstreamIdToSerializedMap) {
+				// log("unserializeFromUpstream: " + serialized.id);
+				let serialized = upstreamIdToSerializedMap[id];
 				unserializeUpstreamObject(serialized);
-			});
+			}
 			
 			if (typeof(liquid.instancePage) !== 'undefined') {
 				liquid.instancePage.upstreamPulseReceived();
@@ -1416,7 +1416,6 @@
 			setPushMessageDownstreamCallback : setPushMessageDownstreamCallback,
 			setPushMessageUpstreamCallback : setPushMessageUpstreamCallback, 
 			getSubscriptionUpdate : getSubscriptionUpdate, 
-			unserializeObjectsFromUpstream : unserializeObjectsFromUpstream,
 			messageFromDownstream : messageFromDownstream,
 			registerPage : registerPage,
 			addNotifyUICallback : addNotifyUICallback,
