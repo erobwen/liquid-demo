@@ -481,7 +481,7 @@
 			return liquid.canRead(this);
 		}
 
-		readable() {
+		writeable() {
 			return liquid.canWrite(this);
 		}
 		

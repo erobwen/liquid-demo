@@ -1,3 +1,4 @@
+
 // Using UMD pattern: https://github.com/umdjs/umd
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -14,21 +15,27 @@
 		return Array.prototype.slice.call(arguments);
 	};
 	
-	function createLiquidInstance(configuration) {			
-		// Debugging
+	function createLiquidInstance(configuration) {// Debugging
+		//Debugging 
 		let objectlog = require('./objectlog.js');
 		if (configuration.isClient) objectlog.useConsoleDefault = true;
 		let log = objectlog.log;
 		let logGroup = objectlog.enter;
 		let logUngroup = objectlog.exit;
 		let logToString = objectlog.toString;
-		
-		// console.log("createLiquidInstance");
+
+		// State 
+		let state = {
+			pushingDataFromDownstream : false,
+			pushingDataFromPage : null,
+			pushingPulseFromUpstream : false // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
+		}
+
+		// Pages and sessions (for server)
 		pagesMap = {};
 		sessionsMap = {};
 
-		// include('./liquid/server/liquidServer.js');
-
+		// Choose causality or eternity.
 		let liquid;
 		if (configuration.usePersistency) {
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
@@ -159,7 +166,48 @@
 			return serialized;
 		};
 		
+		// Form for events:
+		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
+		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
+		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
+		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
+		function serializeEvent(event, forUpstream) {
+			// console.log(event);
+			var serialized  = {
+				action: event.action
+			};
+		
+			if (event.object.const._upstreamId !== null) {
+				serialized.objectId = event.object.const._upstreamId;
+			} else {
+				serialized.objectDownstreamId = event.object.const.id;
+			}
 
+			serialized.type = event.type;
+			if (typeof(event.value) !== 'undefined') {
+				serialized.value = serializeValue(event.value, forUpstream);
+			}
+			if (typeof(event.previousValue) !== 'undefined') {
+				serialized.previousValue = serializeValue(event.previousValue, forUpstream);
+			}
+			if (typeof(event.added) !== 'undefined') {
+				let serializedAdded = [];
+				event.added.forEach(function(added) {
+					serializedAdded.push(serializeValue(added, forUpstream));					
+				});
+				serialized.added = serializedAdded;
+			}
+			if (typeof(event.removed) !== 'undefined') {
+				let serializedRemoved = [];
+				event.removed.forEach(function(removed) {
+					serializedRemoved.push(serializeValue(removed, forUpstream));					
+				});
+				serialized.removed = serializedRemoved;
+			}
+
+			return serialized;
+		}
+		
 		
 		function serializeValue(value, forUpstream) {
 			let type = typeof(value);
@@ -241,12 +289,13 @@
 			for (id in serializedIdToSerializedMap) {
 				let object = serializedIdToSerializedMap[id].object;
                 object._ = logToString(objectDigest(object)); //.__();                    
-				
-			}
-			
-			serializedIdToSerializedMap = null;
+			}	
 		}
 		
+		function cleanupUnserialize() {
+			serializedIdToSerializedMap = null;
+		}
+			
 		function unserializeObject(serializedObject, forUpstream) {
 			if (!serializedObject.finished) {
 				let object = serializedObject.object;
@@ -295,6 +344,25 @@
 					}
 				}				
 			}
+		}
+		
+
+		function unserializeEvents(events, forUpstream) {
+			events.forEach(function(event) {
+				if (typeof(event.objectId) !== 'undefined') {
+					let object;
+					if (forUpstream) {
+						object = page.const._selection[event.objectId];
+					} else {
+						object = upstreamIdObjectMap[event.objectId];
+					}
+					if (event.type === 'set') {
+						object[event.property] = unserializeValue(event.value, forUpstream);
+					} else if (event.type === 'delete') {
+						delete object[event.property];
+					}
+				}
+			});			
 		}
 
 		
@@ -790,6 +858,10 @@
 				}
 				page.const._pendingUpdates.push(update);
 
+				// TODO: Use the following not to get pingpong messages. 			
+				// state.pushingDataFromDownstream;
+				// state.pushingDataFromPage;
+				
 				// TODO: refactor this part to the other layer... 
 				while(page.const._pendingUpdates.length > 0) {
 					if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', page.const._pendingUpdates.shift())) {
@@ -850,122 +922,92 @@
 		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
 		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
 		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
-
+		// throw new Error("What to do with all these data");
+		
 		function unserializeDownstreamPulse(page, pulseData) {
 			log(pulseData, 3);
-			throw new Error("What to do with all these data");
-			var downstreamIdToSerializedObjectMap = {};
-			pulseData.serializedObjects.forEach(function(serializedObject) {
-				downstreamIdToSerializedObjectMap[serializedObject.downstreamId] = serializedObject;
-			});
-			var downstreamIdToObjectMap = {};
+		
+			// Unserialize all objects
+			unserializeObjects(pulseData.serializedObjects, true)
 			
-			function unserializeDownstreamReference(reference) {
-				if (reference === null) {
-					return null;
-				}
-				var fragments = reference.split(":");
-				var className = fragments[0];
-				var type = fragments[1];
-				var id = parseInt(fragments[2]);
-				if (type === 'downstreamId') {
-					return ensureObjectUnserialized(page, null, id);
-				} else {
-					return page.const._selection[id];
-				}
-			}
-			
-			function ensureRelatedObjectsUnserialized(page, event) {
-				var relatedObjectId = typeof(event.relatedObjectId) !== 'undefined' ? event.relatedObjectId : null;
-				var relatedObjectDownstreamId = typeof(event.relatedObjectDownstreamId) !== 'undefined' ? event.relatedObjectDownstreamId : null;
-				return ensureObjectUnserialized(page, relatedObjectId, relatedObjectDownstreamId);
-			}
+			// Consider: Should we postpone notification here?
+			unserializeEvents(pulseData.serializedEvents, true);
 
-			function ensureObjectUnserialized(page, id, downstreamId) {
-				console.log("ensureObjectUnserialized");
-				console.log(id);
-				console.log(downstreamId);
-				console.log(downstreamIdToSerializedObjectMap);
-				if(id == null) {
-					if (typeof(downstreamIdToObjectMap[downstreamId]) === 'undefined') {
-						var serializedObject = downstreamIdToSerializedObjectMap[downstreamId];
-						// console.log("here");
-						// console.log(num.toString(downstreamId));
-						// console.log(downstreamId);
-						// console.log(serializedObject);
-						return unserializeDownstreamObjectRecursivley(serializedObject);
-					} else {
-						return downstreamIdToObjectMap[downstreamId];
-					}
-				} else {
-					// throw new Error("TODO: Think this throug... looks wierd... ");
-					return page.const._selection[id];//liquid.getEntity(id);
-				}
-			}
-			
-			function unserializeDownstreamObjectRecursivley(serializedObject) {
-				var newObject = create(serializedObject.className);
-				downstreamIdToObjectMap[serializedObject.downstreamId] = newObject; // Set this early, so recursive unserializes can point to this object, avoiding infinite loop.
-
-				newObject.forAllOutgoingRelations(function(definition, instance) {
-					var data = serializedObject[definition.qualifiedName];
-					if (definition.isSet) {
-						data = data.map(unserializeDownstreamReference);
-					} else {
-						data = unserializeDownstreamReference(data);
-					}
-					newObject[definition.setterName](data);
-				});
-
-				for (propertyName in newObject._propertyDefinitions) {
-					definition = newObject._propertyDefinitions[propertyName];
-					var data = serializedObject[definition.name];
-					newObject[definition.setterName](data);
-				}
-				newObject._ = logToString(objectDigest(newObject)); //.__();
-
-				return newObject;
-			}
-			
-			liquid.blockUponChangeActions(function() {
-				pulseData.serializedEvents.forEach(function(event) {
-					if (typeof(event.objectId) !== 'undefined' || typeof(downstreamIdToObjectMap[event.downstreamObjectId])) { // Filter out events that should not be visible to server TODO: Make client not send them?
-			
-						var object = typeof(event.objectId) !== 'undefined' ?  page.const._selection[event.objectId] : downstreamIdToObjectMap[event.downstreamObjectId];
-						// console.log()
-						if (event.action === 'settingRelation' ||
-							event.action === 'addingRelation' ||
-							event.action === 'deletingRelation') {
-			
-							// This removes and replaces downstream id:s in the event!
-			
-							var relatedObject = ensureRelatedObjectsUnserialized(page, event); //TODO: maps????, downstreamIdToSerializedObjectMap, downstreamIdToObjectMap
-							// console.log(relatedObject);
-							if (event.action === 'addingRelation') {
-								// console.log(object._);
-								// console.log(event);
-								// console.log(object._relationDefinitions);
-								var adderName = object._relationDefinitions[event.relationQualifiedName].adderName;
-								object[adderName](relatedObject);
-							} else if (event.action === 'deletingRelation'){
-								var removerName = object._relationDefinitions[event.relationQualifiedName].removerName;
-								object[removerName](relatedObject);
-							}
-						} else if (event.action === "settingProperty") {
-							var setterName = object._propertyDefinitions[event.propertyName].setterName;
-							object[setterName](event.value);
-						}
-					}
-			
-					var idToDownstreamIdMap = {};
-					for (downstreamId in downstreamIdToObjectMap) {
-						idToDownstreamIdMap[downstreamIdToObjectMap[downstreamId].const.id] = downstreamId;
-					}
-					liquid.activePulse.originator.const.idToDownstreamIdMap = idToDownstreamIdMap;
-				});
-			});
+			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
+			// var idToDownstreamIdMap = {};
 		}
 
+		
+		
+		
+			// function unserializeDownstreamReference(reference) {
+				// if (reference === null) {
+					// return null;
+				// }
+				// var fragments = reference.split(":");
+				// var className = fragments[0];
+				// var type = fragments[1];
+				// var id = parseInt(fragments[2]);
+				// if (type === 'downstreamId') {
+					// return ensureObjectUnserialized(page, null, id);
+				// } else {
+					// return page.const._selection[id];
+				// }
+			// }
+			
+			// function ensureRelatedObjectsUnserialized(page, event) {
+				// var relatedObjectId = typeof(event.relatedObjectId) !== 'undefined' ? event.relatedObjectId : null;
+				// var relatedObjectDownstreamId = typeof(event.relatedObjectDownstreamId) !== 'undefined' ? event.relatedObjectDownstreamId : null;
+				// return ensureObjectUnserialized(page, relatedObjectId, relatedObjectDownstreamId);
+			// }
+
+			// function ensureObjectUnserialized(page, id, downstreamId) {
+				// console.log("ensureObjectUnserialized");
+				// console.log(id);
+				// console.log(downstreamId);
+				// console.log(downstreamIdToSerializedObjectMap);
+				// if(id == null) {
+					// if (typeof(downstreamIdToObjectMap[downstreamId]) === 'undefined') {
+						// var serializedObject = downstreamIdToSerializedObjectMap[downstreamId];
+						// // console.log("here");
+						// // console.log(num.toString(downstreamId));
+						// // console.log(downstreamId);
+						// // console.log(serializedObject);
+						// return unserializeDownstreamObjectRecursivley(serializedObject);
+					// } else {
+						// return downstreamIdToObjectMap[downstreamId];
+					// }
+				// } else {
+					// // throw new Error("TODO: Think this throug... looks wierd... ");
+					// return page.const._selection[id];//liquid.getEntity(id);
+				// }
+			// }
+			
+			// function unserializeDownstreamObjectRecursivley(serializedObject) {
+				// var newObject = create(serializedObject.className);
+				// downstreamIdToObjectMap[serializedObject.downstreamId] = newObject; // Set this early, so recursive unserializes can point to this object, avoiding infinite loop.
+
+				// newObject.forAllOutgoingRelations(function(definition, instance) {
+					// var data = serializedObject[definition.qualifiedName];
+					// if (definition.isSet) {
+						// data = data.map(unserializeDownstreamReference);
+					// } else {
+						// data = unserializeDownstreamReference(data);
+					// }
+					// newObject[definition.setterName](data);
+				// });
+
+				// for (propertyName in newObject._propertyDefinitions) {
+					// definition = newObject._propertyDefinitions[propertyName];
+					// var data = serializedObject[definition.name];
+					// newObject[definition.setterName](data);
+				// }
+				// newObject._ = logToString(objectDigest(newObject)); //.__();
+
+				// return newObject;
+			// }
+			
+		
 		function getPage(pageToken) {
 			log("getPage:" + pageToken);
 			log(pagesMap, 2);
@@ -977,21 +1019,26 @@
 			throw new Error("Invalid page token: " + pageToken);
 		}
 
-		let pushingDownstreamData = false;
-
 		function messageFromDownstream(pageToken, message) {
 			let page = getPage(pageToken);
 			if (typeof(page) !== 'undefined') {
 				Fiber(function() {
-					pushingDownstreamData = true; // What happens on asynchronous wait?? move this to liquid.state. 
+					
+					// Process pulse or call.
 					if (message.type === 'pulse') {
+						state.pushingDataFromDownstream = true; // What happens on asynchronous wait?? move this to liquid.state. 
+						state.pushingDataFromPage = page;
+						
 						liquid.pulse(function() {
 							unserializeDownstreamPulse(page, message.data); // foo
 						});							
+						
+						state.pushingDataFromDownstream = false;
+						state.pushingDataFromPage = null;
 					} else if (message.type === 'call') {
 						
 					}
-					pushingDownstreamData = false;
+					
 				}).run();
 			} else {
 				throw new Error("Invalid page token"); // Consider: Should be soft landing?
@@ -1003,7 +1050,7 @@
 			// let page = liquid.getPage(pageToken);
 			// if (typeof(page) !== 'undefined') {
 				// Fiber(function() {
-					// pushingDownstreamData = true; // What happens on asynchronous wait?? move this to liquid.state. 
+					// pushingDataFromDownstream = true; // What happens on asynchronous wait?? move this to liquid.state. 
 					// if (message.type === 'pulse') {
 						// liquid.pulse(function() {
 							// liquid.unserializeDownstreamPulse(page, pulseData);
@@ -1011,7 +1058,7 @@
 					// } else if (message.type === 'call') {
 						
 					// }
-					// pushingDownstreamData = false;
+					// pushingDataFromDownstream = false;
 				// }).run();
 				// resolve();
 			// } else {
@@ -1031,26 +1078,19 @@
 		 *
 		 ***************************************************************/
 	
-		let pusingPulseFromUpstream = false; // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
 
 		function receiveInitialDataFromUpstream(serializedData) {
-			pusingPulseFromUpstream = true;
-			console.log("receiveInitialDataFromUpstream");
-			console.log(serializedData);
-			unserializeObjectsFromUpstream(serializedData.subscriptionInfo.addedSerialized)
-			liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
-			console.log(liquid);
-			pusingPulseFromUpstream = false;
-		}
-
-	
-
-		function unserializeObjectsFromUpstream(serializedObjects) {
+			state.pushingPulseFromUpstream = true;
 			liquid.pulse(function() {
-				// unserializeFromUpstream(serializedObjects);
-				unserializeObjects(serializedObjects, false);
+				log("receiveInitialDataFromUpstream");
+				log(serializedData);
+				unserializeObjects(serializedData.subscriptionInfo.addedSerialized, false);
+				liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
+				log(liquid);
 			});			
+			state.pushingPulseFromUpstream = false;
 		}
+
 		
 
 		
@@ -1220,48 +1260,7 @@
 		 *----------------------------------------------------------------*/
 		
 		
-		// Form for events:
-		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
-		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
-		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
-		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
-		function serializeEventForUpstream(event) {
-			// console.log(event);
-			var serialized  = {
-				action: event.action
-			};
-		
-			if (event.object.const._upstreamId !== null) {
-				serialized.objectId = event.object.const._upstreamId;
-			} else {
-				serialized.objectDownstreamId = event.object.const.id;
-			}
 
-			serialized.type = event.type;
-			if (typeof(event.value) !== 'undefined') {
-				serialized.value = serializeValue(event.value, true);
-			}
-			if (typeof(event.previousValue) !== 'undefined') {
-				serialized.previousValue = serializeValue(event.previousValue, true);
-			}
-			if (typeof(event.added) !== 'undefined') {
-				let serializedAdded = [];
-				event.added.forEach(function(added) {
-					serializedAdded.push(serializeValue(added, true));					
-				});
-				serialized.added = serializedAdded;
-			}
-			if (typeof(event.removed) !== 'undefined') {
-				let serializedRemoved = [];
-				event.removed.forEach(function(removed) {
-					serializedRemoved.push(serializeValue(removed, true));					
-				});
-				serialized.removed = serializedRemoved;
-			}
-
-			return serialized;
-		}
-		
 		
 		function tryPushMessageUpstream(message) {
 			if (typeof(pushMessageUpstreamCallback) !== 'undefined') {
@@ -1298,14 +1297,12 @@
 		 * idToUpstreamId
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
-		function pushDataUpstream(events) {
-			log("pushDataUpstream");// console.log("Not yet!");
-			log(events);
-			// return;
-			if (typeof(pushMessageUpstreamCallback) !== undefined && !pusingPulseFromUpstream) {
-				log("Consider push data upstream");
+		function pushDataUpstream(events) {			
+			if (typeof(pushMessageUpstreamCallback) !== undefined && !state.pushingPulseFromUpstream) {
+				log("pushDataUpstream (actually)");
+				log(events);
 		
-				// Find data that needs to be pushed upstream
+				// Recursive search for objects to push upstream
 				var requiredObjects = {};
 				function addRequiredCascade(object) {
 					if (object.const._upstreamId === null && typeof(requiredObjects[object.const.id]) === 'undefined') {
@@ -1319,9 +1316,9 @@
 					}
 				}
 		
-				// TODO: What to do with this?... get events as argument?... 
+				// Scan events for refered objects that needs to be pushed uppstream
 				events.forEach(function(event) {
-					var eventIsFromUpstream = pusingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
+					var eventIsFromUpstream = state.pushingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
 					if (!eventIsFromUpstream) {
 						// log("processing event required objects");
 						if (event.object.const._upstreamId !== null && event.type == 'set' && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
@@ -1330,39 +1327,32 @@
 					}
 				});
 		
-				var serializedObjects = [];
+				// Serialize object
+				var serializedObjects = {};
 				for(id in requiredObjects) {
 					var serializedObject = serializeObject(requiredObjects[id], true);
-					serializedObjects.push(serializedObject);
+					serializedObjects[serializedObject.const.id] = serializedObject;
 				}
 		
+				// Serialize events
 				var serializedEvents = [];
 				events.forEach(function(event) {
-					var eventIsFromUpstream = pusingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
+					var eventIsFromUpstream = state.pushingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
 					if (!eventIsFromUpstream && event.type === 'set' && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
-						// trace('serialize', "not from upstream");
-						if (event.object.const._upstreamId !== null) {
-							serializedEvents.push(serializeEventForUpstream(event));
-						} 
-						// else if (typeof(requiredObjects[event.object.const.id]) !== 'undefined') { // This seems unecessary... these objects will be streamed in their entirety... 
-							// serializedEvents.push(serializeEventForUpstream(event));
-						// }
+					if (event.object.const._upstreamId !== null) {
+							serializedEvents.push(serializeEvent(event, true));
+						}
 					}
 				});
 		
-				var serializedPulse = {
-					serializedEvents : serializedEvents,
-					serializedObjects : serializedObjects
-				};
-		
-				if (serializedPulse.serializedEvents.length > 0 || serializedPulse.serializedObjects.length > 0) {
-					// trace('serialize', "Push upstream:", serializedPulse);
-					// console.log(serializedPulse);			
+				// Push pulse upstream if it has any content
+				if (serializedEvents.length > 0 || serializedObjects.length > 0) {
+					let serializedPulse = {
+						serializedEvents : serializedEvents,
+						serializedObjects : serializedObjects
+					};
 					tryPushMessageUpstream({type: "pulse", data: serializedPulse});
-					// tryPushSerializedPulseUpstream(serializedPulse);
 				}
-		
-				// console.groupEnd();
 			}
 		};
 		
