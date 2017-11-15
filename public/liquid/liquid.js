@@ -28,7 +28,9 @@
 		let state = {
 			pushingDataFromDownstream : false,
 			pushingDataFromPage : null,
-			pushingPulseFromUpstream : false // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
+			pushingPulseFromUpstream : false, // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
+			isSelecting : false,
+			dirtyPageSubscritiptions : {}
 		}
 
 		// Pages and sessions (for server)
@@ -84,7 +86,7 @@
 		});
 
 		liquid.setCustomCanWrite(function(object) {
-			return !isSelecting && writeable[getAccessLevel(object)];
+			return !state.isSelecting && writeable[getAccessLevel(object)];
 		});
 		
 		function getAccessLevel(object) {
@@ -184,6 +186,7 @@
 			}
 
 			serialized.type = event.type;
+			serialized.property = event.property;
 			if (typeof(event.value) !== 'undefined') {
 				serialized.value = serializeValue(event.value, forUpstream);
 			}
@@ -340,7 +343,7 @@
 						unserializeObject(serialized, forUpstream);
 						return serialized.object;
 					} else {
-						return page.const._selection[id]; // Since there is no global id to object map...
+						return state.pushingDataFromPage.const._selection[id]; // Since there is no global id to object map...
 					}
 				}				
 			}
@@ -352,7 +355,7 @@
 				if (typeof(event.objectId) !== 'undefined') {
 					let object;
 					if (forUpstream) {
-						object = page.const._selection[event.objectId];
+						object = state.pushingDataFromPage.const._selection[event.objectId];
 					} else {
 						object = upstreamIdObjectMap[event.objectId];
 					}
@@ -379,7 +382,7 @@
 						let serialized = serializedIdToSerializedMap[id];
 						return serialized.object;
 					} else {
-						return page.const._selection[id]; // Since there is no global id to object map...
+						return state.pushingDataFromPage.const._selection[id]; // Since there is no global id to object map...
 					}
 				} else {
 					let className = fragments[0];
@@ -638,8 +641,7 @@
 		}
 		
 		
-		let isSelecting;
-		let dirtyPageSubscritiptions = {};
+
 		function getSubscriptionUpdate(page) {
 			log("getSubscriptionUpdate");
 			logGroup();
@@ -664,7 +666,7 @@
 						
 						// Select as
 						restrictAccessToThatOfPage = page; // pageAccessRestriction
-						isSelecting = true;
+						state.isSelecting = true;
 						// Also deactivate repeaters during this... 
 						// Better idea: Writeprotect the system here... 
 
@@ -673,7 +675,7 @@
 
 						// Reactivate repeaters here... 
 						// Remove write protection...
-						isSelecting = false;
+						state.isSelecting = false;
 						restrictAccessToThatOfPage = null;
 						
 						log("subscriptionSelection");
@@ -698,7 +700,7 @@
 					// trace('serialize', "A subscription selection got dirty: ", page);
 					// console.log("A subscription selection got dirty: " + page.const.id);
 					// stackDump();
-					liquid.dirtyPageSubscritiptions[page.const.id] = page;
+					state.dirtyPageSubscritiptions[page.const.id] = page;
 					page.const._dirtySubscriptionSelections  = true;
 				});
 				// traceGroupEnd();
@@ -846,11 +848,11 @@
 
 		function pushDataDownstream() {
 			// console.log("x");
-			// console.log(liquid.dirtyPageSubscritiptions);
+			// console.log(state.dirtyPageSubscritiptions);
 			// console.log("y");
-			for (id in liquid.dirtyPageSubscritiptions) {
+			for (id in state.dirtyPageSubscritiptions) {
 				// console.log("Push update to page: " + id);
-				var page = liquid.dirtyPageSubscritiptions[id];
+				var page = state.dirtyPageSubscritiptions[id];
 				var update = liquid.getSubscriptionUpdate(page);
 				// console.log(update);
 				if (typeof(page.const._pendingUpdates) === 'undefined') {
@@ -865,7 +867,7 @@
 				// TODO: refactor this part to the other layer... 
 				while(page.const._pendingUpdates.length > 0) {
 					if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', page.const._pendingUpdates.shift())) {
-						delete liquid.dirtyPageSubscritiptions[id];
+						delete state.dirtyPageSubscritiptions[id];
 					} else {
 						// An update occured before the page has gotten to register its socket id.
 						// trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
@@ -925,6 +927,7 @@
 		// throw new Error("What to do with all these data");
 		
 		function unserializeDownstreamPulse(page, pulseData) {
+			log(unserializeDownstreamPulse);
 			log(pulseData, 3);
 		
 			// Unserialize all objects
@@ -933,6 +936,9 @@
 			// Consider: Should we postpone notification here?
 			unserializeEvents(pulseData.serializedEvents, true);
 
+			let object = state.pushingDataFromPage.const._selection[pulseData.serializedEvents[0].objectId];
+			log(object);
+			log("...");
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
 			// var idToDownstreamIdMap = {};
 		}
