@@ -609,6 +609,38 @@
 		 *                       Push data downstream
 		 *-----------------------------------------------------------------*/
 
+
+		function pushDataDownstream() {
+			// console.log("x");
+			// console.log(state.dirtyPageSubscritiptions);
+			// console.log("y");
+			for (id in state.dirtyPageSubscritiptions) { // TODO: what if an event concerns an object/page without disturbing the page subscription... it needs to be pushed also.. 
+				// console.log("Push update to page: " + id);
+				var page = state.dirtyPageSubscritiptions[id];
+				var update = liquid.getSubscriptionUpdate(page);
+				// console.log(update);
+				if (typeof(page.const._pendingUpdates) === 'undefined') {
+					page.const._pendingUpdates = [];
+				}
+				page.const._pendingUpdates.push(update);
+
+				// TODO: Use the following not to get pingpong messages. 			
+				// state.pushingDataFromDownstream;
+				// state.pushingDataFromPage;
+				
+				// TODO: refactor this part to the other layer... 
+				while(page.const._pendingUpdates.length > 0) {
+					if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', page.const._pendingUpdates.shift())) {
+						delete state.dirtyPageSubscritiptions[id];
+					} else {
+						// An update occured before the page has gotten to register its socket id.
+						// trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
+					}
+				}
+			}
+		};
+		
+		
 		function getMapDifference(firstSet, secondSet) {
 			// console.log("getmapdifference");
 			// console.log(firstSet);
@@ -823,58 +855,28 @@
 		// Form for events:
 		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
 		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
-		function serializeEventForDownstream(event) {
-			// console.log("Serialize event");
-			// console.log(event);
-			var serialized  = {
-				action: event.action
-			};
-			serialized.objectId = event.object.const.id;
+		// function serializeEventForDownstream(event) {
+			// // console.log("Serialize event");
+			// // console.log(event);
+			// var serialized  = {
+				// action: event.action
+			// };
+			// serialized.objectId = event.object.const.id;
 
-			if (event.definition.type === 'relation') {
-				serialized.relationName = event.definition.qualifiedName;
+			// if (event.definition.type === 'relation') {
+				// serialized.relationName = event.definition.qualifiedName;
 
-				if (typeof(event.relatedObject) !== 'undefined') {
-					serialized.relatedObjectId = event.relatedObject.const.id;
-				}
-			} else {
-				serialized.propertyName = event.definition.name;
-				serialized.value = event.value;
-			}
+				// if (typeof(event.relatedObject) !== 'undefined') {
+					// serialized.relatedObjectId = event.relatedObject.const.id;
+				// }
+			// } else {
+				// serialized.propertyName = event.definition.name;
+				// serialized.value = event.value;
+			// }
 
-			return serialized;
-		}
+			// return serialized;
+		// }
 
-
-		function pushDataDownstream() {
-			// console.log("x");
-			// console.log(state.dirtyPageSubscritiptions);
-			// console.log("y");
-			for (id in state.dirtyPageSubscritiptions) {
-				// console.log("Push update to page: " + id);
-				var page = state.dirtyPageSubscritiptions[id];
-				var update = liquid.getSubscriptionUpdate(page);
-				// console.log(update);
-				if (typeof(page.const._pendingUpdates) === 'undefined') {
-					page.const._pendingUpdates = [];
-				}
-				page.const._pendingUpdates.push(update);
-
-				// TODO: Use the following not to get pingpong messages. 			
-				// state.pushingDataFromDownstream;
-				// state.pushingDataFromPage;
-				
-				// TODO: refactor this part to the other layer... 
-				while(page.const._pendingUpdates.length > 0) {
-					if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', page.const._pendingUpdates.shift())) {
-						delete state.dirtyPageSubscritiptions[id];
-					} else {
-						// An update occured before the page has gotten to register its socket id.
-						// trace('serialize', 'An update occured before the page has gotten to register its socket id: ', page);
-					}
-				}
-			}
-		};
 
 		// if (liquid.activePulse.originator === liquid.clientPage) {
 			
@@ -1343,9 +1345,9 @@
 				// Serialize events
 				var serializedEvents = [];
 				events.forEach(function(event) {
-					var eventIsFromUpstream = state.pushingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
-					if (!eventIsFromUpstream && event.type === 'set' && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
-					if (event.object.const._upstreamId !== null) {
+					var eventIsForUpstream = !state.pushingPulseFromUpstream || event.isConsequence; 
+					if (eventIsForUpstream && event.type === 'set' && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
+						if (event.object.const._upstreamId !== null) {
 							serializedEvents.push(serializeEvent(event, true));
 						}
 					}
@@ -1369,7 +1371,6 @@
 		 *----------------------------------------------------------------*/
 		
 		upstreamIdObjectMap = {};
-		
 		
 		
 		// Note: this function can only be used when we know that there is at least a placeholder. 

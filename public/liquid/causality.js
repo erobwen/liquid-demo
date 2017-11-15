@@ -23,7 +23,8 @@
 		let state = { 
 			useIncomingStructures : configuration.useIncomingStructures,
 			incomingStructuresDisabled : 0,
-			blockInitialize : false
+			blockInitialize : false,
+			refreshingRepeater : false
 		};
 
 		/***************************************************************
@@ -2165,6 +2166,7 @@
 				// console.log(event);
 				// event.objectId = handler.const.id;
 				event.object = handler.const.object; 
+				event.isConsequence = state.refreshingRepeater;
 				if (configuration.recordPulseEvents) {
 					pulseEvents.push(event);
 				}
@@ -2504,6 +2506,7 @@
 		}
 
 		function refreshRepeater(repeater) {
+			state.refreshingRepeater = true;
 			enterContext('repeater_refreshing', repeater);
 			// console.log("parent context type: " + repeater.parent.type);
 			// console.log("context type: " + repeater.type);
@@ -2517,6 +2520,7 @@
 				}
 			);
 			leaveContext();
+			state.refreshingRepeater = false;
 			return repeater;
 		}
 
