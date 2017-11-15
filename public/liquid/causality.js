@@ -360,7 +360,11 @@
 			if (isObject(previousValue)) {
 				if (trace.basic) log("tear down previous... ");
 				if (configuration.blockInitializeForIncomingStructures) blockingInitialize++;
-				removeIncomingStructure(objectProxy.const.id, previousStructure);
+				// if (typeof(previousStructure) === 'undefined') {
+					// log(previousValue);
+					// throw new Error("Waaaaaaaaaaaaat");
+				// }
+				if (typeof(previousStructure) !== 'undefined') removeIncomingStructure(objectProxy.const.id, previousStructure);
 				if (previousValue.const.incoming && previousValue.const.incoming[referringRelation]&& previousValue.const.incoming[referringRelation].observers) {
 					notifyChangeObservers(previousValue.const.incoming[referringRelation]);
 				}
@@ -1336,19 +1340,20 @@
 			}
 			
 			// Get previous value		// Get previous value
-			let previousValue;
+			let previousValue = target[key];
 			let previousIncomingStructure;
-			if (state.useIncomingStructures && state.incomingStructuresDisabled === 0) {  // && !isIndexParentOf(this.const.object, value) (not needed... )
+			if (typeof(previousValue) === 'object' && state.useIncomingStructures && state.incomingStructuresDisabled === 0) {  // && !isIndexParentOf(this.const.object, value) (not needed... )
 				// console.log("causality.getHandlerObject:");
 				// console.log(key);
 				state.incomingStructuresDisabled++;
 				activityListFrozen++;
-				previousIncomingStructure = target[key];
-				previousValue = findReferredObject(target[key]);
+				let actualPreviousValue = findReferredObject(previousValue);
+				if (actualPreviousValue !== previousValue) {
+					previousIncomingStructure = previousValue;
+					previousValue = actualPreviousValue;
+				}
 				activityListFrozen--;
 				state.incomingStructuresDisabled--;
-			} else {
-				previousValue = target[key]; 
 			}
 			
 			// If same value as already set, do nothing.
@@ -1411,10 +1416,10 @@
 			}
 
 			// Emit event   && 
-			if (state.useIncomingStructures && state.incomingStructuresDisabled === 0 && (previousValue !== previousIncomingStructure || value !== incomingStructureValue)) {// && !isIndexParentOf(this.const.object, value)) {
+			if (state.useIncomingStructures && state.incomingStructuresDisabled === 0 && (typeof(previousIncomingStructure) !== 'undefined' || value !== incomingStructureValue)) {// && !isIndexParentOf(this.const.object, value)) {
 				// Emit extra event 
 				state.incomingStructuresDisabled++
-				emitSetEvent(this, key, incomingStructureValue, previousIncomingStructure);
+				emitSetEvent(this, key, incomingStructureValue, typeof(previousIncomingStructure) !== 'undefined' ? previousIncomingStructure : previousValue);
 				state.incomingStructuresDisabled--
 			}
 			emitSetEvent(this, key, value, previousValue);

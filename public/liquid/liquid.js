@@ -142,7 +142,7 @@
 			}
 			if (typeof(object.indexParent) !== 'undefined') {
 				// Add these first in references object. 
-				serialized.indexParent = serializeReference(object.indexParent, forUpstream);
+				serialized.indexParent = serializeValue(object.indexParent, forUpstream);
 				serialized.indexParentRelation = object.indexParentRelation;
 			}
 			Object.keys(object).forEach(function(key) {
@@ -190,19 +190,19 @@
 		}
 		
 	
-		function serializeReference(object, forUpstream) {
-			let className = getClassName(object);
-			if (forUpstream) {
-				if (object.const._upstreamId !== null) {
-					return className + ":id:" + object.const._upstreamId;
-				} else {
-					return className + ":downstreamId:" + object.const.id;
-				}
-			} else {
-				// TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
-				return className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
-			}				
-		}
+		// function serializeReference(object, forUpstream) {
+			// let className = getClassName(object);
+			// if (forUpstream) {
+				// if (object.const._upstreamId !== null) {
+					// return "object:" + className + ":id:" + object.const._upstreamId;
+				// } else {
+					// return "object:" + className + ":downstreamId:" + object.const.id;
+				// }
+			// } else {
+				// // TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
+				// return "object:" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
+			// }				
+		// }
 	
 		function getClassName(object) {
 			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
@@ -216,106 +216,108 @@
 		 *
 		 ***************************************************************/
 	
-		let idToSerializedMap;		
+		let serializedIdToSerializedMap;
 		function unserializeObjects(serializedObjects, forUpstream) { // If optionalSaver is undefined it will be used to set saver for all unserialized objects.
-			// liquid.turnOffShapeCheck++;
-			// liquid.allUnlocked++;
+			serializedIdToSerializedMap = serializedObjects;
 			
-			// Add all to a map for possible out of order unserialization (in case of indicies)
-			idToSerializedMap = serializedObjects;
-			
+			// Create placeholders for all streamed (not for all references)
+			for (id in serializedIdToSerializedMap) {
+				let serialized = serializedIdToSerializedMap[id];
+				var newObject = create(serialized.className);
+				if (!forUpstream) {
+					newObject.const._upstreamId = serialized.id;
+					upstreamIdObjectMap[serialized.id] = newObject;
+				}
+				serialized.object = newObject;
+				serialized.finished = false;
+			}
+
 			// Unserialize all
-			for (id in idToSerializedMap) {
-				// log("unserializeFromUpstream: " + serialized.id);
-				let serialized = idToSerializedMap[id];
-				unserializeObject(serialized, forUpstream);
+			for (id in serializedIdToSerializedMap) {
+				unserializeObject(serializedIdToSerializedMap[id], forUpstream);
+			}
+
+			// Decorate all
+			for (id in serializedIdToSerializedMap) {
+				let object = serializedIdToSerializedMap[id].object;
+                object._ = logToString(objectDigest(object)); //.__();                    
+				
 			}
 			
-			if (!forUpstream) {
-				if (typeof(liquid.instancePage) !== 'undefined') {
-					liquid.instancePage.upstreamPulseReceived();
-				}				
-			}
-			idToSerializedMap = null;
-			// liquid.allUnlocked--;
-			// liquid.turnOffShapeCheck--;
+			serializedIdToSerializedMap = null;
 		}
 		
-		
 		function unserializeObject(serializedObject, forUpstream) {
-			// log("unserializeUpstreamObject: " + serializedObject.id);
-			// logGroup();
-			// log(serializedObject);
-			// log(upstreamIdObjectMap[upstreamId]);
-			// console.log(serializedObject);
-			var upstreamId = serializedObject.id;
-			if (!forUpstream) {
-				if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
-					// log("ensurePlaceholderOrObjectExists!");
-						ensurePlaceholderOrObjectExists(upstreamId, serializedObject.className, false);					
-					// log(Object.keys(upstreamIdObjectMap[upstreamId]));
-					// log(Object.keys(upstreamIdObjectMap[upstreamId])[0]);
-					// log(Object.keys(upstreamIdObjectMap[upstreamId])[1]);
-					// log(Object.keys(upstreamIdObjectMap[upstreamId])[2]);
-					// log("...");
-				}
-			} else {
-				// TODO... 
-			}
-			var targetObject = upstreamIdObjectMap[upstreamId];
-			// log(Object.keys(targetObject));
-			// console.log(targetObject);
-			if (targetObject.isPlaceholder) {
-				// log(Object.keys(targetObject));
-				// let ignoreKeys = {
-					// "_" : true,
-					// "id" : true,
-					// "className" : true
-				// }
+			if (!serializedObject.finished) {
+				let object = serializedObject.object;
+				
 				// Connect to index parent. This could potentially cause a recursive call to create the parent(s) first. 
 				if (typeof(serializedObject.indexParent) !== 'undefined') {
-					let parentUpstreamId = getUpstreamId(serializedObject.indexParent); // TODO: ensure loaded here... do it recursivley upwards... 
-					let parentObject;
-					if (typeof(idToSerializedMap[parentUpstreamId]) !== 'undefined') {
-						parentObject = unserializeObject(idToSerializedMap[parentUpstreamId], forUpstream);
-					} else if (typeof(upstreamIdObjectMap[parentUpstreamId]) !== 'undefined') {
-						parentObject = upstreamIdObjectMap[parentUpstreamId]
-					} else {
-						throw new Error("A parent index was not found during unserialization. Index parents must always exist on the client before/at the same time as their children.");						
-					}
-					liquid.setIndex(parentObject, serializedObject.indexParentRelation, targetObject);
+					let parentObject = getUnserializedObjectFromSerializedReference(serializedObject.indexParent); // TODO: ensure loaded here... do it recursivley upwards... 
+					liquid.setIndex(parentObject, serializedObject.indexParentRelation, object);
 				}
 				
 				for(key in serializedObject.values) {
-					targetObject[key] = unserializeValue(serializedObject.values[key], false);
+					object[key] = unserializeValue(serializedObject.values[key], forUpstream);
 				}
-				targetObject._ = logToString(objectDigest(targetObject)); // .__();					
-				targetObject.isPlaceholder = false;
-			} else {
-				// trace('unserialize', "Loaded data that was already loaded!!!");
-				// console.log("Loaded data that was already loaded!!!");
+				
+				serializedObject.finished = true;
 			}
-			return targetObject;
-			// logUngroup();
 		}
-		
+
+		// Note: this functions assumes that all objects have placeholders.
+		function getUnserializedObjectFromSerializedReference(reference, forUpstream) {
+			var fragments = reference.split(":");
+			if (fragments[0] !== 'object') {
+				log(fragments);
+				throw new Error("Expected an object reference!");
+			}
+			if (fragments[1] === 'null') {
+				return null;
+			} else {
+				if (!forUpstream) {
+					// var type = fragments[0];
+					var serializedId = parseInt(fragments[2]);
+					let serialized = serializedIdToSerializedMap[serializedId];
+					unserializeObject(serialized, forUpstream);
+					return serialized.object;
+				} else {
+					// var type = fragments[0];
+					var className = fragments[1];
+					var idType = fragments[2];
+					var id = parseInt(fragments[3]);
+					if (idType === 'downstreamId') {
+						let serialized = serializedIdToSerializedMap[id]
+						unserializeObject(serialized, forUpstream);
+						return serialized.object;
+					} else {
+						return page.const._selection[id]; // Since there is no global id to object map...
+					}
+				}				
+			}
+		}
 
 		
 		function unserializeValue(value, forUpstream) {
 			let fragments = value.split(":");
 			let type = fragments.shift();
 			if (type === 'object') {
+				if (fragments[0] === 'null') return null;
 				if (forUpstream) {
-					// TODO...
-				} else {
-					if (fragments[0] === 'null') {
-						return null;
+					var className = fragments[0];
+					var idType = fragments[1];
+					var id = parseInt(fragments[2]);
+					if (idType === 'downstreamId') {
+						let serialized = serializedIdToSerializedMap[id];
+						return serialized.object;
 					} else {
-						let className = fragments[0];
-						let id = parseInt(fragments[1]);
-						let locked = fragments[2] === 'true' ? true : false;
-						return ensurePlaceholderOrObjectExists(id, className, locked);																		
+						return page.const._selection[id]; // Since there is no global id to object map...
 					}
+				} else {
+					let className = fragments[0];
+					let id = parseInt(fragments[1]);
+					let locked = fragments[2] === 'true' ? true : false;
+					return ensurePlaceholderOrObjectExistsDownstream(id, className, locked);																		
 				}
 			} else if (type === 'number'){
 				let number = fragments[0];
@@ -330,7 +332,30 @@
 				throw new Error("Unsupported data type for streaming: " + type);
 			}
 		}
-
+		
+		function ensurePlaceholderOrObjectExists(serializedObject) {
+			if (!forUpstream) {
+				ensurePlaceholderOrObjectExistsDownstream(serializedObject.id, serializedObject.className, false);
+				return upstreamIdObjectMap[upstreamId];
+			} else {
+				if (typeof(serializedIdToObjectsMap[serializedObject.id]) === 'undefined') { 
+					serializedIdToObjectsMap[serializedObject.id] = create({});
+				}
+				return serializedIdToObjectsMap[serializedObject.id];
+			}
+		}
+		
+		function ensurePlaceholderOrObjectExistsDownstream(upstreamId, className, isLocked) {
+			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
+				var newObject = create(className);
+				newObject.const._upstreamId = upstreamId;
+				upstreamIdObjectMap[upstreamId] = newObject;
+				newObject._ = logToString(objectDigest(newObject)); //.__();					
+				newObject.isPlaceholder = true;
+				newObject.isLocked = isLocked;
+			}
+			return upstreamIdObjectMap[upstreamId];
+		}
 		
 		/***************************************************************
 		 *
@@ -1093,6 +1118,11 @@
 					}
 					liquid.allUnlocked--;
 				});
+				
+				// Notify 
+				if (typeof(liquid.instancePage) !== 'undefined') {
+					liquid.instancePage.upstreamPulseReceived();
+				}				
 			});			
 		}
 		
@@ -1344,11 +1374,6 @@
 		
 		upstreamIdObjectMap = {};
 		
-		function getUpstreamId(reference) {
-			var fragments = reference.split(":");
-			var id = parseInt(fragments[1]);
-			return id;
-		}
 		
 		
 		// Note: this function can only be used when we know that there is at least a placeholder. 
@@ -1359,19 +1384,6 @@
 			return upstreamIdObjectMap[upstreamId];
 		}
 		
-		function ensurePlaceholderOrObjectExists(upstreamId, className, isLocked) {
-			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
-				liquid.state.blockInitialize = true;
-				var newObject = create(className);
-				liquid.state.blockInitialize = false;
-				newObject.const._upstreamId = upstreamId;
-				upstreamIdObjectMap[upstreamId] = newObject;
-				newObject._ = logToString(objectDigest(newObject)); //.__();					
-				newObject.isPlaceholder = true;
-				newObject.isLocked = isLocked;
-			}
-			return upstreamIdObjectMap[upstreamId];
-		}
 		
 		// function allNamedUpstreamObjects() {
 			// let result = {};
