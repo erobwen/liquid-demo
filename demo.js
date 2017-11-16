@@ -212,7 +212,7 @@ function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 			var data = {
 				// serialized : liquid.serializeSelection(selection),
 				pageUpstreamId : page.const.id,
-				subscriptionInfo : liquid.getSubscriptionUpdate(page)
+				subscriptionInfo : liquid.getSubscriptionUpdate(page, [])
 			};
 			res.render('layout',{
 				data: JSON.stringify(data)

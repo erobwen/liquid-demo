@@ -179,10 +179,14 @@
 				action: event.action
 			};
 		
-			if (event.object.const._upstreamId !== null) {
-				serialized.objectId = event.object.const._upstreamId;
+			if (forUpstream) {
+				if (event.object.const._upstreamId !== null) {
+					serialized.objectId = event.object.const._upstreamId;
+				} else {
+					serialized.objectDownstreamId = event.object.const.id;
+				}				
 			} else {
-				serialized.objectDownstreamId = event.object.const.id;
+				serialized.objectId = event.object.const.id;
 			}
 
 			serialized.type = event.type;
@@ -610,14 +614,37 @@
 		 *-----------------------------------------------------------------*/
 
 
-		function pushDataDownstream() {
-			// console.log("x");
-			// console.log(state.dirtyPageSubscritiptions);
-			// console.log("y");
+		function pushDataDownstream(events) {
+			if (!pushMessageDownstreamCallback) return;
+			
+			// Send events to pages that has no change in subscription
+			let pagesToNotifyWithNoChangeInSelection = {};
+			events.forEach(function(event) {
+				let serializedEvent = serializeEvent(event, false);
+				for (id in event.const._observingPages) {
+					let observingPage = event.const._observingPages[id];
+					if (!state.dirtyPageSubscritiptions[id]) {
+						pagesToNotifyWithNoChangeInSelection[id] = observingPage;
+						if (typeof(event.const._pendingEvents) === 'undefined') {
+							event.const._pendingEvents = [];
+						}
+						event.const._pendingEvents.push(serializedEvent);
+					}
+				}
+			});
+			for (id in pagesToNotifyWithNoChangeInSelection) {
+				let page = pagesToNotifyWithNoChangeInSelection[id];
+				if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', {})) {
+					delete pagesToNotifyWithNoChangeInSelection[id];
+				} else {
+				}
+			}
+			
+			// Process pages where page subscriptions changed
 			for (id in state.dirtyPageSubscritiptions) { // TODO: what if an event concerns an object/page without disturbing the page subscription... it needs to be pushed also.. 
 				// console.log("Push update to page: " + id);
 				var page = state.dirtyPageSubscritiptions[id];
-				var update = liquid.getSubscriptionUpdate(page);
+				var update = liquid.getSubscriptionUpdate(page, events);
 				// console.log(update);
 				if (typeof(page.const._pendingUpdates) === 'undefined') {
 					page.const._pendingUpdates = [];
@@ -638,6 +665,124 @@
 					}
 				}
 			}
+		};
+			
+
+		function getSubscriptionUpdate(page, events) {
+			log("getSubscriptionUpdate");
+			logGroup();
+			
+			let result = {};
+
+			let addedAndRemovedIds;
+			if (page.const._dirtySubscriptionSelections) {
+				liquid.uponChangeDo(function() {  
+					let selection = {};
+					log(page.service.orderedSubscriptions, 2);
+					page.service.orderedSubscriptions.forEach(function(subscription) {
+						log("process a subscription ... ");
+						log(subscription, 2);
+						logGroup();
+						
+						// Perform a selection with dependency recording!
+						var subscriptionSelection = {};
+						
+						// Perform selection.
+						restrictAccessToThatOfPage = page;
+						state.isSelecting = true; // Note: this write protects the system during selection.
+						subscription.object['select' + subscription.selector](subscriptionSelection);
+						state.isSelecting = false;
+						restrictAccessToThatOfPage = null;
+						log("subscriptionSelection");
+						logSelection(selection); 
+					
+						// Add to general selection.
+						for (id in subscriptionSelection) {
+							selection[id] = subscriptionSelection[id];
+						}
+						logUngroup();
+					});
+					log("pageSelection");
+					logSelection(selection); 
+					page.const._previousSelection = page.const._selection;
+					page.const._selection = selection;
+					page.const._dirtySubscriptionSelections = false;
+					
+					addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
+				}, function() {
+					state.dirtyPageSubscritiptions[page.const.id] = page;
+					page.const._dirtySubscriptionSelections = true;
+				});
+			} else {
+				addedAndRemovedIds = {
+					added : {},
+					removed : {},
+					static : page.const._selection
+				}
+			}
+
+			// Add as subscriber
+			for (id in addedAndRemovedIds.added) {
+				// console.log("Adding page observers");
+				var addedObject = addedAndRemovedIds.added[id];
+				if (typeof(addedObject.const) === 'undefined') {
+					log(addedObject, 3);
+				}
+				if (typeof(addedObject.const._observingPages) === 'undefined') {
+					addedObject.const._observingPages = {};
+				}
+				addedObject.const._observingPages[page.const.id] = page;
+				// console.log(Object.keys(addedObject.const._observingPages));
+			}
+
+			// Remove subscriber
+			for (id in addedAndRemovedIds.removed) {
+				// console.log("Removing page observers");
+				var removedObject = addedAndRemovedIds.removed[id];
+				delete removedObject.const._observingPages[page.const.id];
+				// console.log(Object.keys(addedObject._observingPages));
+			}
+
+			// Serialize
+			// liquid.state.pageSubject = page; // Why would I need this.... ?
+			result.serializedObjects = serializeSelection(addedAndRemovedIds.added, false);
+			// liquid.state.pageSubject = null;
+
+			result.unsubscribedUpstreamIds = addedAndRemovedIds.removed;
+
+			// Add event info.
+			result.serializedEvents = [];
+			events.forEach(function (event) {
+				if ((state.pushingDataFromPage !== page || event.isConsequence)) { //Do not send back events to originator unless repeater event!  TODO: What about this piece of code?: || liquid.callOnServer ? 
+					if (addedAndRemovedIds.static[event.object.const.id]) {
+						// liquid.state.pageSubject = page;
+						result.serializedEvents.push(serializeEvent(event, false));
+						// liquid.state.pageSubject = null;
+					}
+				}
+			});
+
+			// Add id mapping information
+			result.idToUpstreamId = {};
+			result.idsOfInstantlyHidden = [];
+			if (page.const.idToDownstreamIdMap !== null) {
+				for(id in page.const.idToDownstreamIdMap) {
+					if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
+						result.idToUpstreamId[page.const.idToDownstreamIdMap[id]] = id;
+					} else {
+						result.idsOfInstantlyHidden[page.const.idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
+					}
+				}
+				page.const.idToDownstreamIdMap = null;
+			}
+
+			// More like: 
+			// {
+				// serializedEvents : serializedEvents,
+				// serializedObjects : serializedObjects
+			// };
+			logUngroup();
+			return result;
 		};
 		
 		
@@ -672,185 +817,7 @@
 			}
 		}
 		
-		
-
-		function getSubscriptionUpdate(page) {
-			log("getSubscriptionUpdate");
-			logGroup();
-			// console.group("getSubscriptionUpdate");
-			// traceGroup('subscribe', "--- getSubscriptionUpdate ", page, "---");
-			var result = {};
-
-			var addedAndRemovedIds;
-			if (page.const._dirtySubscriptionSelections) {
-				// traceGroup('subscribe', '--- dirty footprint selection --- ');
-				// console.log("dirty selection");
-				liquid.uponChangeDo(function() {
-					var selection = {};// get
-					log(page.service.orderedSubscriptions, 2);
-					page.service.orderedSubscriptions.forEach(function(subscription) {
-						log("process a subscription ... ");
-						log(subscription, 2);
-						logGroup();
-						
-						// Perform a selection with dependency recording!
-						var subscriptionSelection = {};
-						
-						// Select as
-						restrictAccessToThatOfPage = page; // pageAccessRestriction
-						state.isSelecting = true;
-						// Also deactivate repeaters during this... 
-						// Better idea: Writeprotect the system here... 
-
-						// TODO: Get without observe... 
-						subscription.object['select' + subscription.selector](subscriptionSelection);
-
-						// Reactivate repeaters here... 
-						// Remove write protection...
-						state.isSelecting = false;
-						restrictAccessToThatOfPage = null;
-						
-						log("subscriptionSelection");
-						logSelection(selection); 
-					
-						for (id in subscriptionSelection) {
-							selection[id] = subscriptionSelection[id];
-						}
-						logUngroup();
-					});
-					log("pageSelection");
-					logSelection(selection); 
-					// console.log("consolidate");
-					// console.log(selection);
-					page.const._previousSelection = page.const._selection;
-					// console.log(page.const._previousSelection);
-					page.const._selection = selection;
-					page.const._dirtySubscriptionSelections  = false;
-					
-					addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
-				}, function() {
-					// trace('serialize', "A subscription selection got dirty: ", page);
-					// console.log("A subscription selection got dirty: " + page.const.id);
-					// stackDump();
-					state.dirtyPageSubscritiptions[page.const.id] = page;
-					page.const._dirtySubscriptionSelections  = true;
-				});
-				// traceGroupEnd();
-			} else {
-				// trace('serialize', "just events");
-				addedAndRemovedIds = {
-					added : {},
-					removed : {},
-					static : page.const._selection
-				}
-			}
-
-			// traceGroup('serialize', "Added and removed:");
-			// trace('serialize', "Added:");
-			// for (var id in addedAndRemovedIds.added) {
-				// trace('serialize', getEntity(id));
-			// }
-			// trace('serialize', "Removed:");
-			// for (var id in addedAndRemovedIds.removed) {
-				// trace('serialize', getEntity(id));
-			// }
-			// trace('serialize', "Static:");
-			// for (var id in addedAndRemovedIds.static) {
-				// trace('serialize', getEntity(id));
-			// }
-			// traceGroupEnd();
-			// console.log("Added ids:");
-			// console.log(addedAndRemovedIds.added);
-			// console.log("Removed ids:");
-			// console.log(addedAndRemovedIds.added);
-
-			// Add as subscriber
-			for (id in addedAndRemovedIds.added) {
-				// console.log("Adding page observers");
-				var addedObject = addedAndRemovedIds.added[id];
-				if (typeof(addedObject.const) === 'undefined') {
-					log(addedObject, 3);
-				}
-				if (typeof(addedObject.const._observingPages) === 'undefined') {
-					addedObject.const._observingPages = {};
-				}
-				addedObject.const._observingPages[page.const.id] = page;
-				// console.log(Object.keys(addedObject.const._observingPages));
-			}
-
-			// Remove subscriber
-			for (id in addedAndRemovedIds.removed) {
-				// console.log("Removing page observers");
-				var removedObject = addedAndRemovedIds.removed[id];
-				delete removedObject.const._observingPages[page.const.id];
-				// console.log(Object.keys(addedObject._observingPages));
-			}
-
-			// Serialize
-			liquid.state.pageSubject = page;
-			result.addedSerialized = serializeSelection(addedAndRemovedIds.added, false);
-			liquid.state.pageSubject = null;
-
-			result.unsubscribedUpstreamIds = addedAndRemovedIds.removed;
-
-			// TODO: Consider what to do about this... do we really need a pulse object? 
-			// //add event info originating from repeaters.
-			// result.events = [];
-			// // trace('serialize', "Serialize events");
-			// if (liquid.activePulse !== null) {
-				// liquid.activePulse.events.forEach(function (event) {
-					// // trace('serialize', event.action, event.object);
-					// // trace('serialize', event);
-					// if (!event.redundant && (liquid.activePulse.originator !== page || event.repeater !== null || liquid.callOnServer)) { // Do not send back events to originator!
-						// // console.log("A");
-						// if (addedAndRemovedIds.static[event.object.const.id]) {
-							// // console.log("B");
-							// liquid.state.pageSubject = page;
-							// result.events.push(serializeEventForDownstream(event));
-							// liquid.state.pageSubject = null;
-						// }
-					// }
-				// });
-			// }
-
-			// Add id mapping information
-			result.idToUpstreamId = {};
-			result.idsOfInstantlyHidden = [];
-			if (page.const.idToDownstreamIdMap !== null) {
-				for(id in page.const.idToDownstreamIdMap) {
-					if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
-						result.idToUpstreamId[page.const.idToDownstreamIdMap[id]] = id;
-					} else {
-						result.idsOfInstantlyHidden[page.const.idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
-					}
-				}
-				page.const.idToDownstreamIdMap = null;
-			}
-
-			// console.log(result);
-			// trace('serialize', "Subscription update: ", result);
-			// console.groupEnd();
-			// traceGroupEnd();
-			// log(result, 10);
-			logUngroup();
-
-			return result;
-
-			/**
-			 * result.serializedObjects
-			 * [{
-			 * 	 id: 34
-			 * 	 className: 'Dog'
-			 *	 HumanOwner: 'Human:23'
-			 *	 property: "A string"
-			 * }]
-			 * result.unsubscribedUpstreamIds
-			 * result.idToUpstreamId
-			 * result.events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
-			 */
-		};
-		
-		
+	
 
 		// Form for events:
 		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
@@ -1092,7 +1059,7 @@
 			liquid.pulse(function() {
 				log("receiveInitialDataFromUpstream");
 				log(serializedData);
-				unserializeObjects(serializedData.subscriptionInfo.addedSerialized, false);
+				unserializeObjects(serializedData.subscriptionInfo.serializedObjects, false);
 				liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
 				log(liquid);
 			});			
@@ -1124,7 +1091,7 @@
 				}
 				console.log(changes);
 				//result
-				// unserializeFromUpstream(changes.addedSerialized);
+				// unserializeFromUpstream(changes.serializedObjects);
 				unserializeObjects(serializedObjects, false);
 
 				liquid.blockUponChangeActions(function() {
