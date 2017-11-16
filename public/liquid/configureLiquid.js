@@ -8,7 +8,7 @@
 			reactiveStructuresAsCausalityObjects : false // Already default
 		}
 	});
-	liquid.setAsDefaultConfiguration();
+	liquid.setConfigurationAsDefault();
 	// console.log("configured liquid");
 	// console.log(liquid);
 	// console.log(liquid.classRegistry)

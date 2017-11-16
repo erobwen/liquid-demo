@@ -24,15 +24,6 @@
 		let logUngroup = objectlog.exit;
 		let logToString = objectlog.toString;
 
-		// State 
-		let state = {
-			pushingDataFromDownstream : false,
-			pushingDataFromPage : null,
-			pushingPulseFromUpstream : false, // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
-			isSelecting : false,
-			dirtyPageSubscritiptions : {}
-		}
-
 		// Pages and sessions (for server)
 		pagesMap = {};
 		sessionsMap = {};
@@ -52,7 +43,22 @@
 		Object.assign(liquid, liquidEntity.classes); // Assign all base classes to liquid as well.... 
 		Object.assign(liquid, liquidEntity.functions); // Assign all functions to liquid as well.... 
 
+		/***************************************************************
+		 *
+		 *  State
+		 *
+		 ***************************************************************/
 		
+		// State 
+		let state = {
+			pushingDataFromDownstream : false,
+			pushingDataFromPage : null,
+			pushingPulseFromUpstream : false, // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
+			isSelecting : false,
+			dirtyPageSubscritiptions : {},
+			restrictAccessToThatOfPage : null,
+			callOnServer : false
+		}
 		
 		/***************************************************************
 		 *
@@ -61,7 +67,7 @@
 		 ***************************************************************/
 		
 
-		let restrictAccessToThatOfPage = null;
+		let  = null;
 		
 		let readable = {
 			"readAndWrite" : true,
@@ -76,9 +82,9 @@
 		}
 		
 		function restrictAccess(page, action) {
-			restrictAccessToThatOfPage = page;
+			state.restrictAccessToThatOfPage = page;
 			action();
-			restrictAccessToThatOfPage = null;
+			state.restrictAccessToThatOfPage = null;
 		}
 		
 		liquid.setCustomCanRead(function(object) {
@@ -90,10 +96,10 @@
 		});
 		
 		function getAccessLevel(object) {
-			if (restrictAccessToThatOfPage !== null) {
+			if (state.restrictAccessToThatOfPage !== null) {
 				let accessLevel = "readAndWrite";
 				if (typeof(object.pageAccessLevel) !== 'undefined') {
-					accessLevel = object.pageAccessLevel(restrictAccessToThatOfPage);
+					accessLevel = object.pageAccessLevel(state.restrictAccessToThatOfPage);
 				} else if (typeof(object.redirectSecurityTo) !== 'undefined'){
 					// TODO: Recusive, do this cached instead to prevent really expensive operations. 
 					accessLevel = getAccessLevel(object.redirectSecurityTo);
@@ -243,21 +249,6 @@
 				throw new Error("Unsupported type for serialization: " + type);
 			}
 		}
-		
-	
-		// function serializeReference(object, forUpstream) {
-			// let className = getClassName(object);
-			// if (forUpstream) {
-				// if (object.const._upstreamId !== null) {
-					// return "object:" + className + ":id:" + object.const._upstreamId;
-				// } else {
-					// return "object:" + className + ":downstreamId:" + object.const.id;
-				// }
-			// } else {
-				// // TODO: instead of __ref__, put references in their own serialized object so that we are completley safe from accidental string matching... 
-				// return "object:" + className + ":" + object.const.id + ":" + true; //!object.readable(); // TODO: consider this, we really need access rights on this level?
-			// }				
-		// }
 	
 		function getClassName(object) {
 			return (object instanceof liquid.classRegistry["LiquidEntity"]) ? object.className() : Object.getPrototypeOf(object).constructor.name
@@ -688,11 +679,11 @@
 						var subscriptionSelection = {};
 						
 						// Perform selection.
-						restrictAccessToThatOfPage = page;
+						state.restrictAccessToThatOfPage = page;
 						state.isSelecting = true; // Note: this write protects the system during selection.
 						subscription.object['select' + subscription.selector](subscriptionSelection);
 						state.isSelecting = false;
-						restrictAccessToThatOfPage = null;
+						state.restrictAccessToThatOfPage = null;
 						log("subscriptionSelection");
 						logSelection(selection); 
 					
@@ -787,25 +778,19 @@
 		
 		
 		function getMapDifference(firstSet, secondSet) {
-			// console.log("getmapdifference");
-			// console.log(firstSet);
-			// console.log(secondSet);
 			var added = {};
 			var removed = {};
 			var static = {};
 			for(id in firstSet) {
 				if(typeof(secondSet[id]) === 'undefined') {
-					// console.log("removed");
 					removed[id] = firstSet[id];
 				} else {
-					// console.log("static");
 					static[id] = firstSet[id];
 				}
 			} 
 			
 			for(id in secondSet) {
 				if(typeof(firstSet[id]) === 'undefined') {
-					// console.log("added");
 					added[id] = secondSet[id];
 				}
 			}
@@ -817,76 +802,11 @@
 			}
 		}
 		
-	
-
-		// Form for events:
-		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
-		//  {action: deletingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
-		// function serializeEventForDownstream(event) {
-			// // console.log("Serialize event");
-			// // console.log(event);
-			// var serialized  = {
-				// action: event.action
-			// };
-			// serialized.objectId = event.object.const.id;
-
-			// if (event.definition.type === 'relation') {
-				// serialized.relationName = event.definition.qualifiedName;
-
-				// if (typeof(event.relatedObject) !== 'undefined') {
-					// serialized.relatedObjectId = event.relatedObject.const.id;
-				// }
-			// } else {
-				// serialized.propertyName = event.definition.name;
-				// serialized.value = event.value;
-			// }
-
-			// return serialized;
-		// }
-
-
-		// if (liquid.activePulse.originator === liquid.clientPage) {
-			
 
 
 		/**-------------------------------------------------------------
 		 *                 Receive from downstream
 		 ---------------------------------------------------------------*/
-
-		liquid.callOnServer = false;
-		function receiveCallOnServer(pageToken, callInfo) {
-			// trace('serialize', "Make call on server");
-			// trace('serialize', pageToken);
-			// trace('serialize', callInfo);
-			liquid.callOnServer = true;
-			Fiber(function() {
-				// trace('serialize', Object.keys(pagesMap));
-				if (typeof(pagesMap[pageToken]) !== 'undefined') {
-					var page = pagesMap[pageToken];
-					trace('serialize', "Make call on server ", page);
-
-					liquid.pulse(function() {
-						var object = page.const._selection[callInfo.objectId];
-						var methodName = callInfo.methodName;
-						var argumentList = callInfo.argumentList; // TODO: Convert to
-						// trace('serialize', "Call: ", methodName);
-						// trace('serialize', "Call: ", argumentList);
-
-						// traceTags.event = true;
-						if (object.allowCallOnServer(page)) {
-							liquid.unlockAll(function() {
-								object[methodName].apply(object, argumentList);
-							});
-						}
-						// delete traceTags.event;
-
-						// trace('serialize', "Results after call to server", page.getSession(), page.getSession().getUser());
-					});
-				}
-			}).run();
-			liquid.callOnServer = false;
-		}
-
 
 		// Form for events:
 		//  {action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }
@@ -911,77 +831,33 @@
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
 			// var idToDownstreamIdMap = {};
 		}
-
 		
 		
 		
-			// function unserializeDownstreamReference(reference) {
-				// if (reference === null) {
-					// return null;
-				// }
-				// var fragments = reference.split(":");
-				// var className = fragments[0];
-				// var type = fragments[1];
-				// var id = parseInt(fragments[2]);
-				// if (type === 'downstreamId') {
-					// return ensureObjectUnserialized(page, null, id);
-				// } else {
-					// return page.const._selection[id];
-				// }
-			// }
-			
-			// function ensureRelatedObjectsUnserialized(page, event) {
-				// var relatedObjectId = typeof(event.relatedObjectId) !== 'undefined' ? event.relatedObjectId : null;
-				// var relatedObjectDownstreamId = typeof(event.relatedObjectDownstreamId) !== 'undefined' ? event.relatedObjectDownstreamId : null;
-				// return ensureObjectUnserialized(page, relatedObjectId, relatedObjectDownstreamId);
-			// }
+		function receiveCallOnServer(pageToken, callInfo) {
+			state.callOnServer = true;
+			Fiber(function() {
+				if (typeof(pagesMap[pageToken]) !== 'undefined') {
+					var page = pagesMap[pageToken];
+					trace('serialize', "Make call on server ", page);
 
-			// function ensureObjectUnserialized(page, id, downstreamId) {
-				// console.log("ensureObjectUnserialized");
-				// console.log(id);
-				// console.log(downstreamId);
-				// console.log(downstreamIdToSerializedObjectMap);
-				// if(id == null) {
-					// if (typeof(downstreamIdToObjectMap[downstreamId]) === 'undefined') {
-						// var serializedObject = downstreamIdToSerializedObjectMap[downstreamId];
-						// // console.log("here");
-						// // console.log(num.toString(downstreamId));
-						// // console.log(downstreamId);
-						// // console.log(serializedObject);
-						// return unserializeDownstreamObjectRecursivley(serializedObject);
-					// } else {
-						// return downstreamIdToObjectMap[downstreamId];
-					// }
-				// } else {
-					// // throw new Error("TODO: Think this throug... looks wierd... ");
-					// return page.const._selection[id];//liquid.getEntity(id);
-				// }
-			// }
-			
-			// function unserializeDownstreamObjectRecursivley(serializedObject) {
-				// var newObject = create(serializedObject.className);
-				// downstreamIdToObjectMap[serializedObject.downstreamId] = newObject; // Set this early, so recursive unserializes can point to this object, avoiding infinite loop.
+					liquid.pulse(function() {
+						var object = page.const._selection[callInfo.objectId];
+						var methodName = callInfo.methodName;
+						var argumentList = callInfo.argumentList; // TODO: Convert to
 
-				// newObject.forAllOutgoingRelations(function(definition, instance) {
-					// var data = serializedObject[definition.qualifiedName];
-					// if (definition.isSet) {
-						// data = data.map(unserializeDownstreamReference);
-					// } else {
-						// data = unserializeDownstreamReference(data);
-					// }
-					// newObject[definition.setterName](data);
-				// });
+						if (object.allowCallOnServer(page)) {
+							liquid.unlockAll(function() {
+								object[methodName].apply(object, argumentList);
+							});
+						}
+					});
+				}
+			}).run();
+			state.callOnServer = false;
+		}
 
-				// for (propertyName in newObject._propertyDefinitions) {
-					// definition = newObject._propertyDefinitions[propertyName];
-					// var data = serializedObject[definition.name];
-					// newObject[definition.setterName](data);
-				// }
-				// newObject._ = logToString(objectDigest(newObject)); //.__();
 
-				// return newObject;
-			// }
-			
 		
 		function getPage(pageToken) {
 			log("getPage:" + pageToken);
@@ -1052,7 +928,18 @@
 		 *  
 		 *
 		 ***************************************************************/
-	
+		
+		upstreamIdObjectMap = {};
+		
+		
+		// Note: this function can only be used when we know that there is at least a placeholder. 
+		function getUpstreamEntity(upstreamId) {
+			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
+				throw new Error("Tried to get an upstream entity that is unknown... ");
+			}
+			return upstreamIdObjectMap[upstreamId];
+		}
+		
 
 		function receiveInitialDataFromUpstream(serializedData) {
 			state.pushingPulseFromUpstream = true;
@@ -1065,87 +952,60 @@
 			});			
 			state.pushingPulseFromUpstream = false;
 		}
-
 		
-
-		
-		/**--------------------------------------------------------------
-		 *              Receive changes from upstream
-		 *----------------------------------------------------------------*/
 		
 		function messageFromUpstream(message) {
 			if (message.type = "pulse") {
-				receiveChangesFromUpstream(message.changes);
+				unserializeUpstreamPulse(message);
 			} else if (message.type = "callOnServerReturn") {
-				
+				// TODO... 
 			}
 		}
 		
-		function receiveChangesFromUpstream(changes) {
-			liquid.pulse(function() {
-				// Consolidate ids:
-				for (id in changes.idToUpstreamId) {
-					throw new Error("Not done yet!");
-					// TODO: Needs to keep a local map for all server synched objects...  
-					// liquid.getEntity(id)._upstreamId = changes.idToUpstreamId[id];
-				}
-				console.log(changes);
-				//result
-				// unserializeFromUpstream(changes.serializedObjects);
-				unserializeObjects(serializedObjects, false);
 
-				liquid.blockUponChangeActions(function() {
-					liquid.allUnlocked++;
-					changes.events.forEach(function(event) {
-						if (event.action === 'addingRelation') {
-							var object = getUpstreamEntity(event.objectId);
-							var relatedObject = getUpstreamEntity(event.relatedObjectId);
-							var relation = object._relationDefinitions[event.relationName];
-							if (relation.isSet) {
-								object[relation.adderName](relatedObject);
-							} else {
-								object[relation.setterName](relatedObject);
-							}
-						} else if (event.action === 'deletingRelation') {
-							liquid.activeSaver = null;
-							var object = getUpstreamEntity(event.objectId);
-							var relatedObject = getUpstreamEntity(event.relatedObjectId);
-							var relation = object._relationDefinitions[event.relationName];
-							if (relation.isSet) {
-								object[relation.removerName](relatedObject);
-							} else {
-								object[relation.setterName](null);
-							}
-							liquid.activeSaver = liquid.defaultSaver;
-						} else if (event.action === 'settingProperty') {
-							liquid.activeSaver = null;
-							var object = getUpstreamEntity(event.objectId);
-							var setterName = object._propertyDefinitions[event.propertyName].setterName;
-							object[setterName](event.value);
-							liquid.activeSaver = liquid.defaultSaver;
-						}
-					});
+		function unserializeUpstreamPulse(pulseData) {
+			logGroup("unserializeUpstreamPulse");
+			log(pulseData, 3);
+		
+			// Unserialize all objects
+			unserializeObjects(pulseData.serializedObjects, false)
+			
+			// Consider: Should we postpone notification here?
+			unserializeEvents(pulseData.serializedEvents, false);
 
-					// and create an "originators copy" of the data for safekeeping. 
-					for (upstreamId in changes.unsubscribedUpstreamIds) {
-						var object = getUpstreamEntity(upstreamId);
-						object.setIsLockedObject(true);
-					}
-					liquid.allUnlocked--;
-				});
+			//TODO: Do something with instantly hidden... 
+			// // and create an "originators copy" of the data for safekeeping. 
+				// for (upstreamId in changes.unsubscribedUpstreamIds) {
+					// var object = getUpstreamEntity(upstreamId);
+					// object.setIsLockedObject(true);
+				// }
+				// liquid.allUnlocked--;
+			// });
+			
+			// // Notify 
+			// if (typeof(liquid.instancePage) !== 'undefined') {
+				// liquid.instancePage.upstreamPulseReceived();
+			// }				
 				
-				// Notify 
-				if (typeof(liquid.instancePage) !== 'undefined') {
-					liquid.instancePage.upstreamPulseReceived();
-				}				
-			});			
+			logUngroup();
+			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
+			// var idToDownstreamIdMap = {};
 		}
+
+	
+		
+		// function allNamedUpstreamObjects() {
+			// let result = {};
+			// for(upstreamId in upstreamIdObjectMap) {
+				
+			// }
+		// }
+		
 		
 		function disconnect(page) {
 			delete pagesMap[page.token];
 		}
  		
-		
 		
 		// This was done on client... wierd... I think that active subscriptions should be updated by server and pushed in same pulse as newly loaded... 
 		// liquid.instancePage.setReceivedSubscriptions(liquid.instancePage.getPageService().getOrderedSubscriptions());
@@ -1155,79 +1015,30 @@
 		// // Setup user
 		// window.displayedUser = liquid.findLocalEntity({className: 'User'})
 
-
-	
-			// consolidateIds : function(temporaryEntityIdToEntityIdMap) {
-    // 	// console.groupCollapsed("Consolidating ids");
-    // 	if (!isArray(temporaryEntityIdToEntityIdMap)) {
-    // 		for(var tempId in temporaryEntityIdToEntityIdMap) {
-    // 			// console.log("Found id to consolidate");
-    // 			// console.log(tempId);
-    //
-    // 			var entityId = temporaryEntityIdToEntityIdMap[tempId];
-    // 			// console.log(entityId);
-    //
-    // 			// Replace in object self
-    // 			var entity = getEntity(tempId);
-    // 			entity.entityId = entityId;
-    // 			// console.log(entity);
-    //
-    // 			// Replace in idObjectMap
-    // 			liquid.idObjectMap[entityId] = entity;
-    // 			delete liquid.idObjectMap.tempId;
-    // 		}
-    // 	} else {
-    // 		// console.log("Nothing to consolidate");
-    // 	}
-    // 	// console.groupEnd();
-    // },
-    
-    
-    // function removeRedundantSessionChanges(changeList, event) {
-    // 	var newList = [];
-    // 	changeList.forEach(function(loggedEvent) {
-    // 		if (loggedEvent.entity == event.entity && loggedEvent.relationOrProperty == event.relationOrProperty) {
-    // 			// Skip this event
-    // 		} else {
-    // 			newList.push(loggedEvent);
-    // 		}
-    // 	});
-    // 	return newList;
-    // }
-    
-		/**--------------------------------------------------------------
-		 *              Call on server
-		 *----------------------------------------------------------------*/
-		
-		var callId = 0;
-		
-		function addCallOnServer(object) {
-			if (liquid.onClient) {
-				object['callOnServer'] = function() {
-					// Split arguments
-					var argumentsArray = argumentsToArray(arguments);
-					var methodName = argumentsArray.shift();
-					var methodArguments = argumentsArray;
-					var callData = {
-						callId: callId++,
-						objectId: this._upstreamId,
-						methodName: methodName,
-						argumentList: cloneAndMapLiquidObjectsDeep(argumentsArray, function(liquidObject) {
-							if (liquidObject._upstreamId != null) {
-								return { id : liquidObject._upstreamId };
-							} else {
-								return null; // TODO: consider, should we push data to server?
-							}
-						})
-					};
-					// traceGroup('serialize', "=== Call on server ===");
-					// trace('serialize', callData.callId, callData.objectId, callData.methodName);
-					// trace('serialize', callData.argumentList);
-					// traceGroupEnd();
-					liquid.makeCallOnServer(callData);
-				};
-			}
-		};
+				// consolidateIds : function(temporaryEntityIdToEntityIdMap) {
+		// 	// console.groupCollapsed("Consolidating ids");
+		// 	if (!isArray(temporaryEntityIdToEntityIdMap)) {
+		// 		for(var tempId in temporaryEntityIdToEntityIdMap) {
+		// 			// console.log("Found id to consolidate");
+		// 			// console.log(tempId);
+		//
+		// 			var entityId = temporaryEntityIdToEntityIdMap[tempId];
+		// 			// console.log(entityId);
+		//
+		// 			// Replace in object self
+		// 			var entity = getEntity(tempId);
+		// 			entity.entityId = entityId;
+		// 			// console.log(entity);
+		//
+		// 			// Replace in idObjectMap
+		// 			liquid.idObjectMap[entityId] = entity;
+		// 			delete liquid.idObjectMap.tempId;
+		// 		}
+		// 	} else {
+		// 		// console.log("Nothing to consolidate");
+		// 	}
+		// 	// console.groupEnd();
+		// },
 		
 		
 		/**--------------------------------------------------------------
@@ -1337,30 +1148,12 @@
 		 *            Unserialization from upstream
 		 *----------------------------------------------------------------*/
 		
-		upstreamIdObjectMap = {};
-		
-		
-		// Note: this function can only be used when we know that there is at least a placeholder. 
-		function getUpstreamEntity(upstreamId) {
-			if (typeof(upstreamIdObjectMap[upstreamId]) === 'undefined') {
-				throw new Error("Tried to get an upstream entity that is unknown... ");
-			}
-			return upstreamIdObjectMap[upstreamId];
-		}
-		
-		
-		// function allNamedUpstreamObjects() {
-			// let result = {};
-			// for(upstreamId in upstreamIdObjectMap) {
-				
-			// }
-		// }
-		
+
 		
 
 		/**--------------------------------------------------------------
 		 * 
-		 *            Timeing 
+		 *     Post pulse setup 
 		 *
 		 *----------------------------------------------------------------*/
 		
@@ -1396,8 +1189,10 @@
 		/**--------------------------------------------------------------
 		 *            Publish functions 
 		 *----------------------------------------------------------------*/
+
+
 		 
-		function setAsDefaultConfiguration() {
+		function setConfigurationAsDefault() {
 			userDefaultConfiguration = configuration;
 		}
 		
@@ -1415,7 +1210,7 @@
 			messageFromDownstream : messageFromDownstream,
 			registerPage : registerPage,
 			addNotifyUICallback : addNotifyUICallback,
-			setAsDefaultConfiguration : setAsDefaultConfiguration,
+			setConfigurationAsDefault : setConfigurationAsDefault,
 			addToSelection : addToSelection,
 			upstreamIdObjectMap : upstreamIdObjectMap,
 			disconnect : disconnect,

@@ -19,7 +19,7 @@ let liquid = require("./public/liquid/liquid.js")(
 // console.log("demo.liquid state: ");
 // console.log(liquid.state);
 
-liquid.setAsDefaultConfiguration();
+liquid.setConfigurationAsDefault();
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
 let create = liquid.create;
