@@ -6,14 +6,14 @@ let liquid = require("./public/liquid/liquid.js")(
 		name: "serverLiquid", 
 		usePersistency: false, 
 		isServer: true, 
-		eternityConfiguration : {
-			allowPlainObjectReferences : false,
-			databaseFileName: "demoDb.mongoDb",
+		// eternityConfiguration : {
+			// allowPlainObjectReferences : false,
+			// databaseFileName: "demoDb.mongoDb",
 			causalityConfiguration : {
 				useIncomingStructures : true, 
 				recordPulseEvents : true
 			}
-		}
+		// }
 	}
 );
 // console.log("demo.liquid state: ");
@@ -100,13 +100,13 @@ var politics = null;
 	});
 // }
 
-log("experiments");
-logGroup();
+// log("experiments");
+// logGroup();
 // let selection = {};
 // user.selectAll(selection);
 // liquid.logSelection(selection);
 // log(user.getRootCategories());
-let testPage = create("LiquidPage", { user: user});
+// let testPage = create("LiquidPage", { user: user});
 // log(politics);
 // log("subCategories:");
 // log(politics.subCategories);
@@ -114,8 +114,8 @@ let testPage = create("LiquidPage", { user: user});
 // log(politics.subCategories.get(), 1);
 // log("georgism.const.incoming.subCategories");
 // log(georgism.const.incoming.subCategories, 1);
-log("user.ownedCategories.getContents()");
-log(user.ownedCategories.getContents(), 2);
+// log("user.ownedCategories.getContents()");
+// log(user.ownedCategories.getContents(), 2);
 
 // let selection = {};
 // liquid.restrictAccess(testPage, 
@@ -125,10 +125,10 @@ log(user.ownedCategories.getContents(), 2);
 // );
 // log("selection");
 // liquid.logSelection(selection);
-log("================================");
-log(user.getRootCategories(), 2);
-log(user.getRootCategories().length);
-log("================================");
+// log("================================");
+// log(user.getRootCategories(), 2);
+// log(user.getRootCategories().length);
+// log("================================");
 // liquid.trace.basic = true;
 // log(georgism.parents);
 // liquid.trace.basic = false;

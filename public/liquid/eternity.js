@@ -2241,6 +2241,7 @@
 		
 		// Primary causality object space
 		let objectCausalityConfiguration = {};
+		// log("Assigning causality");
 		Object.assign(objectCausalityConfiguration, configuration.causalityConfiguration);
 		Object.assign(objectCausalityConfiguration, {
 			name: 'objectCausality', 

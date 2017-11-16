@@ -33,8 +33,12 @@
 		if (configuration.usePersistency) {
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
-			log(configuration);
-			liquid = require("./causality.js")(configuration.causalityConfiguration);
+			log(configuration, 4);
+			// if (typeof(configuration.eternityConfiguration) !== 'undefined') {
+				// liquid = require("./causality.js")(configuration.eternityConfiguration.causalityConfiguration);
+			// } else {
+				liquid = require("./causality.js")(configuration.causalityConfiguration);				
+			// }
 		}
 		let create = liquid.create;
 		let liquidEntity = require("./liquidEntity.js");
@@ -180,7 +184,8 @@
 		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
 		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
 		function serializeEvent(event, forUpstream) {
-			// console.log(event);
+			log("serializeEvent");
+			log(event, 3);
 			var serialized  = {
 				action: event.action
 			};
@@ -355,7 +360,11 @@
 						object = upstreamIdObjectMap[event.objectId];
 					}
 					if (event.type === 'set') {
+						logGroup("setting " + event.property);
+						// liquid.trace.basic++;
 						object[event.property] = unserializeValue(event.value, forUpstream);
+						// liquid.trace.basic--;
+						logUngroup();
 					} else if (event.type === 'delete') {
 						delete object[event.property];
 					}
@@ -606,21 +615,26 @@
 
 
 		function pushDataDownstream(events) {
-			if (!pushMessageDownstreamCallback) return;
+			// logGroup("pushDataDownstream?");
+			if (pushMessageDownstreamCallback === null) return;	
+			logGroup("pushDataDownstream");
+			// log(events, 2);
 			
 			// Send events to pages that has no change in subscription
 			let pagesToNotifyWithNoChangeInSelection = {};
 			events.forEach(function(event) {
-				let serializedEvent = serializeEvent(event, false);
-				for (id in event.const._observingPages) {
-					let observingPage = event.const._observingPages[id];
-					if (!state.dirtyPageSubscritiptions[id]) {
-						pagesToNotifyWithNoChangeInSelection[id] = observingPage;
-						if (typeof(event.const._pendingEvents) === 'undefined') {
-							event.const._pendingEvents = [];
+				if (!event.incomingStructureEvent) {
+					let serializedEvent = serializeEvent(event, false);
+					for (id in event.object.const._observingPages) {
+						let observingPage = event.object.const._observingPages[id];
+						if (!state.dirtyPageSubscritiptions[id]) {
+							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
+							if (typeof(event.object.const._pendingEvents) === 'undefined') {
+								event.object.const._pendingEvents = [];
+							}
+							event.object.const._pendingEvents.push(serializedEvent);
 						}
-						event.const._pendingEvents.push(serializedEvent);
-					}
+					}					
 				}
 			});
 			for (id in pagesToNotifyWithNoChangeInSelection) {
@@ -656,6 +670,7 @@
 					}
 				}
 			}
+			logUngroup();
 		};
 			
 
@@ -816,7 +831,7 @@
 		// throw new Error("What to do with all these data");
 		
 		function unserializeDownstreamPulse(page, pulseData) {
-			log(unserializeDownstreamPulse);
+			logGroup("unserializeDownstreamPulse");
 			log(pulseData, 3);
 		
 			// Unserialize all objects
@@ -825,9 +840,9 @@
 			// Consider: Should we postpone notification here?
 			unserializeEvents(pulseData.serializedEvents, true);
 
-			let object = state.pushingDataFromPage.const._selection[pulseData.serializedEvents[0].objectId];
-			log(object);
-			log("...");
+			// let object = state.pushingDataFromPage.const._selection[pulseData.serializedEvents[0].objectId];
+			// log(object);
+			logUngroup();
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
 			// var idToDownstreamIdMap = {};
 		}
@@ -1084,9 +1099,10 @@
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
 		function pushDataUpstream(events) {			
-			if (typeof(pushMessageUpstreamCallback) !== undefined && !state.pushingPulseFromUpstream) {
+			if (typeof(pushMessageUpstreamCallback) !== 'undefined' && !state.pushingPulseFromUpstream) {
 				log("pushDataUpstream (actually)");
-				log(events);
+				log(pushMessageUpstreamCallback);
+				log(events, 2);
 		
 				// Recursive search for objects to push upstream
 				var requiredObjects = {};
@@ -1163,8 +1179,11 @@
 		}
 		
 		function streamInRelevantDirections(events) { // Stream in your general direction.
+			// log("streamInRelevantDirections?...");
+			// log(events.length);
 			if (events.length > 0) {				
 				logGroup("streamInRelevantDirections");
+				// log(events, 2);
 				// Notify UI
 				notifyUICallbacks.forEach(function(callback) {
 					callback(events);
@@ -1271,7 +1290,6 @@
 	let configurationToSystemMap = {};
 	return function(requestedConfiguration) {
 		if(typeof(requestedConfiguration) === 'undefined') {
-			
 			if (userDefaultConfiguration) {
 				requestedConfiguration = userDefaultConfiguration;
 			} else {

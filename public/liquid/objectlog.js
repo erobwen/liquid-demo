@@ -9,7 +9,7 @@
     }
 }(this, function () {
 	
-	let bufferWidth = 100;
+	let bufferWidth = 56;
 	
 	let indentLevel = 0;
 
