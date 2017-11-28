@@ -16,8 +16,11 @@ let liquid = require("./public/liquid/liquid.js")(
 		// }
 	}
 );
-// console.log("demo.liquid state: ");
-// console.log(liquid.state);
+liquid.trace.pulse++;
+
+
+// log("demo.liquid state: ");
+// log(liquid.state);
 
 liquid.setConfigurationAsDefault();
 liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
@@ -43,6 +46,7 @@ var politics = null;
 // if (!liquid.persistent.demoInitialized) {
 
 	liquid.pulse(function() {
+		logGroup("Setup database contents... ");
 		// Name of persistent object
 		// liquid.persistent.name = "persistent";
 		
@@ -97,6 +101,8 @@ var politics = null;
 		// Create References
 
 		// log(user, 3);
+		log("...finished setup.");
+		logUngroup();
 	});
 // }
 
@@ -137,7 +143,7 @@ var politics = null;
 
 // log(user.addedReferences.getContents(), 3);
 // log(user.ownedCategories.getContents(), 3);
-logUngroup();
+// logUngroup();
 
 
 /* ------------------------------------------
@@ -148,11 +154,12 @@ logUngroup();
 	'' : "LiquidPage",
 	'index': 'LiquidPage',
 	'demo': function(req) { // Note: req follows express conventions.
-		console.log("in demo controller");
+		logGroup("in demo controller");
 		var session = liquid.createOrGetSessionObject(req.session.token);
 		session.user = user; 
 		var page = create('LiquidPage', {session: session});
 		page.service.orderedSubscriptions.push(create({object: user, selector:'All'})); //object: user,
+		logUngroup();
 		return page;
 	},
 	'someurl/:someargument' : 'PageWithArgument'
@@ -175,7 +182,7 @@ for (controllerName in expressControllers) {
 expressHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
 
 expressHttpServer.listen(4000, function () {
-  console.log('Liquid is now listening on port 4000!');
+  log('Liquid is now listening on port 4000!');
 });
 
 function createExpressControllers(liquidControllers) {
@@ -205,7 +212,7 @@ function createExpressControllerFromClassName(className) {
 
 function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
-		// console.log(req);
+		logGroup("express controller...");
 		liquid.pulse(function() {
 			// Setup session object (that we know is the same object identity on each page request)
 			var page = pageCreatorFunction(req)
@@ -218,6 +225,7 @@ function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 				data: JSON.stringify(data)
 			});
 		});
+		logUngroup("...");
 	}
 }
 
@@ -265,7 +273,7 @@ liquidSocket.on('connection', function (socket) {
 
 liquid.setPushMessageDownstreamCallback(function(page, message) { //messageType, data
 	log("socket.emit: message");
-	page.const._socket.emit("message", message);	
+	if (page.const._socket) page.const._socket.emit("message", message);	
 });
 
 // .catch(function() {

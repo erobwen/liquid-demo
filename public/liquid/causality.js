@@ -1096,6 +1096,18 @@
 				emitSpliceEvent(this, target, added, removed);
 				if (--state.inPulse === 0) postPulseCleanup();
 				return result;
+			},
+			
+			forEach : function(callback) {
+				if (state.inActiveRecording) {
+					registerChangeObserver(getSpecifier(this.const, "_arrayObservers"));//object
+				}
+				this.const.target.forEach(function(element) {
+					if (state.incomingStructuresDisabled === 0) {
+						element = getReferredObject(target[key]);
+					}
+					callback(element);
+				});
 			}
 		};
 
@@ -2105,7 +2117,7 @@
 		}
 
 		function postPulseCleanup() {
-			trace.pulse && logGroup("postPulseCleanup");
+			trace.pulse && logGroup("postPulseCleanup (" + state.pulseEvents.length + " events)");
 			state.inPulse++; // block new pulses!			
 			state.inPostPulseProcess++;
 			
@@ -2274,6 +2286,7 @@
 		}
 
 		function emitEvent(handler, event) {
+			if (event.type === "set" && typeof(event.value) === 'undefined') throw new Error("WTF WTF");
 			if (trace.event) {
 				logGroup("emitEvent: ");// + event.type + " " + event.property);
 				log(event);

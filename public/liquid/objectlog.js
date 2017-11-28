@@ -9,7 +9,8 @@
     }
 }(this, function () {
 	
-	let bufferWidth = 56;
+	// let bufferWidth = 56;
+	let bufferWidth = 76;
 	
 	let indentLevel = 0;
 
@@ -39,6 +40,7 @@
 				// }
 			// },
 			log : function(string) {
+				// string = "#" + this.indentLevel + "#" +  string
 				if (this.unfinishedLine) {
 					if (toString) {
 						this.result += string;

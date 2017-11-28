@@ -574,10 +574,9 @@
 		
 		forEach(callback) {
 			trace.entity && log("LiquidIndex.forEach");
-			Object.keys(this).forEach(function(key) {
+			Object.keys(this.contents).forEach(function(key) {
 				if (!nonContentProperties[key]) callback(this.contents[key]);
-				
-			});
+			}.bind(this));
 		}
 		
 		remove(object) {
@@ -611,7 +610,7 @@
 
 	class LiquidSession extends LiquidEntity {
 		initialize(data) {
-			super.initialize(data);
+			// super.initialize(data);
 			this.token = null; // Hard to guess session id
 			this.user = null;			
 		}

@@ -184,12 +184,8 @@
 		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
 		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
 		function serializeEvent(event, forUpstream) {
-			log("serializeEvent");
-			log(event, 3);
-			var serialized  = {
-				action: event.action
-			};
-		
+			logGroup("serializeEvent");
+			var serialized  = {};
 			if (forUpstream) {
 				if (event.object.const._upstreamId !== null) {
 					serialized.objectId = event.object.const._upstreamId;
@@ -201,7 +197,9 @@
 			}
 
 			serialized.type = event.type;
-			serialized.property = event.property;
+			if (typeof(event.property) !== 'undefined') {				
+				serialized.property = event.property;
+			}
 			if (typeof(event.value) !== 'undefined') {
 				serialized.value = serializeValue(event.value, forUpstream);
 			}
@@ -222,7 +220,8 @@
 				});
 				serialized.removed = serializedRemoved;
 			}
-
+			log(serialized, 3);
+			logUngroup();
 			return serialized;
 		}
 		
@@ -621,10 +620,11 @@
 			// log(events, 2);
 			
 			// Send events to pages that has no change in subscription
+			logGroup("Send events to pages that has no change in subscription... ");
 			let pagesToNotifyWithNoChangeInSelection = {};
 			events.forEach(function(event) {
 				if (!event.incomingStructureEvent) {
-					let serializedEvent = serializeEvent(event, false);
+					let serializedEvent;
 					for (id in event.object.const._observingPages) {
 						let observingPage = event.object.const._observingPages[id];
 						if (!state.dirtyPageSubscritiptions[id]) {
@@ -632,6 +632,7 @@
 							if (typeof(event.object.const._pendingEvents) === 'undefined') {
 								event.object.const._pendingEvents = [];
 							}
+							if (typeof(serializedEvent) === 'undefined') serializedEvent = serializeEvent(event, false);	
 							event.object.const._pendingEvents.push(serializedEvent);
 						}
 					}					
@@ -644,6 +645,7 @@
 				} else {
 				}
 			}
+			logUngroup();
 			
 			// Process pages where page subscriptions changed
 			for (id in state.dirtyPageSubscritiptions) { // TODO: what if an event concerns an object/page without disturbing the page subscription... it needs to be pushed also.. 
@@ -675,8 +677,7 @@
 			
 
 		function getSubscriptionUpdate(page, events) {
-			log("getSubscriptionUpdate");
-			logGroup();
+			logGroup("getSubscriptionUpdate");
 			
 			let result = {};
 
@@ -1100,7 +1101,7 @@
 		 */
 		function pushDataUpstream(events) {			
 			if (typeof(pushMessageUpstreamCallback) !== 'undefined' && !state.pushingPulseFromUpstream) {
-				log("pushDataUpstream (actually)");
+				logGroup("pushDataUpstream (actually)");
 				log(pushMessageUpstreamCallback);
 				log(events, 2);
 		
@@ -1155,6 +1156,7 @@
 					};
 					tryPushMessageUpstream({type: "pulse", data: serializedPulse});
 				}
+				logUngroup();
 			}
 		};
 		
