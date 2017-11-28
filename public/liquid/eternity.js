@@ -178,13 +178,13 @@
 		function createEmptyDbImage(object, potentialParentImage, potentialParentProperty) {
 			let dbImage = createDbImageConnectedWithObject(object);
 			dbImage.const.name = object.const.name + "(dbImage)";
-			imageCausality.state.useIncomingStructures = false;
+			imageCausality.state.incomingStructuresDisabled--;
 			dbImage["_eternityParent"] = potentialParentImage;
 			dbImage["_eternityObjectClass"] = Object.getPrototypeOf(object).constructor.name;
 			dbImage["_eternityImageClass"] = (object instanceof Array) ? "Array" : "Object";
 			dbImage["_eternityParentProperty"] = potentialParentProperty;
 			dbImage["_eternityIsObjectImage"] = true;
-			imageCausality.state.useIncomingStructures = true;
+			imageCausality.state.incomingStructuresDisabled++;
 			
 			// TODO: have causality work with this... currently incoming references count is not updatec correctly
 			// let imageContents = {
@@ -245,15 +245,15 @@
 			objectCausality.pokeObject(object); // poke all newly saved?
 		}
 		
-		function createDbImageRecursivley(entity, potentialParentImage, potentialParentProperty) {
-			// log("createDbImageRecursivley");
-			if (objectCausality.isObject(entity)) {
-				createDbImageForObject(entity, potentialParentImage, potentialParentProperty);		
-				return entity.const.dbImage;
-			} else {
-				return entity;
-			}
-		} 
+		// function createDbImageRecursivley(entity, potentialParentImage, potentialParentProperty) {
+			// // log("createDbImageRecursivley");
+			// if (objectCausality.isObject(entity)) {
+				// createDbImageForObject(entity, potentialParentImage, potentialParentProperty);		
+				// return entity.const.dbImage;
+			// } else {
+				// return entity;
+			// }
+		// } 
 		
 
 		/*-----------------------------------------------
@@ -311,7 +311,7 @@
 				// Incoming structures or root incoming structure
 				currentIncomingStructure = nextIncomingStructure;
 				let referedDbImage;
-				if (typeof(currentIncomingStructure.isIncomingStructure) !== 'undefined') {
+				if (imageCausality.isIncomingStructure(currentIncomingStructure)) {
 					// We were at the root incoming structure, proceed to the main incoming structure
 					nextIncomingStructure = currentIncomingStructure.incomingStructures;
 				} else {
@@ -401,7 +401,7 @@
 				imageCausality.blockInitialize(function() {
 					// log(event, 1);
 					// if (event.type === 'set') {
-						// log(valueToString(event.object) + ".set " + event.property + " to " + valueToString(event.value) + (event.incomingStructureEvent ? " [incoming]" : ""));
+						// log(valueToString(event.object) + ".set " + event.property + " to " + valueToString(event.value)));
 					// }
 				});
 			});
@@ -503,96 +503,92 @@
 				tmpDbIdToDbId = {};
 				pendingUpdate = {
 					imageCreations : {},
+					imageDeallocations : {},
 					imageUpdates : {}
 				}
+				
+				// Find all deallocations.
+				events.forEach(function(event) {
+					if (event.type === 'set' && event.property === eternityTag + "_to_deallocate") {
+						pendingUpdate.imageDeallocations[event.value] = true;
+					}
+				});
 
 				// Extract updates and creations to be done.
 				events.forEach(function(event) {
 					if (trace.eternity) {
 						// log("events.forEach(function(event)) { ..."); 
 					}
-					if (!isMacroEvent(event)) {
-						let dbImage = event.object;
-						let imageId = dbImage.const.id;
+					let dbImage = event.object;
+					let imageId = dbImage.const.id;
+						
+					if (event.type === 'creation') {
+						if (typeof(dbImage.const.dbId) === 'undefined') {
+							// Maintain image structure
+							for (let property in dbImage) {
+								increaseLoadedIncomingMacroReferenceCounters(dbImage, property);
+							}
 							
-						if (event.type === 'creation') {
-							if (typeof(dbImage.const.dbId) === 'undefined') {
-								// Maintain image structure
-								for (let property in dbImage) {
-									increaseLoadedIncomingMacroReferenceCounters(dbImage, property);
-								}
-								
-								// Serialized image creation, with temporary db ids. 
-								let tmpDbId = getTmpDbId(dbImage);
-								pendingUpdate.imageCreations[tmpDbId] = serializeDbImage(dbImage);
-								
-								// if (typeof(pendingUpdate.imageUpdates[imageId]) !== 'undefined') {
-									// // We will do a full write of this image, no need to update after.				
-									// delete pendingUpdate.imageUpdates[dbId];   // will never happen anymore?
-								// }
+							// Serialized image creation, with temporary db ids. 
+							let tmpDbId = getTmpDbId(dbImage);
+							pendingUpdate.imageCreations[tmpDbId] = serializeDbImage(dbImage);
 							
+							// if (typeof(pendingUpdate.imageUpdates[imageId]) !== 'undefined') {
+								// // We will do a full write of this image, no need to update after.				
+								// delete pendingUpdate.imageUpdates[dbId];   // will never happen anymore?
+							// }
+						
+						}
+					} else if (event.type === 'set') {
+						if (typeof(dbImage.const.dbId) !== 'undefined' && dbImage.const.dbId !== null && typeof(dbImage[eternityTag + "_to_deallocate"]) === 'undefined') { // 
+							// Maintain image structure
+							increaseLoadedIncomingMacroReferenceCounters(dbImage, event.property);
+							// decreaseLoadedIncomingMacroReferenceCounters(dbImage, event.); // TODO: Decrease counters here? Get the previousIncomingStructure... 
+							
+							// Only update if we will not do a full write on this image. 
+							let dbId = dbImage.const.dbId;
+							if (typeof(pendingUpdate.imageUpdates[dbId]) === 'undefined') {
+								pendingUpdate.imageUpdates[dbId] = {};
 							}
-						} else if (event.type === 'set') {
-							if (typeof(dbImage.const.dbId) !== 'undefined' && dbImage.const.dbId !== null) { // 
-								// Maintain image structure
-								increaseLoadedIncomingMacroReferenceCounters(dbImage, event.property);
-								// decreaseLoadedIncomingMacroReferenceCounters(dbImage, event.); // TODO: Decrease counters here? Get the previousIncomingStructure... 
-								
-								// Only update if we will not do a full write on this image. 
-								let dbId = dbImage.const.dbId;
-								if (typeof(pendingUpdate.imageUpdates[dbId]) === 'undefined') {
-									pendingUpdate.imageUpdates[dbId] = {};
-								}
-								let imageUpdates = pendingUpdate.imageUpdates[dbId];
-								
-								// Serialized value with temporary db ids. 
-								// recursiveCounter = 0;
-								let value = convertReferencesToDbIdsOrTemporaryIds(event.value);
-								let property = event.property;
-								property = imageCausality.transformPossibleIdExpression(property, imageIdToDbIdOrTmpDbId);
-								imageUpdates[event.property] = value;
-								if (typeof(imageUpdates["_eternityDeletedKeys"]) !== 'undefined') {
-									delete imageUpdates["_eternityDeletedKeys"][event.property];
-								} 
+							let imageUpdates = pendingUpdate.imageUpdates[dbId];
+							
+							// Serialized value with temporary db ids. 
+							// recursiveCounter = 0;
+							let value = convertReferencesToDbIdsOrTemporaryIds(event.value);
+							let property = event.property;
+							property = imageCausality.transformPossibleIdExpression(property, imageIdToDbIdOrTmpDbId);
+							imageUpdates[event.property] = value;
+							if (typeof(imageUpdates["_eternityDeletedKeys"]) !== 'undefined') {
+								delete imageUpdates["_eternityDeletedKeys"][event.property];
+							} 
+						}
+					} else if (event.type === 'delete') {
+						if (typeof(dbImage.const.dbId) !== 'undefined' && dbImage.const.dbId !== null && typeof(dbImage[eternityTag + "_to_deallocate"]) === 'undefined') { // 
+							// Maintain image structure
+							// decreaseLoadedIncomingMacroReferenceCounters(dbImage, event.); // TODO: Decrease counters here?
+							
+							// Only update if we will not do a full write on this image. 
+							let dbId = dbImage.const.dbId;
+							if (typeof(pendingUpdate.imageUpdates[dbId]) === 'undefined') {
+								pendingUpdate.imageUpdates[dbId] = {};
 							}
-						} else if (event.type === 'delete') {
-							if (typeof(dbImage.const.dbId) !== 'undefined' && dbImage.const.dbId !== null) { // 
-								// Maintain image structure
-								// decreaseLoadedIncomingMacroReferenceCounters(dbImage, event.); // TODO: Decrease counters here?
-								
-								// Only update if we will not do a full write on this image. 
-								let dbId = dbImage.const.dbId;
-								if (typeof(pendingUpdate.imageUpdates[dbId]) === 'undefined') {
-									pendingUpdate.imageUpdates[dbId] = {};
-								}
-								if (typeof(pendingUpdate.imageUpdates[dbId]["_eternityDeletedKeys"]) === 'undefined') {
-									pendingUpdate.imageUpdates[dbId]["_eternityDeletedKeys"] = {};
-								}
-								let imageUpdates = pendingUpdate.imageUpdates[dbId];
-								let deletedKeys = imageUpdates["_eternityDeletedKeys"];
-								
-								// Serialized value with temporary db ids. 
-								let property = event.property;
-								property = imageCausality.transformPossibleIdExpression(property, imageIdToDbIdOrTmpDbId);
-								deletedKeys[property] = true;
-								delete imageUpdates[event.property];
+							if (typeof(pendingUpdate.imageUpdates[dbId]["_eternityDeletedKeys"]) === 'undefined') {
+								pendingUpdate.imageUpdates[dbId]["_eternityDeletedKeys"] = {};
 							}
-						}		
-					}
+							let imageUpdates = pendingUpdate.imageUpdates[dbId];
+							let deletedKeys = imageUpdates["_eternityDeletedKeys"];
+							
+							// Serialized value with temporary db ids. 
+							let property = event.property;
+							property = imageCausality.transformPossibleIdExpression(property, imageIdToDbIdOrTmpDbId);
+							deletedKeys[property] = true;
+							delete imageUpdates[event.property];
+						}
+					}		
 				});								
 			});
 			if(trace.eternity) log(pendingUpdate, 4);
 			logUngroup();
-		}
-		
-		
-		function isMacroEvent(event) {
-			return imageEventHasObjectValue(event) && !event.incomingStructureEvent;
-		}
-		
-		
-		function imageEventHasObjectValue(event) {
-			return imageCausality.isObject(event.value) || imageCausality.isObject(event.oldValue);
 		}
 		
 	
@@ -712,6 +708,10 @@
 			for (let tmpDbId in imageCreations) {
 				writeSerializedImageToDatabase(tmpDbIdToDbId[tmpDbId], replaceTmpDbIdsWithDbIds(imageCreations[tmpDbId]));
 			}
+			for (let tmpDbId in pendingUpdate.imageDeallocations) {
+				mockMongoDB.deallocate(tmpDbId);
+			}			
+			
 			
 			// TODO: Update entire record if the number of updates are more than half of fields.
 			if(trace.eternity) log("pendingUpdate.imageUpdates:" + Object.keys(pendingUpdate.imageUpdates).length);
@@ -897,25 +897,25 @@
 			logUngroup();
 		}
 		
-		// function createTarget(className) {
-			// if (typeof(className) !== 'undefined') {
-				// if (className === 'Array') {
-					// return []; // On Node.js this is different from Object.create(eval("Array").prototype) for some reason... 
-				// } else if (className === 'Object') {
-					// return {}; // Just in case of similar situations to above for some Javascript interpretors... 
-				// } else {
-					// if (typeof(configuration.classRegistry[className]) === 'function') {
-						// return Object.create(configuration.classRegistry[className].prototype);
-					// } else if (typeof(configuration.classRegistry[className]) === 'object') {
-						// return Object.create(configuration.classRegistry[className]);
-					// } else {
-						// throw new Error("Cannot find class named " + className + ". Make sure to enter it in the eternity classRegistry configuration." );
-					// }
-				// }
-			// } else {
-				// return {};
-			// }
-		// }
+		function createTarget(className) {
+			if (typeof(className) !== 'undefined') {
+				if (className === 'Array') {
+					return []; // On Node.js this is different from Object.create(eval("Array").prototype) for some reason... 
+				} else if (className === 'Object') {
+					return {}; // Just in case of similar situations to above for some Javascript interpretors... 
+				} else {
+					if (typeof(configuration.classRegistry[className]) === 'function') {
+						return Object.create(configuration.classRegistry[className].prototype);
+					} else if (typeof(configuration.classRegistry[className]) === 'object') {
+						return Object.create(configuration.classRegistry[className]);
+					} else {
+						throw new Error("Cannot find class named " + className + ". Make sure to enter it in the eternity classRegistry configuration." );
+					}
+				}
+			} else {
+				return {};
+			}
+		}
 		
 		function createObjectPlaceholderFromDbId(dbId) {
 			let placeholder = objectCausality.create(peekAtRecord(dbId)._eternityObjectClass);
@@ -1161,7 +1161,7 @@
 			// log("unloadAndKillObjects");
 			if (loadedObjects > maxNumberOfLoadedObjects) {
 				// log("Too many objects, unload some... ");
-				logGroup();
+				trace.unload && logGroup("unloadAndKillObjects");
 				objectCausality.withoutEmittingEvents(function() {
 					imageCausality.withoutEmittingEvents(function() {
 						let leastActiveObject = objectCausality.getActivityListLast();
@@ -1182,7 +1182,7 @@
 						});
 					});
 				});
-				logUngroup();
+				trace.unload && logUngroup();
 			} else {
 				// log("... still room for all loaded... ");
 			}
@@ -1190,8 +1190,7 @@
 		
 		function unloadObject(object) {
 			objectCausality.freezeActivityList(function() {				
-				// log("unloadObject " + object.const.name);
-				logGroup();
+				trace.unload && logGroup("unloadObject " + object.const.name);
 				// without emitting events.
 				
 				for (let property in object) {
@@ -1216,7 +1215,7 @@
 						// killObject(object);
 					// }
 				// });
-				logUngroup();
+				trace.unload && logUngroup();
 			});
 		}
 		
@@ -1242,19 +1241,18 @@
 		}
 		
 		function tryKillObject(object) {
-            // log("tryKillObject: " + objName(object));
-			logGroup();
+            trace.killing && log("tryKillObject: " + objName(object));
+			trace.killing && logGroup();
 			// logObj(object);
             objectCausality.blockInitialize(function() {
                 objectCausality.freezeActivityList(function() {
                     // Kill if unloaded
 					let isPersistentlyStored = typeof(object.const.dbImage) !== 'undefined';
 					let isUnloaded = typeof(object.const.initializer) === 'function'
-					let hasNoIncoming = object.const.incomingReferencesCount  === 0;
-                    
-					// log("is unloaded: " + isUnloaded);
-					// log("has incoming: " + !hasNoIncoming);
-					// log("is persistently stored: " + isPersistentlyStored);
+					let hasNoIncoming = object.const.incomingReferencesCount === 0;
+					trace.killing && log("is unloaded: " + isUnloaded);
+					trace.killing && log("has no incoming: " + hasNoIncoming + " (count=" + object.const.incomingReferencesCount + ")");
+					trace.killing && log("is persistently stored: " + isPersistentlyStored);
 					
 					if (isPersistentlyStored && isUnloaded && hasNoIncoming) {
 						// log("kill it!");
@@ -1267,7 +1265,7 @@
 					}
                 });
             });
-			logUngroup();
+			trace.killing && logUngroup();
         }
 
 		
@@ -1520,8 +1518,9 @@
 		 *-----------------------------------------------*/
 		
 		function deallocateInDatabase(dbImage) {
+			dbImage[eternityTag + "_to_deallocate"] = dbImage.const.dbId;
 			// dbImage._eternityDeallocate = true;
-			mockMongoDB.deallocate(dbImage.const.dbId);
+			// mockMongoDB.deallocate(dbImage.const.dbId);
 			delete dbImage.const.correspondingObject.const.dbImage;
 			delete dbImage.const.correspondingObject.const.dbId;
 			delete dbImage.const.correspondingObject;
@@ -1657,7 +1656,7 @@
 			if (trace.eternity) {
 				log(gcState, 1);
 			}
-			imageCausality.state.useIncomingStructures = false;
+			imageCausality.state.incomingStructuresDisabled--;
 			let result = imageCausality.pulse(function() {
 				
 				// Reattatch 
@@ -1669,9 +1668,9 @@
 					
 					for (let property in current) {
 						if (property !== 'incoming') {
-                            imageCausality.state.useIncomingStructures = true; // Activate macro events.
+                            imageCausality.state.incomingStructuresDisabled++;
                             let value = current[property];
-                            imageCausality.state.useIncomingStructures = false; // Activate macro events.
+                            imageCausality.state.incomingStructuresDisabled--;
                             if (imageCausality.isObject(value) && isUnstable(value) && objectCausality.persistent.const.dbImage !== value) { // Has to exists!
                                 let referedImage = value;
                                 if(trace.gc) log("reconnecting " + referedImage.const.name + "!");
@@ -1686,7 +1685,7 @@
 					return false;
 				}
 				
-				// // Move to next zone expansion
+				// // Move to next zone expansion TODO: what is this???? ... forgotten comment out?
 				// if (isEmptyList(gcState, unexpandedUnstableZone) && !isEmptyList(gcState, nextUnexpandedUnstableZone)) {
 					// log("<<<<                                    >>>>>");
 					// log("<<<< Move to nextUnexpandedUnstableZone >>>>>");
@@ -1715,10 +1714,10 @@
 						logGroup();
 						if (!property.startsWith(eternityTag) && property !== 'incoming') {							
 							// log("expanding property: " + property)
-							imageCausality.state.useIncomingStructures = true; // Activate macro events.
+							imageCausality.state.incomingStructuresDisabled++; // Activate macro events.
 							// log(imageCausality.state);
 							let value = dbImage[property];
-							imageCausality.state.useIncomingStructures = false; // Activate macro events.
+							imageCausality.state.incomingStructuresDisabled--; // Activate macro events.
 							if (imageCausality.isObject(value)) {
 								// log("value:");
 								// log(value);
@@ -1825,30 +1824,31 @@
 					for(let property in toDestroy) {
 						if(property !== 'incoming') {
 							// log(property);
-							imageCausality.state.useIncomingStructures = true; // Activate macro events.
+							imageCausality.state.incomingStructuresDisabled++; // Activate macro events.
 							delete toDestroy[property]; 
-							imageCausality.state.useIncomingStructures = false;
+							imageCausality.state.incomingStructuresDisabled--;
 						}
 					}
-					addFirstToList(gcState, deallocationZone, toDestroy);
+					// addFirstToList(gcState, deallocationZone, toDestroy);
+					deallocateInDatabase(toDestroy);
 					loadedObjects--;
 					    // toDestroy._eternityDismanteled = true;
 					return false;
 				}
 				
-				// Destroy those left in the destruction list. 
-				if (!isEmptyList(gcState, deallocationZone)) {
-					// log("<<<<                    >>>>>");
-					// log("<<<< Deallocate ......  >>>>>");
-					// log("<<<<                    >>>>>");
+				// // Destroy those left in the destruction list. 
+				// if (!isEmptyList(gcState, deallocationZone)) {
+					// // log("<<<<                    >>>>>");
+					// // log("<<<< Deallocate ......  >>>>>");
+					// // log("<<<<                    >>>>>");
 					
-					let toDeallocate = removeFirstFromList(gcState, deallocationZone);
-					// Make sure that object beeing destroyed is loaded.
-					deallocateInDatabase(toDeallocate);
+					// let toDeallocate = removeFirstFromList(gcState, deallocationZone);
+					// // Make sure that object beeing destroyed is loaded.
+					// deallocateInDatabase(toDeallocate);
 					
-					loadedObjects--;
-					return false;
-				}
+					// loadedObjects--;
+					// return false;
+				// }
 				
 				
 							
@@ -1882,7 +1882,7 @@
 				}
 			});
 			logUngroup();
-			imageCausality.state.useIncomingStructures = true;
+			imageCausality.state.incomingStructuresDisabled++;
 			return result;
 		}
 		
@@ -1987,15 +1987,16 @@
 		
 		function forAllPersistentIncomingPersistentIteration(object, property, objectAction) {
 			imageCausality.disableIncomingRelations(function() {
-				// imageCausality.state.useIncomingStructures = false;
+				// imageCausality.state.incomingStructuresDisabled--;
 				if (typeof(object.const.dbImage) !== 'undefined') {
 					let dbImage = object.const.dbImage;
 					if (typeof(dbImage.const.incoming) !== 'undefined') {
 						let relations = dbImage.const.incoming;
 						// log(relations, 3);
 						// log("here");
-						if (typeof(relations[property]) !== 'undefined') {
-							let relation = relations[property];
+						let propertyKey = "property:" + property;
+						if (typeof(relations[propertyKey]) !== 'undefined') {
+							let relation = relations[propertyKey];
 							
 							// Iterate root
 							let contents = relation.contents;
@@ -2036,7 +2037,7 @@
 						}
 					}
 				}
-				// imageCausality.state.useIncomingStructures = true;
+				// imageCausality.state.incomingStructuresDisabled++;
 			});
 		}
 		
@@ -2121,8 +2122,9 @@
 						let relations = dbImage.const.incoming;
 						// log(relations, 3);
 						// log("here");
-						if (typeof(relations[property]) !== 'undefined') {
-							let relation = relations[property];
+						let propertyKey = "property:" + property;
+						if (typeof(relations[propertyKey]) !== 'undefined') {
+							let relation = relations[propertyKey];
 														
 							// Iterate the root
 							let contents = relation.contents;
@@ -2207,7 +2209,7 @@
 			// log(dbImage.const.isObjectImage);
 			// log(dbImage.const.dbId);
 			if (!dbImage.const.isObjectImage) {
-				if (!dbImage.isIncomingStructures && !dbImage.isIncomingStructure) {
+				if (!imageCausality.isIncomingStructure(dbImage)) {
 					// log("killing spree");
 					if (killImageIfDissconnectedAndNonReferred(dbImage)) {
 						deallocateInDatabase(dbImage);
@@ -2252,7 +2254,7 @@
 			blockInitializeForIncomingStructures: true, 
 			blockInitializeForIncomingReferenceCounters: true
 			// TODO: make it possible to run these following in conjunction with eternity.... as of now it will totally confuse eternity.... 
-			// incomingRelations : true, // this works only in conjunction with incomingStructuresAsCausalityObjects, otherwise isObject fails.... 
+			// incomingRelations : true, // this works only in conjunction with incomingStructuresAsCausalityObjects, otherwise isObject fails.... Note: this only seems to be a problem with eternity, and not with plain causality. 
 			// incomingStructuresAsCausalityObjects : true
 		});
 		let objectCausality = require("./causality.js")(objectCausalityConfiguration);
@@ -2301,7 +2303,10 @@
 			// TODO: Add and remove to activity list as we persist/unpersist this object....
 		});
 		let trace = objectCausality.trace;
-
+		trace.killing = 0;
+		trace.loading = 0;
+		trace.zombies = 0;
+		trace.eternity = false;
 		
 		// Setup database
 		setupDatabase();

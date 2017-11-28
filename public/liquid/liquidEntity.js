@@ -18,10 +18,13 @@
 	let log = objectlog.log;
 	let logGroup = objectlog.enter;
 	let logUngroup = objectlog.exit;
+	let trace;
 	
 	function injectLiquid(injectedLiquid) {
 		liquid = injectedLiquid;
 		create = liquid.create;
+		trace = liquid.trace;
+		trace.entity = 1;
 	}
 
 
@@ -570,9 +573,11 @@
 		}
 		
 		forEach(callback) {
-			for(let key in this.contents) {
+			trace.entity && log("LiquidIndex.forEach");
+			Object.keys(this).forEach(function(key) {
 				if (!nonContentProperties[key]) callback(this.contents[key]);
-			}
+				
+			});
 		}
 		
 		remove(object) {
