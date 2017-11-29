@@ -311,19 +311,27 @@
 		}
 
 		initialize(data) {
-			this._ = ""
+			this._ = "{" + this.className() + "}";
 			// log("LiquidEntity.initialize");
-			this.assign(data);
+			// this.assign(data);
 		}
 		
 		isUndefined(property) {
 			return typeof(this[property]) === 'undefined';
 		}
 		
-		ensureDefault(property, defaultValue) {
+		setProperty(property, data, defaultValue) {
 			if (typeof(this[property]) === 'undefined') {
-				this[property] = defaultValue;
-			}
+				if (typeof(data[property]) !== 'undefined') {
+					this[property] = data[property];
+					return true;
+				} else if (typeof(defaultValue) !== 'undefined'){
+					this[property] = defaultValue;
+					return true;
+				}
+				return false;
+			} 				
+			return true;
 		}
 		
 		set(property, data, defaultValue) {
@@ -346,19 +354,19 @@
 			liquid.setIndex(this, property, index); // Has to use liquid to do this, since incoming needs to be disabled during this operation. 
 		}
 
-		assign(data) {
-			for(property in data) {
-				this[property] = data[property];
-			}
-		}
+		// assign(data) {
+			// for(property in data) {
+				// this[property] = data[property];
+			// }
+		// }
 		
-		assignWeak(data) {
-			for(property in data) {
-				if (typeof(this[property] === 'undefined')) {
-					this[property] = data[property];
-				}
-			}
-		}
+		// assignWeak(data) {
+			// for(property in data) {
+				// if (typeof(this[property] === 'undefined')) {
+					// this[property] = data[property];
+				// }
+			// }
+		// }
 
 		// // This is the signum function, useful for debugging and tracing.
 		__() {
@@ -610,9 +618,9 @@
 
 	class LiquidSession extends LiquidEntity {
 		initialize(data) {
-			// super.initialize(data);
-			this.token = null; // Hard to guess session id
-			this.user = null;			
+			super.initialize(data);
+			this.setProperty("token", data, null);
+			this.setProperty("user", data, null);			
 		}
 		
 		accessLevel(user) {
@@ -643,8 +651,8 @@
 		
 		initialize(data) {
 			super.initialize(data);
-			this.ensureDefault("session", null);
-			if (this.isUndefined("receivedSubscriptions")) {
+			this.setProperty(data, "session", null);
+			if (this.setProperty(data, "receivedSubscriptions")) {
 				this.receivedSubscriptions = create([]); 				
 			}
 			if (this.isUndefined("session")) {
@@ -859,8 +867,8 @@
 		initialize(data) {
 			// log("LiquidUser.initialize");
 			super.initialize(data);
-			this.ensureDefault("loginName", "");
-			this.ensureDefault("alternativeLoginName", "");
+			this.setProperty("loginName", "");
+			this.setProperty("alternativeLoginName", "");
 			
 			let encryptedPassword = null;
 			if (typeof(data.password) !== 'undefined') {

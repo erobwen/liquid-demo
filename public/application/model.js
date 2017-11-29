@@ -45,8 +45,8 @@
 		initialize(data) {
 			// log("User.initialize");
 			super.initialize(data);			
-			this.ensureDefault("name", '');
-			this.ensureDefault("email", '');
+			this.setProperty("name", data, '');
+			this.setProperty("email", data, '');
 			if (this.isUndefined("addedReferences")) {
 				this.attatchIndex("addedReferences", create('LiquidIndex'));
 			}
@@ -78,10 +78,12 @@
 
 	class Category extends LiquidEntity {
 		initialize(data) {
+			super.initialize(data);
+			
 			this._ = "";
 			// console.log("initialize Category");
-			this.name = this.get(data["name"], '');
-			this.description = this.get(data["description"], '');
+			this.setProperty("name", data, '');
+			this.setProperty("description", data, '');
 			// this.owner;  Incoming: User.categories
 
 			// Sub categories
@@ -106,7 +108,7 @@
 				this.owner = data.owner;
 			}
 			// assignWeak(data);
-			super.initialize();
+			
 		}
 			
 		// __() {
@@ -141,6 +143,7 @@
 	
 	class Reference extends LiquidEntity {
 		initialize(data) {
+			super.initialize(data);
 			this._ = "";
 			
 			this.url = "";
@@ -163,7 +166,7 @@
 			// log("====================================================");
 			// liquid.trace.basic = true;
 			// logGroup();
-			this.assignWeak(data);
+			// this.assignWeak(data);
 			// logUngroup();
 			// liquid.trace.basic = false;
 			// log("====================================================");
