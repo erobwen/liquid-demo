@@ -2131,7 +2131,11 @@
 			});
 			state.contextsScheduledForPossibleDestruction = [];
 			
-
+			// // Compress events
+			// if (configuration.compressEvents) {
+				// compressEvents(state.pulseEvents);
+			// }
+			
 			// Custom post pulse hooks... insert your framework here...
 			trace.pulse && logGroup("postPulseHooks");
 			postPulseHooks.forEach(function(callback) {
@@ -2331,6 +2335,19 @@
 			}
 			handler.observers.push(observerFunction);
 		}
+		
+		// function compressEvents(events) {
+			// let objectPropertyEvents = {};
+			// events.forEach(function(event) {
+				// if (event.type === 'set') {
+					// if (typeof(objectPropertyEvents[event.property]) === 'undefined') {
+						// objectPropertyEvents[event.property] = {};
+					// }
+					// objectPropertyEvents[event.property] = event;
+				// }
+			// });
+			// let newEvents = [];
+		// }
 
 
 		/**********************************

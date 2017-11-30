@@ -39,7 +39,7 @@
 		let unstableImages = [];
 
 		function postObjectPulseAction(events) {
-			if (postPulseCallbackBeforeStorage) postPulseCallbackBeforeStorage();
+			if (postPulseCallbackBeforeStorage) postPulseCallbackBeforeStorage(events);
 			
 			// log("postObjectPulseAction: " + events.length + " events");
 			// logGroup();

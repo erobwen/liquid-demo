@@ -4,16 +4,17 @@
 let liquid = require("./public/liquid/liquid.js")(
 	{
 		name: "serverLiquid", 
-		usePersistency: false, 
+		usePersistency: true, 
 		isServer: true, 
-		// eternityConfiguration : {
-			// allowPlainObjectReferences : false,
-			// databaseFileName: "demoDb.mongoDb",
+		eternityConfiguration : {
+			allowPlainObjectReferences : false,
+			databaseFileName: "demoDb.mongoDb",
 			causalityConfiguration : {
 				useIncomingStructures : true, 
+				incomingStructuresAsCausalityObjects : false,
 				recordPulseEvents : true
 			}
-		// }
+		}
 	}
 );
 liquid.trace.pulse++;
@@ -43,7 +44,7 @@ let user = null;
 let georgism = null;
 var politics = null;
 
-// if (!liquid.persistent.demoInitialized) {
+if (!liquid.persistent.demoInitialized) {
 
 	liquid.pulse(function() {
 		logGroup("Setup database contents... ");
@@ -104,7 +105,7 @@ var politics = null;
 		log("...finished setup.");
 		logUngroup();
 	});
-// }
+}
 
 // log("experiments");
 // logGroup();

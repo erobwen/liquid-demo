@@ -151,17 +151,10 @@
 			this.pageExtractedSummary = "";
 			this.pageExtractedImageUrl = "";
 			
-			if (defined(data.user)) {
-				this.setOwner(data.user);
-				delete data.user;
-			}
-			if (defined(data.categories)) {
-				this.categories = data.categories;
-				delete data.categories;
-			}
+			this.setProperty("owner", data);
+			this.setProperty("categories", data);
 			if (defined(data.category)) {
 				this.categories = [data.category];
-				delete data.category;
 			}
 			// log("====================================================");
 			// liquid.trace.basic = true;
