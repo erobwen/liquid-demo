@@ -205,6 +205,12 @@
 			
 			return gottenReferingObject;
 		}
+
+		let indexUsedNames = {
+			'name' : true,
+			'indexParent' : true, 
+			'indexParentRelation' : true
+		}
 		
 		function setIndex(object, property, index) {
 			state.incomingStructuresDisabled++;
@@ -3539,6 +3545,7 @@
 			getSingleIncomingReference : getSingleIncomingReference, 
 			createArrayIndex : createArrayIndex,
 			setIndex : setIndex,
+			indexUsedNames : indexUsedNames, 
 			isIncomingStructure : isIncomingStructure
 		}
 		

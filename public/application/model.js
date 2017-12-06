@@ -59,7 +59,7 @@
 		selectBasics(selection) {
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);
-			this.ownedCategories.selectAll(selection);
+			this.ownedCategories.selectAll(selection, "WithIndexes");
 			this.addedReferences.selectAll(selection);
 		}
 
@@ -113,6 +113,11 @@
 			
 		}
 			
+		selectWithIndexes(selection) {
+			liquid.addToSelection(selection, this);
+			this.subCategories.selectTree(selection);
+			this.references.selectTree(selection);
+		}
 		// __() {
 			// liquid.withoutRecording(function() {
 				// return "(" + this._className() + "." + this._idString() + ":" + unloadedOrName + ")";				

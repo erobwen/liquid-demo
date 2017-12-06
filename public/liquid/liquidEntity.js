@@ -558,13 +558,29 @@
 			this.attatchIndex("contents", create({}));
 		}
 		
-		selectAll(selection) {
+		selectTree(selection) {
+			liquid.addToSelection(selection, this);
+			liquid.addToSelection(selection, this.contents);		
+		}
+		
+		selectAll(selection, elementSelector) {
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.contents);
 			Object.keys(this.contents).forEach(function(key) {
-				let element = this.contents[key];
-				// if (liquid.isObject(element) {
-				liquid.addToSelection(selection, element);					
+				if (!liquid.indexUsedNames[key]) {
+					let element = this.contents[key];
+					// if (liquid.isObject(element) {
+					if (typeof(elementSelector) !== 'undefined') {
+						if (typeof(element["select" + elementSelector]) !== 'function') {
+							log(key);
+							log("select" + elementSelector);
+							log(element);
+						}
+						element["select" + elementSelector](selection);
+					} else {
+						liquid.addToSelection(selection, element);
+					}					
+				}
 				// }
 			}.bind(this));
 		}
