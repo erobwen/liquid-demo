@@ -19,10 +19,10 @@
 		//Debugging 
 		let objectlog = require('./objectlog.js');
 		if (configuration.isClient) objectlog.useConsoleDefault = true;
-		let log = objectlog.log;
-		let logGroup = objectlog.enter;
-		let logUngroup = objectlog.exit;
-		let logToString = objectlog.toString;
+		// let log = objectlog.log;
+		// let logGroup = objectlog.enter;
+		// let logUngroup = objectlog.exit;
+		// let logToString = objectlog.toString;
 
 		// Pages and sessions (for server)
 		pagesMap = {};
@@ -33,14 +33,17 @@
 		if (configuration.usePersistency) {
 			liquid = require("./eternity.js")(configuration.eternityConfiguration);
 		} else {
-			log(configuration, 4);
-			// if (typeof(configuration.eternityConfiguration) !== 'undefined') {
-				// liquid = require("./causality.js")(configuration.eternityConfiguration.causalityConfiguration);
-			// } else {
-				liquid = require("./causality.js")(configuration.causalityConfiguration);				
-			// }
+			liquid = require("./causality.js")(configuration.causalityConfiguration);				
 		}
+		let log = liquid.log;
+		let logGroup = liquid.logGroup;
+		let logUngroup = liquid.logUngroup;
+		let logToString = liquid.logToString;
 		let create = liquid.create;
+		let trace = liquid.trace;
+		trace.serialize = 0;
+		
+		// Liquid entity... 
 		let liquidEntity = require("./liquidEntity.js");
 		liquidEntity.injectLiquid(liquid);
 		liquid.addClasses(liquidEntity.classes);
@@ -184,7 +187,7 @@
 		//  {action: addingRelation, objectDownstreamId:45, relationName: 'Foobar', relatedObjectDownstreamId:45 }
 		//  {action: settingProperty, objectDownstreamId:45, propertyName: 'Foobar', propertyValue: 'Some string perhaps'}
 		function serializeEvent(event, forUpstream) {
-			logGroup("serializeEvent");
+			trace.serialize && logGroup("serializeEvent");
 			var serialized  = {};
 			if (forUpstream) {
 				if (event.object.const._upstreamId !== null) {
@@ -220,8 +223,8 @@
 				});
 				serialized.removed = serializedRemoved;
 			}
-			log(serialized, 3);
-			logUngroup();
+			trace.serialize && log(serialized, 3);
+			trace.serialize && logUngroup();
 			return serialized;
 		}
 		
@@ -596,7 +599,7 @@
 					addToSelection(selection, object.indexParent);
 				}
 				
-				// trace('selection', "Added: ", object);
+				log('selection', "Added: ", object);
 				selection[object.const.id] = object;
 
 				return true;
@@ -627,15 +630,18 @@
 					let serializedEvent;
 					for (id in event.object.const._observingPages) {
 						let observingPage = event.object.const._observingPages[id];
-						log("found an observing page... ");
-						log(event, 2);
+						log("found an observing page with id: " + observingPage.token);
+						// log(event, 2);
 						if (state.pushingDataFromPage !== observingPage && !state.dirtyPageSubscritiptions[id]) {
+							log("actually send data to it... ");
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
 							if (typeof(event.object.const._pendingEvents) === 'undefined') {
 								event.object.const._pendingEvents = [];
 							}
 							if (typeof(serializedEvent) === 'undefined') serializedEvent = serializeEvent(event, false);	
 							event.object.const._pendingEvents.push(serializedEvent);
+						} else {
+							log("do not notify this page... ");
 						}
 					}					
 				}
@@ -720,6 +726,7 @@
 					
 					addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
 				}, function() {
+					log("INVALIDATING SELECTION");
 					state.dirtyPageSubscritiptions[page.const.id] = page;
 					page.const._dirtySubscriptionSelections = true;
 				});

@@ -8,11 +8,7 @@
 		root.causality = factory(); // Support browser global
 	}
 }(this, function () {	
-	// Debugging
 	let objectlog = require('./objectlog.js');
-	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit; 
 	
 	function createCausalityInstance(configuration) {
 		// Tracing per instance 
@@ -82,6 +78,42 @@
 		}
 
 
+		/***************************************************************
+		 *
+		 *  Debugging
+		 *
+		 ***************************************************************/
+		 
+		 // Debugging
+		function log(entity, pattern) {
+			state.recordingPaused++;
+			updateInActiveRecording();
+			objectlog.log(entity, pattern);
+			state.recordingPaused--;	
+			updateInActiveRecording();
+		}
+		
+		function logGroup(entity, pattern) {
+			state.recordingPaused++;
+			updateInActiveRecording();
+			objectlog.enter(entity, pattern);
+			state.recordingPaused--;
+			updateInActiveRecording();
+		} 
+		
+		function logUngroup() {
+			objectlog.exit(); 
+		} 
+	
+		function logToString(entity, pattern) {
+			state.recordingPaused++;
+			updateInActiveRecording();
+			objectlog.toString(entity, pattern);
+			state.recordingPaused--;
+			updateInActiveRecording();
+		}
+		
+		
 		/***************************************************************
 		 *
 		 *  Id format
@@ -1371,8 +1403,10 @@
 					let keyInTarget = key in target;
 					if (state.inActiveRecording) {
 						if (keyInTarget) {
+							log("registerChangeObserver: " + this.const.id + "." + key);
 							registerChangeObserver(getSpecifier(getSpecifier(this.const, "_propertyObservers"), key));
 						} else {
+							log("registerChangeObserver: " + this.const.id + "." + key);
 							registerChangeObserver(getSpecifier(this.const, "_enumerateObservers"));
 						}
 					}
@@ -3529,6 +3563,7 @@
 			withoutSideEffects : withoutSideEffects,
 			assertNotRecording : assertNotRecording,
 			withoutRecording : withoutRecording,
+			updateInActiveRecording : updateInActiveRecording, 
 			withoutNotifyChange : nullifyObserverNotification,
 			withoutEmittingEvents : withoutEmittingEvents,
 			disableIncomingRelations : disableIncomingRelations,
@@ -3551,6 +3586,10 @@
 		
 		// Debugging and testing
 		let debuggingAndTesting = {
+			log : log, 
+			logGroup : logGroup, 
+			logUngroup : logUngroup,
+			logToString : logToString,
 			observeAll : observeAll,
 			cachedCallCount : cachedCallCount,
 			clearRepeaterLists : clearRepeaterLists,

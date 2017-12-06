@@ -40,9 +40,9 @@ let logUngroup = objectlog.exit;
 // Custom setup server script
 // require('./include');
 // include('./liquid/application/serverConfiguration.js');
-let user = null;
-let georgism = null;
-var politics = null;
+// let user = null;
+// let georgism = null;
+// var politics = null;
 
 if (!liquid.persistent.demoInitialized) {
 
@@ -64,20 +64,20 @@ if (!liquid.persistent.demoInitialized) {
 		
 
 		
-		var funny = create('Category', {name: 'Funny', description: '', owner: user});
-		politics = create('Category', {name: 'Politics', description: '', owner: user});
-		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
+		// var funny = create('Category', {name: 'Funny', description: '', owner: user});
+		// politics = create('Category', {name: 'Politics', description: '', owner: user});
+		// georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		// log("==========================================================");
 		// log (" Adding... ");
 		// liquid.trace.basic++;
-		politics.subCategories.add(georgism);
+		// politics.subCategories.add(georgism);
 		// liquid.trace.basic--;
 		// log("==========================================================");
 		
-		var created = 0;
-		while (created++ < 3) {
-			var reference1 = create('Reference', {url : 'http://foo.com/' + created, owner: user, categories: [georgism]});
-		}
+		// var created = 0;
+		// while (created++ < 3) {
+			// var reference1 = create('Reference', {url : 'http://foo.com/' + created, owner: user, categories: [georgism]});
+		// }
 		
 		// liquid.persistent.demoInitialized = true;
 		// setTimeout(function() {

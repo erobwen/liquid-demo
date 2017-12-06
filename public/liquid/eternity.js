@@ -15,9 +15,6 @@
 	
 	// Neat logging
 	let objectlog = require('./objectlog.js');
-	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
 
 	function createEternityInstance(configuration) {
 		// console.log(">>> CREATE ETERNITY INSTANCE <<<");
@@ -26,6 +23,74 @@
 		// logGroup();
 		// log(configuration,5);
 		// logUngroup();
+		/*-----------------------------------------------
+		 *          Debugging
+		 *-----------------------------------------------*/
+		 
+		 // Debugging
+		function log(entity, pattern) {
+			objectCausality.state.recordingPaused++;	
+			imageCausality.state.recordingPaused++;	
+			objectCausality.state.blockingInitialize++;	
+			imageCausality.state.blockingInitialize++;	
+			objectCausality.state.freezeActivityList++;	
+			objectCausality.updateInActiveRecording();
+			imageCausality.updateInActiveRecording();
+
+			objectlog.log(entity, pattern);
+
+			objectCausality.state.recordingPaused--;	
+			imageCausality.state.recordingPaused--;	
+			objectCausality.state.blockingInitialize--;	
+			imageCausality.state.blockingInitialize--;	
+			objectCausality.state.freezeActivityList--;	
+			objectCausality.updateInActiveRecording();
+			imageCausality.updateInActiveRecording();
+		}
+		
+		function logGroup(entity, pattern) {
+			objectCausality.state.recordingPaused++;	
+			imageCausality.state.recordingPaused++;	
+			objectCausality.state.blockingInitialize++;	
+			imageCausality.state.blockingInitialize++;	
+			objectCausality.state.freezeActivityList++;	
+			objectCausality.updateInActiveRecording();
+			imageCausality.updateInActiveRecording();
+
+			objectlog.enter(entity, pattern);
+			
+			objectCausality.state.recordingPaused--;	
+			imageCausality.state.recordingPaused--;	
+			objectCausality.state.blockingInitialize--;	
+			imageCausality.state.blockingInitialize--;	
+			objectCausality.state.freezeActivityList--;	
+			objectCausality.updateInActiveRecording();
+			imageCausality.updateInActiveRecording();
+		} 
+		
+		function logUngroup() {
+			objectlog.exit(); 
+		} 
+	
+		function logToString() {
+			objectCausality.state.withoutRecording++;	
+			imageCausality.state.withoutRecording++;	
+			objectCausality.state.blockingInitialize++;	
+			imageCausality.state.blockingInitialize++;	
+			objectCausality.state.freezeActivityList++;	
+			objectCausality.updateInActiveRecording();
+			imageCausality.updateInActiveRecording();
+
+			objectlog.toString();
+
+			objectCausality.state.withoutRecording--;	
+			imageCausality.state.withoutRecording--;	
+			objectCausality.state.blockingInitialize--;	
+			imageCausality.state.blockingInitialize--;	
+			objectCausality.state.freezeActivityList--;	
+			objectCausality.updateInActiveRecording();
+			imageCausality.updateInActiveRecording();
+		}
 
 		/*-----------------------------------------------
 		 *          Object post pulse events
