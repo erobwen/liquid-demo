@@ -55,12 +55,14 @@
 			}
 		}
 		
-		selectAllCategories(selection) {
-			this.ownedCategories.forEach(function(category) {
-				liquid.addToSelection(selection, category);
-			});
-		}
 		
+		selectBasics(selection) {
+			liquid.addToSelection(selection, this);
+			liquid.addToSelection(selection, this.passwordVault);
+			this.ownedCategories.selectAll(selection);
+			this.addedReferences.selectAll(selection);
+		}
+
 		getRootCategories() {
 			let result = [];
 			this.ownedCategories.forEach(function(category) {

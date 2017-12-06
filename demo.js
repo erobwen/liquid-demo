@@ -159,7 +159,7 @@ if (!liquid.persistent.demoInitialized) {
 		var session = liquid.createOrGetSessionObject(req.session.token);
 		session.user = user; 
 		var page = create('LiquidPage', {session: session});
-		page.service.orderedSubscriptions.push(create({object: user, selector:'All'})); //object: user,
+		page.service.orderedSubscriptions.push(create({object: user, selector:'Basics'})); //object: user,
 		logUngroup();
 		return page;
 	},

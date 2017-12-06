@@ -411,57 +411,57 @@
 			);
 		}
 					
-		selectAll(selection) {
-			// log("selectAll: ");
-			// log(liquid.objectDigest(this));
-			// logGroup();//console
-			function selectAllObjects(object) {
-				// log("try selecting a plain liquid-object (no class)");
-				if (!liquid.canRead(object)) {
-					// log("no read access...");
-					return;
-				}
+		// selectAll(selection) {
+			// // log("selectAll: ");
+			// // log(liquid.objectDigest(this));
+			// // logGroup();//console
+			// function selectAllObjects(object) {
+				// // log("try selecting a plain liquid-object (no class)");
+				// if (!liquid.canRead(object)) {
+					// // log("no read access...");
+					// return;
+				// }
 				
-				if (typeof(selection[object.const.id]) === 'undefined') {
-					selection[object.const.id] = object; 
-					Object.keys(object).forEach(function(key) {
-						let value = object[key];
-						if (value instanceof LiquidEntity) { //liquid.isObject(value)
-							value.selectAll(selection);
-						} if (liquid.isObject(value)) {
-							selectAllObjects(value);
-						}
-					});
-				}
-			}
+				// if (typeof(selection[object.const.id]) === 'undefined') {
+					// selection[object.const.id] = object; 
+					// Object.keys(object).forEach(function(key) {
+						// let value = object[key];
+						// if (value instanceof LiquidEntity) { //liquid.isObject(value)
+							// value.selectAll(selection);
+						// } if (liquid.isObject(value)) {
+							// selectAllObjects(value);
+						// }
+					// });
+				// }
+			// }
 			
-			// trace('selection', liquid.canRead(this));
-			if (!liquid.canRead(this)) {
-				// log("no read access...");
-				return;
-			}
+			// // trace('selection', liquid.canRead(this));
+			// if (!liquid.canRead(this)) {
+				// // log("no read access...");
+				// return;
+			// }
 			
-			if (typeof(selection[this.const.id]) === 'undefined') {
-				// console.log("Selecting " + this.__());
-				selection[this.const.id] = this;
+			// if (typeof(selection[this.const.id]) === 'undefined') {
+				// // console.log("Selecting " + this.__());
+				// selection[this.const.id] = this;
 				
-				Object.keys(this).forEach(function(key) {
-					// log("selecting property: " + key);
-					// logGroup();
-					// log("indented");
-					let value = this[key];
-					// liquid.logValue(value);
-					if (value instanceof LiquidEntity) { //liquid.isObject(value)
-						value.selectAll(selection);
-					} else if (liquid.isObject(value)) {
-						// Warning: potentially dangerous. Could select A LOT...
-						selectAllObjects(value); 
-					}
-					// logUngroup();
-				}.bind(this));
-			}
-			// logUngroup();
-		}
+				// Object.keys(this).forEach(function(key) {
+					// // log("selecting property: " + key);
+					// // logGroup();
+					// // log("indented");
+					// let value = this[key];
+					// // liquid.logValue(value);
+					// if (value instanceof LiquidEntity) { //liquid.isObject(value)
+						// value.selectAll(selection);
+					// } else if (liquid.isObject(value)) {
+						// // Warning: potentially dangerous. Could select A LOT...
+						// selectAllObjects(value); 
+					// }
+					// // logUngroup();
+				// }.bind(this));
+			// }
+			// // logUngroup();
+		// }
 		
 		isLoaded() {
 			// if (liquid.onClient) {
@@ -558,6 +558,17 @@
 			this.attatchIndex("contents", create({}));
 		}
 		
+		selectAll(selection) {
+			liquid.addToSelection(selection, this);
+			liquid.addToSelection(selection, this.contents);
+			Object.keys(this.contents).forEach(function(key) {
+				let element = this.contents[key];
+				// if (liquid.isObject(element) {
+				liquid.addToSelection(selection, element);					
+				// }
+			}.bind(this));
+		}
+		
 		setContents(objectArray) {
 			let keys = Object.keys(this.contents);
 			keys.forEach(function(property) {
@@ -567,8 +578,6 @@
 				this.add(object)
 			});
 		}
-		
-
 		
 		getContents() {
 			let result = [];
@@ -880,6 +889,11 @@
 			}
 			
 			this.passwordVault = create("LiquidUserPasswordVault", { encryptedPassword: encryptedPassword });
+		}
+		
+		selectBasics(selection) {
+			liquid.addToSelection(selection, this);
+			liquid.addToSelection(selection, this.passwordVault);
 		}
 		
 		getEncryptedPassword() {

@@ -627,7 +627,9 @@
 					let serializedEvent;
 					for (id in event.object.const._observingPages) {
 						let observingPage = event.object.const._observingPages[id];
-						if (!state.dirtyPageSubscritiptions[id]) {
+						log("found an observing page... ");
+						log(event, 2);
+						if (state.pushingDataFromPage !== observingPage && !state.dirtyPageSubscritiptions[id]) {
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
 							if (typeof(event.object.const._pendingEvents) === 'undefined') {
 								event.object.const._pendingEvents = [];
@@ -648,6 +650,7 @@
 			logUngroup();
 			
 			// Process pages where page subscriptions changed
+			log("dirty page subscriptions: " + Object.keys(state.dirtyPageSubscritiptions).length);
 			for (id in state.dirtyPageSubscritiptions) { // TODO: what if an event concerns an object/page without disturbing the page subscription... it needs to be pushed also.. 
 				// console.log("Push update to page: " + id);
 				var page = state.dirtyPageSubscritiptions[id];
@@ -836,7 +839,7 @@
 			log(pulseData, 3);
 		
 			// Unserialize all objects
-			unserializeObjects(pulseData.serializedObjects, true)
+			unserializeObjects(pulseData.serializedObjects, true);
 			
 			// Consider: Should we postpone notification here?
 			unserializeEvents(pulseData.serializedEvents, true);
