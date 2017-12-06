@@ -72,7 +72,7 @@
 			objectlog.exit(); 
 		} 
 	
-		function logToString() {
+		function logToString(entity, pattern) {
 			objectCausality.state.withoutRecording++;	
 			imageCausality.state.withoutRecording++;	
 			objectCausality.state.blockingInitialize++;	
@@ -81,7 +81,7 @@
 			objectCausality.updateInActiveRecording();
 			imageCausality.updateInActiveRecording();
 
-			objectlog.toString();
+			objectlog.toString(entity, pattern);
 
 			objectCausality.state.withoutRecording--;	
 			imageCausality.state.withoutRecording--;	
