@@ -639,11 +639,11 @@
 						if (state.pushingDataFromPage !== observingPage && !state.dirtyPageSubscritiptions[id]) {
 							log("actually send data to it... ");
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
-							if (typeof(event.object.const._pendingEvents) === 'undefined') {
-								event.object.const._pendingEvents = [];
+							if (typeof(observingPage.const._pendingEvents) === 'undefined') {
+								observingPage.const._pendingEvents = [];
 							}
 							if (typeof(serializedEvent) === 'undefined') serializedEvent = serializeEvent(event, false);	
-							event.object.const._pendingEvents.push(serializedEvent);
+							observingPage.const._pendingEvents.push(serializedEvent);
 						} else {
 							log("do not notify this page... ");
 						}
@@ -652,9 +652,9 @@
 			});
 			for (id in pagesToNotifyWithNoChangeInSelection) {
 				let page = pagesToNotifyWithNoChangeInSelection[id];
-				if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', {})) {
+				if(pushMessageDownstreamCallback(page, { serializedEvents : page.const._pendingEvents })) { //'pushChangesFromUpstream', 
+					delete page.const._pendingEvents;
 					delete pagesToNotifyWithNoChangeInSelection[id];
-				} else {
 				}
 			}
 			logUngroup();
@@ -1233,6 +1233,7 @@
 		
 		// Publish some functions 
 		Object.assign(liquid, {
+			messageFromUpstream : messageFromUpstream,
 			logSelection : logSelection,
 			logValue : logValue,
 			objectDigest : objectDigest,

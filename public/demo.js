@@ -53,6 +53,7 @@
 
 		socket.on('message', function(message) {
 			log("socket.on: message");
+			log(message);
 			liquid.messageFromUpstream(message);
 		});
 

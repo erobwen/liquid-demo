@@ -263,6 +263,7 @@ liquidSocket.on('connection', function (socket) {
 
 	socket.on("message", function(pageToken, message) {
 		log("socket.on: message");
+		log(message);
 		liquid.messageFromDownstream(pageToken, message);
 	});
 
