@@ -572,6 +572,8 @@
 		} 
 		 
 		function objectDigest(object) {
+			liquid.state.recordingPaused++;
+			liquid.updateInActiveRecording();
 			let objectDigest = {};
 			objectDigest.id = object.const.id;
 			objectDigest.className = getClassName(object);
@@ -581,6 +583,8 @@
 			if(typeof(object.name) === 'string') {
 				objectDigest.name = object.name;
 			}
+			liquid.state.recordingPaused--;
+			liquid.updateInActiveRecording();
 			return objectDigest;
 		} 
 		 
@@ -599,7 +603,7 @@
 					addToSelection(selection, object.indexParent);
 				}
 				
-				log('selection', "Added: ", object);
+				log("selected: " + object.const.id);
 				selection[object.const.id] = object;
 
 				return true;

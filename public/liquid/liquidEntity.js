@@ -14,15 +14,19 @@
 	let create;
 	
 	// Debugging
-	let objectlog = require('./objectlog.js');
-	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
+	let log;
+	let logGroup;
+	let logUngroup;
 	let trace;
 	
 	function injectLiquid(injectedLiquid) {
 		liquid = injectedLiquid;
 		create = liquid.create;
+		
+		log = liquid.log;
+		logGroup = liquid.logGroup;
+		logUngroup = liquid.logUngroup;
+	
 		trace = liquid.trace;
 		trace.entity = 1;
 	}
@@ -559,11 +563,14 @@
 		}
 		
 		selectTree(selection) {
+			logGroup("selectTree");
 			liquid.addToSelection(selection, this);
-			liquid.addToSelection(selection, this.contents);		
+			liquid.addToSelection(selection, this.contents);
+			logUngroup();
 		}
 		
 		selectAll(selection, elementSelector) {
+			logGroup("selectAll");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.contents);
 			Object.keys(this.contents).forEach(function(key) {
@@ -583,6 +590,7 @@
 				}
 				// }
 			}.bind(this));
+			logUngroup();
 		}
 		
 		setContents(objectArray) {
@@ -708,6 +716,8 @@
 		}
 		
 		selectBasics(selection) {
+			logGroup(this.const.id + ".selectBasics");
+
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.session);
 			liquid.addToSelection(selection, this.getActiveUser());
@@ -721,6 +731,8 @@
 				liquid.addToSelection(selection, subscription);
 				liquid.addToSelection(selection, subscription.targetObject);
 			});	
+			
+			logUngroup();
 		}
 		
 		checkLoadQueue(selection) {
@@ -908,8 +920,10 @@
 		}
 		
 		selectBasics(selection) {
+			logGroup(this.const.id + ".selectBasics");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);
+			logUngroup();
 		}
 		
 		getEncryptedPassword() {

@@ -108,9 +108,10 @@
 		function logToString(entity, pattern) {
 			state.recordingPaused++;
 			updateInActiveRecording();
-			objectlog.toString(entity, pattern);
+			let result = objectlog.toString(entity, pattern);
 			state.recordingPaused--;
 			updateInActiveRecording();
+			return result;
 		}
 		
 		

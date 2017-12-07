@@ -13,13 +13,14 @@
 		// }
     }
 }(this, function () {
-	let objectlog = require("../liquid/objectlog.js");
-	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
+	// let objectlog = require("../liquid/objectlog.js");
 
 	// console.log("in model...");
 	let liquid = require("../liquid/liquid.js")();
+	let log = liquid.log;
+	let logGroup = liquid.logGroup;
+	let logUngroup = liquid.logUngroup;
+	
 	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
 	let LiquidEntity = liquid.LiquidEntity;
@@ -57,10 +58,12 @@
 		
 		
 		selectBasics(selection) {
+			logGroup(this.const.id + ".selectBasics");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);
 			this.ownedCategories.selectAll(selection, "WithIndexes");
 			this.addedReferences.selectAll(selection);
+			logUngroup();
 		}
 
 		getRootCategories() {
@@ -114,9 +117,11 @@
 		}
 			
 		selectWithIndexes(selection) {
+			logGroup(this.const.id + ".selectWithIndexes");
 			liquid.addToSelection(selection, this);
 			this.subCategories.selectTree(selection);
 			this.references.selectTree(selection);
+			logUngroup();
 		}
 		// __() {
 			// liquid.withoutRecording(function() {

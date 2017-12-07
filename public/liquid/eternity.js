@@ -81,7 +81,7 @@
 			objectCausality.updateInActiveRecording();
 			imageCausality.updateInActiveRecording();
 
-			objectlog.toString(entity, pattern);
+			let result = objectlog.toString(entity, pattern);
 
 			objectCausality.state.withoutRecording--;	
 			imageCausality.state.withoutRecording--;	
@@ -90,6 +90,7 @@
 			objectCausality.state.freezeActivityList--;	
 			objectCausality.updateInActiveRecording();
 			imageCausality.updateInActiveRecording();
+			return result;
 		}
 
 		/*-----------------------------------------------
