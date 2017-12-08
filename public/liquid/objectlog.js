@@ -121,6 +121,15 @@
 			pattern = 1;
 		} 
 		
+		// Apply transformation
+		// let originalEntity = entity;
+		if (typeof(pattern) === 'function') {
+			// console.log(pattern);
+			// console.log(entity);
+			entity = pattern(entity);
+			pattern = -1;
+		}
+		
 		// Setup of process
 		let outer = false;
 		if (typeof(context) === 'undefined') {
@@ -178,7 +187,7 @@
 					if (typeof(pattern) === 'object') {
 						nextPattern = pattern[p];
 					} else {
-						nextPattern = pattern - 1;
+						nextPattern = pattern === -1 ? -1 : pattern - 1;
 					}
 					
 					if(!isArray) context.indentLevel++;

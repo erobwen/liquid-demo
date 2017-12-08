@@ -1404,10 +1404,10 @@
 					let keyInTarget = key in target;
 					if (state.inActiveRecording) {
 						if (keyInTarget) {
-							log("registerChangeObserver: " + this.const.id + "." + key);
+							// trace.register && log("registerChangeObserver: " + this.const.id + "." + key);
 							registerChangeObserver(getSpecifier(getSpecifier(this.const, "_propertyObservers"), key));
 						} else {
-							log("registerChangeObserver: " + this.const.id + "." + key);
+							// trace.register && log("registerChangeObserver: " + this.const.id + "." + key);
 							registerChangeObserver(getSpecifier(this.const, "_enumerateObservers"));
 						}
 					}

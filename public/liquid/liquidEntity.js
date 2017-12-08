@@ -563,14 +563,14 @@
 		}
 		
 		selectTree(selection) {
-			logGroup("selectTree");
+			trace.selection && logGroup("selectTree");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.contents);
-			logUngroup();
+			trace.selection && logUngroup();
 		}
 		
 		selectAll(selection, elementSelector) {
-			logGroup("selectAll");
+			trace.selection && logGroup("selectAll");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.contents);
 			Object.keys(this.contents).forEach(function(key) {
@@ -590,7 +590,7 @@
 				}
 				// }
 			}.bind(this));
-			logUngroup();
+			trace.selection && logUngroup();
 		}
 		
 		setContents(objectArray) {
@@ -716,7 +716,7 @@
 		}
 		
 		selectBasics(selection) {
-			logGroup(this.const.id + ".selectBasics");
+			trace.selection && logGroup(this.const.id + ".selectBasics");
 
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.session);
@@ -732,7 +732,7 @@
 				liquid.addToSelection(selection, subscription.targetObject);
 			});	
 			
-			logUngroup();
+			trace.selection && logUngroup();
 		}
 		
 		checkLoadQueue(selection) {
@@ -920,10 +920,10 @@
 		}
 		
 		selectBasics(selection) {
-			logGroup(this.const.id + ".selectBasics");
+			trace.selection && logGroup(this.const.id + ".selectBasics");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);
-			logUngroup();
+			trace.selection && logUngroup();
 		}
 		
 		getEncryptedPassword() {

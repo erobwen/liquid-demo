@@ -102,8 +102,7 @@ if (!liquid.persistent.demoInitialized) {
 		// Create References
 
 		// log(user, 3);
-		log("...finished setup.");
-		logUngroup();
+		logUngroup("...finished setup.");
 	});
 }
 

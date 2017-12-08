@@ -603,7 +603,7 @@
 					addToSelection(selection, object.indexParent);
 				}
 				
-				log("selected: " + object.const.id);
+				trace.selection && log("selected: " + object.const.id);
 				selection[object.const.id] = object;
 
 				return true;
@@ -636,7 +636,7 @@
 						let observingPage = event.object.const._observingPages[id];
 						log("found an observing page with id: " + observingPage.token);
 						// log(event, 2);
-						if (state.pushingDataFromPage !== observingPage && !state.dirtyPageSubscritiptions[id]) {
+						if (state.pushingDataFromPage !== observingPage) { // && !state.dirtyPageSubscritiptions[id]
 							log("actually send data to it... ");
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
 							if (typeof(observingPage.const._pendingEvents) === 'undefined') {
@@ -700,9 +700,8 @@
 					let selection = {};
 					log(page.service.orderedSubscriptions, 2);
 					page.service.orderedSubscriptions.forEach(function(subscription) {
-						log("process a subscription ... ");
-						log(subscription, 2);
-						logGroup();
+						logGroup("process a subscription element ... ");
+						log(subscription, {object: objectDigest});
 						
 						// Perform a selection with dependency recording!
 						var subscriptionSelection = {};
@@ -713,16 +712,16 @@
 						subscription.object['select' + subscription.selector](subscriptionSelection);
 						state.isSelecting = false;
 						state.restrictAccessToThatOfPage = null;
-						log("subscriptionSelection");
+						log("subscriptionSelection:");
 						logSelection(selection); 
 					
 						// Add to general selection.
 						for (id in subscriptionSelection) {
 							selection[id] = subscriptionSelection[id];
 						}
-						logUngroup();
+						logUngroup("...");
 					});
-					log("pageSelection");
+					log("pageSelection:");
 					logSelection(selection); 
 					page.const._previousSelection = page.const._selection;
 					page.const._selection = selection;

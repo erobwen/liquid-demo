@@ -20,6 +20,7 @@
 	let log = liquid.log;
 	let logGroup = liquid.logGroup;
 	let logUngroup = liquid.logUngroup;
+	let trace = liquid.trace;
 	
 	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
@@ -58,12 +59,12 @@
 		
 		
 		selectBasics(selection) {
-			logGroup(this.const.id + ".selectBasics");
+			trace.selection && logGroup(this.const.id + ".selectBasics");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);
 			this.ownedCategories.selectAll(selection, "WithIndexes");
 			this.addedReferences.selectAll(selection);
-			logUngroup();
+			trace.selection && logUngroup();
 		}
 
 		getRootCategories() {
@@ -117,11 +118,11 @@
 		}
 			
 		selectWithIndexes(selection) {
-			logGroup(this.const.id + ".selectWithIndexes");
+			trace.selection && logGroup(this.const.id + ".selectWithIndexes");
 			liquid.addToSelection(selection, this);
 			this.subCategories.selectTree(selection);
 			this.references.selectTree(selection);
-			logUngroup();
+			trace.selection && logUngroup();
 		}
 		// __() {
 			// liquid.withoutRecording(function() {
