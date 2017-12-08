@@ -5,8 +5,8 @@ var reactRootComponentInstance = null;
 let liquid = require('./liquid.js')();
 let objectlog = require("../liquid/objectlog.js");
 let log = objectlog.log;
-let logGroup = objectlog.enter;
-let logUngroup = objectlog.exit;
+let logGroup = objectlog.group;
+let logUngroup = objectlog.groupEnd;
 
 /*--------------------------------------*
 *              Focus    

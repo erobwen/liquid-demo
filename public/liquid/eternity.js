@@ -57,7 +57,7 @@
 			objectCausality.updateInActiveRecording();
 			imageCausality.updateInActiveRecording();
 
-			objectlog.enter(entity, pattern);
+			objectlog.group(entity, pattern);
 			
 			objectCausality.state.recordingPaused--;	
 			imageCausality.state.recordingPaused--;	
@@ -69,7 +69,7 @@
 		} 
 		
 		function logUngroup() {
-			objectlog.exit(); 
+			objectlog.groupEnd(); 
 		} 
 	
 		function logToString(entity, pattern) {
@@ -81,7 +81,7 @@
 			objectCausality.updateInActiveRecording();
 			imageCausality.updateInActiveRecording();
 
-			let result = objectlog.toString(entity, pattern);
+			let result = objectlog.logToString(entity, pattern);
 
 			objectCausality.state.withoutRecording--;	
 			imageCausality.state.withoutRecording--;	

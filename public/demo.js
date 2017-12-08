@@ -1,8 +1,8 @@
 (function(root) {
 	let objectlog = require("../objectlog.js");
 	let log = objectlog.log;
-	let logGroup = objectlog.enter;
-	let logUngroup = objectlog.exit;
+	let logGroup = objectlog.group;
+	let logUngroup = objectlog.groupEnd;
 	
 	log("demo.js");
 	// Create one single liquid instance

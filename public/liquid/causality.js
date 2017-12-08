@@ -96,19 +96,19 @@
 		function logGroup(entity, pattern) {
 			state.recordingPaused++;
 			updateInActiveRecording();
-			objectlog.enter(entity, pattern);
+			objectlog.group(entity, pattern);
 			state.recordingPaused--;
 			updateInActiveRecording();
 		} 
 		
 		function logUngroup() {
-			objectlog.exit(); 
+			objectlog.groupEnd(); 
 		} 
 	
 		function logToString(entity, pattern) {
 			state.recordingPaused++;
 			updateInActiveRecording();
-			let result = objectlog.toString(entity, pattern);
+			let result = objectlog.logToString(entity, pattern);
 			state.recordingPaused--;
 			updateInActiveRecording();
 			return result;

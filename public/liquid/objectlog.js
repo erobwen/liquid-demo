@@ -9,16 +9,29 @@
     }
 }(this, function () {
 	
-	// let bufferWidth = 56;
-	let bufferWidth = 83;
-	// let bufferWidth = 76;
+	// Configuration
+	let configuration = {
+		// Count the number of chars that can fit horizontally in your buffer. Set to -1 for one line logging only. 
+		bufferWidth : 83,
+		// bufferWidth : 83
+		// bufferWidth : 76
+		
+		indentToken : "  ",
+		
+		// Change to true in order to find all logs hidden in your code.
+		findLogs : false, 
+		
+		// Set to true in web browser that already has a good way to display objects with expandable trees.
+		useConsoleDefault : false
+	};	
 	
+	// State
 	let globalIndentLevel = 0;
 
 	function indentString(level) {
 		let string = "";
 		while (level-- > 0) {
-			string = string + "  ";
+			string = string + configuration.indentToken;
 		}
 		return string;
 	}
@@ -144,8 +157,9 @@
 				let isArray = (entity instanceof Array);
 				let startedHorizontal = false;
 				if (!context.horizontal) {
-					context.horizontal = horizontalLogFitsWithinWidthLimit(entity, pattern, bufferWidth - context.indentLevel * 2); // - 
-					startedHorizontal = true;
+					let spaceLeft = configuration.bufferWidth - (context.indentLevel * configuration.indentToken.length);
+					context.horizontal = configuration.bufferWidth === -1 ? true : horizontalLogFitsWithinWidthLimit(entity, pattern, spaceLeft); 
+					startedHorizontal = context.horizontal;
 				}
 				if (isArray) context.finishOpenLine(); // Should not be when enforced single row.
 				context.log(isArray ? "[" : "{");
@@ -184,26 +198,29 @@
 		if (outer) context.finishOpenLine();
 	}
 	
-	
 	let objectlog = {
-		toString: function(entity, pattern) {
+		// Configuration
+		configuration : configuration, 
+
+		// If you need the output as a string.
+		logToString: function(entity, pattern) {
 			let context = createToStringContext();
 			logPattern(entity, pattern, context);
 			return context.result;
 		}, 
-		findLogs : false,
-		useConsoleDefault : false,
+		
 		log : function(entity, pattern) {
 			if (objectlog.findLogs) throw new Error("No logs allowed!");
-			if (objectlog.useConsoleDefault) {
+			if (configuration.useConsoleDefault) {
 				console.log(entity);
 			} else {
 				logPattern(entity, pattern);
 			}
 		},
-		enter : function(entity, pattern) {
+		
+		group : function(entity, pattern) {
 			if (objectlog.findLogs) throw new Error("No logs allowed!");
-			if (objectlog.useConsoleDefault) {
+			if (configuration.useConsoleDefault) {
 				console.group(entity);
 			} else {
 				if (typeof(entity) !== 'undefined') {
@@ -212,12 +229,16 @@
 				globalIndentLevel++;
 			}
 		},
-		exit : function() {
+		
+		groupEnd : function(entity, pattern) {
 			if (objectlog.findLogs) throw new Error("No logs allowed!");
-			if (objectlog.useConsoleDefault) {
+			if (configuration.useConsoleDefault) {
 				console.groupEnd();
 			} else {
 				globalIndentLevel--;
+				if (typeof(entity) !== 'undefined') {
+					logPattern(entity, pattern);
+				}
 			}
 		} 		
 	}

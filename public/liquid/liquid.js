@@ -18,11 +18,11 @@
 	function createLiquidInstance(configuration) {// Debugging
 		//Debugging 
 		let objectlog = require('./objectlog.js');
-		if (configuration.isClient) objectlog.useConsoleDefault = true;
+		if (configuration.isClient) objectlog.configuration.useConsoleDefault = true;
 		// let log = objectlog.log;
-		// let logGroup = objectlog.enter;
-		// let logUngroup = objectlog.exit;
-		// let logToString = objectlog.toString;
+		// let logGroup = objectlog.group;
+		// let logUngroup = objectlog.groupEnd;
+		// let logToString = objectlog.logToString;
 
 		// Pages and sessions (for server)
 		pagesMap = {};
@@ -362,11 +362,11 @@
 						object = upstreamIdObjectMap[event.objectId];
 					}
 					if (event.type === 'set') {
-						logGroup("setting " + event.property);
+						// logGroup("setting " + event.property);
 						// liquid.trace.basic++;
 						object[event.property] = unserializeValue(event.value, forUpstream);
 						// liquid.trace.basic--;
-						logUngroup();
+						// logUngroup();
 					} else if (event.type === 'delete') {
 						delete object[event.property];
 					}
