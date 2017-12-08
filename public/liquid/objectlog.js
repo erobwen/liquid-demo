@@ -10,9 +10,10 @@
 }(this, function () {
 	
 	// let bufferWidth = 56;
-	let bufferWidth = 76;
+	let bufferWidth = 83;
+	// let bufferWidth = 76;
 	
-	let indentLevel = 0;
+	let globalIndentLevel = 0;
 
 	function indentString(level) {
 		let string = "";
@@ -22,101 +23,84 @@
 		return string;
 	}
 
-	function createContext(toString) {
+	function createBasicContext() {
 		return {
-			result : "",
+			terminated : false,
 			rootLevel : true,
 			horizontal : false,
-			indentLevel : indentLevel,
-			unfinishedLine : false,
-			// log : function(string) {
-				// if (this.unfinishedLine) {
-					// console.log(string);
-					// this.unfinishedLine = false;					
-				// } else {
-					// let indent = indentString(this.indentLevel);
-					// console.log(indent + string);
-					// this.unfinishedLine = false;
-				// }
-			// },
-			log : function(string) {
-				// string = "#" + this.indentLevel + "#" +  string
-				if (this.unfinishedLine) {
-					if (toString) {
-						this.result += string;
-					} else {
-						process.stdout.write(string); 						
-					}
-					this.unfinishedLine = true;
-				} else {
-					let indent = indentString(this.indentLevel);
-					if (toString) {
-						this.result += indent + string;
-					} else {
-						process.stdout.write(indent + string); 						
-					}
-					this.unfinishedLine = true;
-				}
-			},
-			finishOpenLine : function() {
-				if (this.unfinishedLine && !this.horizontal) {
-					console.log();
-					this.unfinishedLine = false;
-				}
-			} 
+			indentLevel : globalIndentLevel,
+			unfinishedLine : false
+		}		
+	}
+	
+	function createToStringContext() {
+		let context = createBasicContext();
+		context.result = "";
+		context.log = function(string) {
+			if (this.unfinishedLine) {
+				this.result += string;
+				this.unfinishedLine = true;
+			} else {
+				this.result += indentString(this.indentLevel) + string;
+				this.unfinishedLine = true;
+			}
 		};
+		context.finishOpenLine = function() {
+			if (this.unfinishedLine && !this.horizontal) {
+				this.result += "\n";
+				this.unfinishedLine = false;
+			}
+		};		
+		return context;
+	}
+	
+	function createStdoutContext() {
+		let context = createBasicContext();
+		context.log = function(string) {
+			if (this.unfinishedLine) {
+				process.stdout.write(string); 						
+				this.unfinishedLine = true;
+			} else {
+				let indent = indentString(this.indentLevel);
+				process.stdout.write(indent + string);
+				this.unfinishedLine = true;
+			}
+		};
+		context.finishOpenLine = function() {
+			if (this.unfinishedLine && !this.horizontal) {
+				console.log();
+				this.unfinishedLine = false;
+			}
+		};
+		return context;
 	}
 
-	function horizontalLogWithinWidthLimit(entity, pattern, limit, context) {
-		// Setup of process
-		if (typeof(context) === 'undefined') {
-			context = { 
-				charcount : 0,
-				count : function(chars) {
-					this.charcount += chars.length;
-					// console.log("less than limit?" + chars);
-					// console.log(context.charcount <= limit);
-					return context.charcount <= limit; 
-				}
-			};	
-		}
-
-		if (typeof(entity) !== 'object') { 
-			if (typeof(entity) === 'function') {
-				return context.count("function( ... ) { ... }");				
+	function createHorizontalMeasureContext(limit) {
+		let context = createBasicContext();
+		context.horizontal = true;
+		context.count = 0;
+		context.limit = limit;
+		
+		context.log = function(string) {
+			if (this.unfinishedLine) {
+				this.count += string.length;
+				this.terminated = this.count > this.limit;
+				this.unfinishedLine = true;
 			} else {
-				return context.count(entity + "");
+				let indent = indentString(this.indentLevel);
+				this.count += (indent + string).length;
+				this.terminated = this.count > this.limit;
+				this.unfinishedLine = true;
 			}
-		} else {
-			if (pattern === 0) {
-				if (entity instanceof Array) {
-					return context.count("[...]"); 
-				} else {
-					return context.count("{...}"); 				
-				}
-			} else {
-				let isArray = (entity instanceof Array);
-				context.count(isArray ? "[" : "{");
-				for (p in entity) {
-					if (!isArray || isNaN(p)) context.count(p + " : ");
-					
-					let nextPattern = null;
-					if (typeof(pattern) === 'object') {
-						nextPattern = pattern[p];
-					} else {
-						nextPattern = pattern - 1;
-					}
-					
-					if (!horizontalLogWithinWidthLimit(entity[p], nextPattern, limit, context)) {
-						// console.log("fails on child");
-						return false;
-					}
-				}
-				return context.count(isArray ? "]" : "}");				
-			}	
-		}
-		// console.log("on the wild side");
-		// console.log(entity);
+		};
+		context.finishOpenLine = function() {};		
+		return context;
+	}
+		
+	function horizontalLogFitsWithinWidthLimit(entity, pattern, limit) {		
+		let context = createHorizontalMeasureContext(limit);
+		logPattern(entity, pattern, context);
+		return !context.terminated;
 	}
 
 	function logPattern(entity, pattern, context) {
@@ -127,9 +111,12 @@
 		// Setup of process
 		let outer = false;
 		if (typeof(context) === 'undefined') {
-			context = createContext();
+			context = createStdoutContext();
 			outer = true;
 		}
+		
+		// Bail out if terminated
+		if (context.terminated) return;
 
 		// Recursive rendering
 		if (typeof(entity) !== 'object') {
@@ -157,7 +144,7 @@
 				let isArray = (entity instanceof Array);
 				let startedHorizontal = false;
 				if (!context.horizontal) {
-					context.horizontal = horizontalLogWithinWidthLimit(entity, pattern, bufferWidth - context.indentLevel * 2); // - 
+					context.horizontal = horizontalLogFitsWithinWidthLimit(entity, pattern, bufferWidth - context.indentLevel * 2); // - 
 					startedHorizontal = true;
 				}
 				if (isArray) context.finishOpenLine(); // Should not be when enforced single row.
@@ -200,7 +187,7 @@
 	
 	let objectlog = {
 		toString: function(entity, pattern) {
-			let context = createContext(true);
+			let context = createToStringContext();
 			logPattern(entity, pattern, context);
 			return context.result;
 		}, 
@@ -222,7 +209,7 @@
 				if (typeof(entity) !== 'undefined') {
 					logPattern(entity, pattern);
 				}
-				indentLevel++;
+				globalIndentLevel++;
 			}
 		},
 		exit : function() {
@@ -230,7 +217,7 @@
 			if (objectlog.useConsoleDefault) {
 				console.groupEnd();
 			} else {
-				indentLevel--;
+				globalIndentLevel--;
 			}
 		} 		
 	}

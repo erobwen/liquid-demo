@@ -41,25 +41,29 @@
 		var socket = io('http://localhost:8080');
 
 		socket.on('connect', function(){
-			log("socket.on: connect");
+			logGroup("socket.on: connect");
 			log(liquid.instancePage);
 			socket.emit("connectPageWithSocket", liquid.instancePage.token);
+			logUngroup();
 		});
 		
 		socket.on('couldNotConnectPageWithSocket', function() {
-			log("socket.on: couldNotConnectPageWithSocket");
+			logGroup("socket.on: couldNotConnectPageWithSocket");
 			throw new Error("Could not connect propertly with server.");
+			logUngroup();
 		});
 
 		socket.on('message', function(message) {
-			log("socket.on: message");
+			logGroup("socket.on: message");
 			log(message);
 			liquid.messageFromUpstream(message);
+			logUngroup();
 		});
 
 		liquid.setPushMessageUpstreamCallback(function(message) {
-			log("socket.emit: message");
+			logGroup("socket.emit: message");
 			socket.emit('message', liquid.instancePage.token, message);	
+			logUngroup();
 		});		
 
 		socket.on('disconnect', function(){

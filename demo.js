@@ -250,7 +250,7 @@ liquidSocket.on('connection', function (socket) {
 	// trace('serialize', 'Connected a socket!');
 	
 	socket.on('connectPageWithSocket', function(pageToken) {
-		log("socket.on: connectPageWithSocket " + pageToken);
+		logGroup("socket.on: connectPageWithSocket " + pageToken);
 		try {
 			let page = liquid.getPage(pageToken);
 			page.const._socket = socket;
@@ -259,17 +259,20 @@ liquidSocket.on('connection', function (socket) {
 		} catch (error) {
 			socket.emit('couldNotConnectPageWithSocket');
 		}
+		logUngroup();
 	});
 
 	socket.on("message", function(pageToken, message) {
-		log("socket.on: message");
-		log(message);
+		logGroup("socket.on: message");
+		log(message, 10);
 		liquid.messageFromDownstream(pageToken, message);
+		logUngroup();
 	});
 
 	socket.on('disconnect', function(message) {
-		log("socket.on: disconnect: " + message);
+		logGroup("socket.on: disconnect: " + message);
 		liquid.disconnect(socket._liquidPage);
+		logUngroup();
 	});
 });
 

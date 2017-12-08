@@ -890,8 +890,8 @@
 
 		
 		function getPage(pageToken) {
-			log("getPage:" + pageToken);
-			log(pagesMap, 2);
+			// log("getPage:" + pageToken);
+			// log(pagesMap, 2);
 			// trace('serialize', "Register page connection:" + pageToken);
 			// trace('serialize', pageToken);
 			if (typeof(pageToken) !== 'undefined' && pageToken !== null && typeof(pagesMap[pageToken]) !== 'undefined') {
