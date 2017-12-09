@@ -58,9 +58,13 @@
 		
 		// State 
 		let state = {
-			pushingDataFromDownstream : false,
-			pushingDataFromPage : null,
-			pushingPulseFromUpstream : false, // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
+			// Pushing to server
+			pushingChangesFromDownstream : false,
+			pushingChangesFromPage : null,
+			
+			// Pushing to client
+			pushingChangesFromUpstream : false, // Too simple, do we need to keep track of individual events? What aboutr if upstream pulse triggers repeaters on client?. we get a mixed pulse.... 
+			
 			isSelecting : false,
 			dirtyPageSubscritiptions : {},
 			restrictAccessToThatOfPage : null,
@@ -345,7 +349,7 @@
 						unserializeObject(serialized, forUpstream);
 						return serialized.object;
 					} else {
-						return state.pushingDataFromPage.const._selection[id]; // Since there is no global id to object map...
+						return state.pushingChangesFromPage.const._selection[id]; // Since there is no global id to object map...
 					}
 				}				
 			}
@@ -357,7 +361,7 @@
 				if (typeof(event.objectId) !== 'undefined') {
 					let object;
 					if (forUpstream) {
-						object = state.pushingDataFromPage.const._selection[event.objectId];
+						object = state.pushingChangesFromPage.const._selection[event.objectId];
 					} else {
 						object = upstreamIdObjectMap[event.objectId];
 					}
@@ -388,7 +392,7 @@
 						let serialized = serializedIdToSerializedMap[id];
 						return serialized.object;
 					} else {
-						return state.pushingDataFromPage.const._selection[id]; // Since there is no global id to object map...
+						return state.pushingChangesFromPage.const._selection[id]; // Since there is no global id to object map...
 					}
 				} else {
 					let className = fragments[0];
@@ -636,7 +640,7 @@
 						let observingPage = event.object.const._observingPages[id];
 						log("found an observing page with id: " + observingPage.token);
 						// log(event, 2);
-						if (state.pushingDataFromPage !== observingPage) { // && !state.dirtyPageSubscritiptions[id]
+						if (state.pushingChangesFromPage !== observingPage) { // && !state.dirtyPageSubscritiptions[id]
 							log("actually send data to it... ");
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
 							if (typeof(observingPage.const._pendingEvents) === 'undefined') {
@@ -672,8 +676,8 @@
 				page.const._pendingUpdates.push(update);
 
 				// TODO: Use the following not to get pingpong messages. 			
-				// state.pushingDataFromDownstream;
-				// state.pushingDataFromPage;
+				// state.pushingChangesFromDownstream;
+				// state.pushingChangesFromPage;
 				
 				// TODO: refactor this part to the other layer... 
 				while(page.const._pendingUpdates.length > 0) {
@@ -773,7 +777,7 @@
 			// Add event info.
 			result.serializedEvents = [];
 			events.forEach(function (event) {
-				if ((state.pushingDataFromPage !== page || event.isConsequence)) { //Do not send back events to originator unless repeater event!  TODO: What about this piece of code?: || liquid.callOnServer ? 
+				if ((state.pushingChangesFromPage !== page || event.isConsequence)) { //Do not send back events to originator unless repeater event!  TODO: What about this piece of code?: || liquid.callOnServer ? 
 					if (addedAndRemovedIds.static[event.object.const.id]) {
 						// liquid.state.pageSubject = page;
 						result.serializedEvents.push(serializeEvent(event, false));
@@ -846,7 +850,7 @@
 		
 		function unserializeDownstreamPulse(page, pulseData) {
 			logGroup("unserializeDownstreamPulse");
-			log(pulseData, 3);
+			// log(pulseData, 3);
 		
 			// Unserialize all objects
 			unserializeObjects(pulseData.serializedObjects, true);
@@ -854,7 +858,7 @@
 			// Consider: Should we postpone notification here?
 			unserializeEvents(pulseData.serializedEvents, true);
 
-			// let object = state.pushingDataFromPage.const._selection[pulseData.serializedEvents[0].objectId];
+			// let object = state.pushingChangesFromPage.const._selection[pulseData.serializedEvents[0].objectId];
 			// log(object);
 			logUngroup();
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
@@ -901,28 +905,33 @@
 
 		function messageFromDownstream(pageToken, message) {
 			let page = getPage(pageToken);
+			logGroup("messageFromDownstream pageId:" + page.const.id);
+			log(message, 10);
+			// log(objectDigest(page));
 			if (typeof(page) !== 'undefined') {
 				Fiber(function() {
 					
 					// Process pulse or call.
 					if (message.type === 'pulse') {
-						state.pushingDataFromDownstream = true; // What happens on asynchronous wait?? move this to liquid.state. 
-						state.pushingDataFromPage = page;
+						state.pushingChangesFromDownstream = true; // What happens on asynchronous wait?? move this to liquid.state. 
+						state.pushingChangesFromPage = page;
 						
 						liquid.pulse(function() {
 							unserializeDownstreamPulse(page, message.data); // foo
 						});							
 						
-						state.pushingDataFromDownstream = false;
-						state.pushingDataFromPage = null;
+						state.pushingChangesFromDownstream = false;
+						state.pushingChangesFromPage = null;
 					} else if (message.type === 'call') {
 						
 					}
 					
 				}).run();
 			} else {
+				logUngroup();
 				throw new Error("Invalid page token"); // Consider: Should be soft landing?
 			}
+			logUngroup();
 		}
 		
 		
@@ -930,7 +939,7 @@
 			// let page = liquid.getPage(pageToken);
 			// if (typeof(page) !== 'undefined') {
 				// Fiber(function() {
-					// pushingDataFromDownstream = true; // What happens on asynchronous wait?? move this to liquid.state. 
+					// pushingChangesFromDownstream = true; // What happens on asynchronous wait?? move this to liquid.state. 
 					// if (message.type === 'pulse') {
 						// liquid.pulse(function() {
 							// liquid.unserializeDownstreamPulse(page, pulseData);
@@ -938,7 +947,7 @@
 					// } else if (message.type === 'call') {
 						
 					// }
-					// pushingDataFromDownstream = false;
+					// pushingChangesFromDownstream = false;
 				// }).run();
 				// resolve();
 			// } else {
@@ -971,7 +980,7 @@
 		
 
 		function receiveInitialDataFromUpstream(serializedData) {
-			state.pushingPulseFromUpstream = true;
+			state.pushingChangesFromUpstream = true;
 			liquid.pulse(function() {
 				log("receiveInitialDataFromUpstream");
 				log(serializedData);
@@ -979,7 +988,7 @@
 				liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
 				log(liquid);
 			});			
-			state.pushingPulseFromUpstream = false;
+			state.pushingChangesFromUpstream = false;
 		}
 		
 		
@@ -991,16 +1000,19 @@
 			}
 		}
 		
-
+		
 		function unserializeUpstreamPulse(pulseData) {
 			logGroup("unserializeUpstreamPulse");
 			log(pulseData, 3);
+			state.pushingChangesFromUpstream = true;
 		
 			// Unserialize all objects
-			unserializeObjects(pulseData.serializedObjects, false)
-			
-			// Consider: Should we postpone notification here?
-			unserializeEvents(pulseData.serializedEvents, false);
+			liquid.pulse(function() {
+				unserializeObjects(pulseData.serializedObjects, false)
+				
+				// Consider: Should we postpone notification here?
+				unserializeEvents(pulseData.serializedEvents, false);				
+			});
 
 			//TODO: Do something with instantly hidden... 
 			// // and create an "originators copy" of the data for safekeeping. 
@@ -1015,7 +1027,8 @@
 			// if (typeof(liquid.instancePage) !== 'undefined') {
 				// liquid.instancePage.upstreamPulseReceived();
 			// }				
-				
+
+			state.pushingChangesFromUpstream = false;				
 			logUngroup();
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
 			// var idToDownstreamIdMap = {};
@@ -1113,7 +1126,7 @@
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
 		function pushDataUpstream(events) {			
-			if (typeof(pushMessageUpstreamCallback) !== 'undefined' && !state.pushingPulseFromUpstream) {
+			if (typeof(pushMessageUpstreamCallback) !== 'undefined') { // && !state.pushingChangesFromUpstream
 				logGroup("pushDataUpstream (actually)");
 				log(pushMessageUpstreamCallback);
 				log(events, 2);
@@ -1134,7 +1147,7 @@
 		
 				// Scan events for refered objects that needs to be pushed uppstream
 				events.forEach(function(event) {
-					var eventIsFromUpstream = state.pushingPulseFromUpstream; // && event.isDirectEvent; TODO: Make something to distinguish direct events... 
+					var eventIsFromUpstream = state.pushingChangesFromUpstream && !event.isConsequence;
 					if (!eventIsFromUpstream) {
 						// log("processing event required objects");
 						if (event.object.const._upstreamId !== null && event.type == 'set' && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
@@ -1153,7 +1166,7 @@
 				// Serialize events
 				var serializedEvents = [];
 				events.forEach(function(event) {
-					var eventIsForUpstream = !state.pushingPulseFromUpstream || event.isConsequence; 
+					var eventIsForUpstream = !state.pushingChangesFromUpstream || event.isConsequence; 
 					if (eventIsForUpstream && event.type === 'set' && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
 						if (event.object.const._upstreamId !== null) {
 							serializedEvents.push(serializeEvent(event, true));

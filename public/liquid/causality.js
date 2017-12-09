@@ -2340,7 +2340,7 @@
 			if (state.emitEventPaused === 0) {
 				// log("EMIT EVENT " + configuration.name + " " + event.type + " " + event.property + "=...");
 				event.object = handler.const.object; 
-				// event.isConsequence = state.refreshingRepeater;
+				event.isConsequence = state.refreshingRepeater;  //MERGE: coment out this on eternity... 
 				if (configuration.recordPulseEvents) {
 					trace.event && log("store in pulse....");
 					state.pulseEvents.push(event);

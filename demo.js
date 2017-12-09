@@ -28,10 +28,10 @@ liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we ma
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
 let create = liquid.create;
 
-let objectlog = require("./public/liquid/objectlog.js");
-let log = objectlog.log;
-let logGroup = objectlog.group;
-let logUngroup = objectlog.groupEnd;
+// let objectlog = require("./public/liquid/objectlog.js");
+let log = liquid.log;
+let logGroup = liquid.logGroup;
+let logUngroup = liquid.logUngroup;
 
 /**--------------------------------------------------------------
  *            Initialize database if necessary
@@ -40,9 +40,9 @@ let logUngroup = objectlog.groupEnd;
 // Custom setup server script
 // require('./include');
 // include('./liquid/application/serverConfiguration.js');
-// let user = null;
-// let georgism = null;
-// var politics = null;
+let user;
+let georgism;
+var politics;
 
 if (!liquid.persistent.demoInitialized) {
 
@@ -62,15 +62,13 @@ if (!liquid.persistent.demoInitialized) {
 		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		// log(user.ownedCategories.contents);
 		
-
-		
-		// var funny = create('Category', {name: 'Funny', description: '', owner: user});
-		// politics = create('Category', {name: 'Politics', description: '', owner: user});
-		// georgism = create('Category', {name: 'Georgism', description: '', owner: user});
+		var funny = create('Category', {name: 'Funny', description: '', owner: user});
+		politics = create('Category', {name: 'Politics', description: '', owner: user});
+		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
+		politics.subCategories.add(georgism);
 		// log("==========================================================");
 		// log (" Adding... ");
 		// liquid.trace.basic++;
-		// politics.subCategories.add(georgism);
 		// liquid.trace.basic--;
 		// log("==========================================================");
 		
@@ -154,12 +152,12 @@ if (!liquid.persistent.demoInitialized) {
 	'' : "LiquidPage",
 	'index': 'LiquidPage',
 	'demo': function(req) { // Note: req follows express conventions.
-		logGroup("in demo controller");
+		logGroup("create page and session object...");
 		var session = liquid.createOrGetSessionObject(req.session.token);
 		session.user = user; 
 		var page = create('LiquidPage', {session: session});
 		page.service.orderedSubscriptions.push(create({object: user, selector:'Basics'})); //object: user,
-		logUngroup();
+		logUngroup("...");
 		return page;
 	},
 	'someurl/:someargument' : 'PageWithArgument'
@@ -213,10 +211,16 @@ function createExpressControllerFromClassName(className) {
 function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
 		logGroup("express controller...");
+		let page;
+		
+		// Create the page. This is a separate pulse so the creation will not be sent after the pulse
 		liquid.pulse(function() {
 			// Setup session object (that we know is the same object identity on each page request)
-			var page = pageCreatorFunction(req)
-			var data = {
+			page = pageCreatorFunction(req);
+		});
+		
+		liquid.pulse(function() {
+			let data = {
 				// serialized : liquid.serializeSelection(selection),
 				pageUpstreamId : page.const.id,
 				subscriptionInfo : liquid.getSubscriptionUpdate(page, [])
@@ -263,7 +267,7 @@ liquidSocket.on('connection', function (socket) {
 
 	socket.on("message", function(pageToken, message) {
 		logGroup("socket.on: message");
-		log(message, 10);
+		// log(message, 10);
 		liquid.messageFromDownstream(pageToken, message);
 		logUngroup();
 	});
