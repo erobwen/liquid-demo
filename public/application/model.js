@@ -124,6 +124,25 @@
 			this.references.selectTree(selection);
 			trace.selection && logUngroup();
 		}
+		
+		allTransitiveSubCategories(set) {
+			if (typeof(set) === 'undefined') {
+				set = {};
+			}
+			
+			if (typeof(set[this.const.id]) === 'undefined') {
+				set[this.const.id] = this;
+			
+				this.subCategories.forEach(function(subCategory) {
+					subCategory.allTransitiveSubCategories(set);
+				});
+			}
+			return set;
+		}
+		
+		canAddSubCategory(category) {
+			return category.allTransitiveSubCategories()[this.const.id] === 'undefined';
+		}
 		// __() {
 			// liquid.withoutRecording(function() {
 				// return "(" + this._className() + "." + this._idString() + ":" + unloadedOrName + ")";				

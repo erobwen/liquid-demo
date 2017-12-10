@@ -288,7 +288,7 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDrop: function(event) {
-		// console.log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
+		console.log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
 		// console.log(this.props.category);
 		event.preventDefault();
 		this.dragEnterCounter = 0;
@@ -296,15 +296,15 @@ window.CategoryView = React.createClass(liquidClassData({
 		var droppedCategory = draggedCategory;
 		draggedCategory = null;
 		if (category.writeable() && category.canAddSubCategory(droppedCategory)) {
-			liquid.pulse('local', function() {
+			liquid.pulse(function() {
 				// console.log(droppedCategory.parents.length);
 				// console.log(droppedCategory.parents);
-				var parents = copyArray(droppedCategory.parents);
-				parents.forEach(function(parentCategory) {
+				// var parents = copyArray(droppedCategory.parents);
+				droppedCategory.parents.forEach(function(parentCategory) {
 					// console.log("Dropping parent: " + parentCategory.__());
-					droppedCategory.removeParent(parentCategory);
+					parentCategory.subCategories.remove(droppedCategory);
 				});
-				category.addSubCategory(droppedCategory);	
+				category.subCategories.add(droppedCategory);	
 			});
 		}
 		this.setState({ 
@@ -374,6 +374,7 @@ window.CategoryView = React.createClass(liquidClassData({
 
 
 			this.props.category.subCategories.forEach(function(category) {
+				console.log(category);
 				// How to do it with standard syntax:
 
 				subCategories.push(

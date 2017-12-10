@@ -199,6 +199,7 @@
 		 // TODO: Specifiers needs a reference to its causality object... 
 		function getSpecifier(javascriptObject, specifierName) {
 			if (typeof(javascriptObject[specifierName]) === 'undefined' || javascriptObject[specifierName] === null) {
+				let referredObject = typeof(javascriptObject.referredObject) !== 'undefined' ? javascriptObject.referredObject : javascriptObject;
 				let specifier = {
 					// Incoming structure
 					isIncomingStructure : true,

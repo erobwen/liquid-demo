@@ -614,9 +614,9 @@
 		}
 		
 		forEach(callback) {
-			trace.entity && log("LiquidIndex.forEach");
-			Object.keys(this.contents).forEach(function(key) {
-				if (!nonContentProperties[key]) callback(this.contents[key]);
+			// trace.entity && log("LiquidIndex.forEach");
+			Object.keys(this.contents).forEach(function(key) {		
+				if (!nonContentProperties[key] && typeof(this.contents[key]) !== 'undefined') callback(this.contents[key]);
 			}.bind(this));
 		}
 		
