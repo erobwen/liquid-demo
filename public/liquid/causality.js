@@ -203,7 +203,7 @@
 				let specifier = {
 					// Incoming structure
 					isIncomingStructure : true,
-					referredObject : javascriptObject, // should be object instead.... 
+					referredObject : referredObject, // should be object instead.... 
 					referredObjectProperty : specifierName,
 					parent : null,
 
@@ -475,7 +475,7 @@
 			// Note: sometimes value and previous value are just strings. Optimize for this case... 
 			let referringRelation = key;
 			if (trace.incoming) {
-				log("createAndRemoveIncomingRelations");
+				logGroup("createAndRemoveIncomingRelations");
 				log(referringRelation);
 				log(objectProxy);
 			}
@@ -485,12 +485,14 @@
 				referringRelation = objectProxy.indexParentRelation;
 				objectProxy = objectProxy.indexParent;				
 				if (trace.incoming) {
-					log("Moving up one step:");
+					log("Get refering object... one step:");
 					log(referringRelation);
 					log(objectProxy);
+					log("...");
 				}
 			}
 			referringRelation = "property:" + referringRelation;
+			trace.incoming && log("referringRelation : " + referringRelation);
 			
 			// Tear down structure to old value
 			if (isReferencesChunk(previousStructure)) {
@@ -517,6 +519,7 @@
 				value = referencedValue;
 			}
 
+			trace.incoming && logUngroup();
 			return value;
 		}
 		
@@ -542,6 +545,13 @@
 		}
 		
 		function createAndRemoveArrayIncomingRelations(arrayProxy, index, removedOrIncomingStructures, added) {
+			if (trace.incoming) {
+				logGroup("createAndRemoveArrayIncomingRelations");
+				log(index);
+				log(removedOrIncomingStructures, 2);
+				log(added, 2);
+			} 
+
 			// Get refering object 
 			// log("createAndRemoveArrayIncomingRelations");
 			// logGroup();
@@ -580,7 +590,7 @@
 					}					
 				});					
 			}
-			// logUngroup();
+			trace.incoming && logUngroup();
 			return addedAdjusted;
 		} 
 		
@@ -723,14 +733,15 @@
 		*/				
 		function removeReverseReference(refererId, referencesChunk) {
 			if (trace.incoming) {
-				log("removeReverseReference");
-				log(refererId);
-				log(referencesChunk, 3);
+				logGroup("removeReverseReference");
+				// log(refererId);
+				// log(referencesChunk, 3);
 			}
 			let referencesChunkContents = referencesChunk['contents'];
 			delete referencesChunkContents[idExpression(refererId)];
 			referencesChunk.contentsCounter--;
 			tryRemoveIncomingStructure(referencesChunk);
+			trace.incoming && logUngroup();
 		}
 		
 		
@@ -932,11 +943,13 @@
 				
 				// TODO: configuration.incomingReferenceCounters || .... 
 				if (state.incomingStructuresDisabled === 0) {
+					trace.incoming && log("...consider incoming...");
 					state.incomingStructuresDisabled++;
 					addedOrIncomingStructures = createAndRemoveArrayIncomingRelations(this.const.object, index, null, added); // TODO: implement for other array manipulators as well. 
 					state.incomingStructuresDisabled--;
 					this.target.push.apply(this.target, addedOrIncomingStructures);
 				} else {
+					trace.incoming && log("...no incoming...");
 					this.target.push.apply(this.target, added);
 				}
 				

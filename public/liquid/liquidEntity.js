@@ -346,7 +346,7 @@
 			}
 		}
 		
-		get(value, defaultValue) {
+		getProperty(value, defaultValue) {
 			if (typeof(value) !== 'undefined') {
 				return value;
 			} else {
@@ -603,7 +603,7 @@
 			});
 		}
 		
-		getContents() {
+		get() {
 			let result = [];
 			let keys = Object.keys(this.contents);
 			keys.forEach(function(property) {
@@ -628,20 +628,20 @@
 			this.contents[liquid.idExpression(object.const.id)] = object;		 
 		}
 		
-		get() {
-			let result = [];
-			let keys = Object.keys(this.contents);
-			keys.forEach(function(property) {
-				if (property !== 'indexParentRelation' && property !== 'indexParent')
-				result.push(this.contents[property]);
-			}.bind(this)); 
-			return result;
+		// get() {
 			// let result = [];
-			// for(let key in this.contents) {
-				// result.push(this.contents[key]);
-			// }
+			// let keys = Object.keys(this.contents);
+			// keys.forEach(function(property) {
+				// if (property !== 'indexParentRelation' && property !== 'indexParent')
+				// result.push(this.contents[property]);
+			// }.bind(this)); 
 			// return result;
-		}
+			// // let result = [];
+			// // for(let key in this.contents) {
+				// // result.push(this.contents[key]);
+			// // }
+			// // return result;
+		// }
 	 }
 	
 	
@@ -689,7 +689,7 @@
 				this.receivedSubscriptions = create([]); 				
 			}
 			if (this.isUndefined("session")) {
-				this.session = this.get(data.session, null);				
+				this.session = this.getProperty(data.session, null);				
 			}
 			if (this.isUndefined("service")) {
 				this.service = this.createPageService();				

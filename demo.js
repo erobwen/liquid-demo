@@ -17,7 +17,8 @@ let liquid = require("./public/liquid/liquid.js")(
 		}
 	}
 );
-liquid.trace.pulse++;
+liquid.trace.pulse = 1;
+// liquid.trace.incoming = 1; 
 
 
 // log("demo.liquid state: ");
@@ -118,8 +119,8 @@ if (!liquid.persistent.demoInitialized) {
 // log(politics.subCategories.get(), 1);
 // log("georgism.const.incoming.subCategories");
 // log(georgism.const.incoming.subCategories, 1);
-// log("user.ownedCategories.getContents()");
-// log(user.ownedCategories.getContents(), 2);
+// log("user.ownedCategories.get()");
+// log(user.ownedCategories.get(), 2);
 
 // let selection = {};
 // liquid.restrictAccess(testPage, 
@@ -139,8 +140,8 @@ if (!liquid.persistent.demoInitialized) {
 // log("================================");
 
 
-// log(user.addedReferences.getContents(), 3);
-// log(user.ownedCategories.getContents(), 3);
+// log(user.addedReferences.get(), 3);
+// log(user.ownedCategories.get(), 3);
 // logUngroup();
 
 

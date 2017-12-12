@@ -1127,9 +1127,9 @@
 		 */
 		function pushDataUpstream(events) {			
 			if (typeof(pushMessageUpstreamCallback) !== 'undefined') { // && !state.pushingChangesFromUpstream
-				logGroup("pushDataUpstream (actually)");
-				log(pushMessageUpstreamCallback);
-				log(events, 2);
+				// logGroup("pushDataUpstream (actually)");
+				// log(pushMessageUpstreamCallback);
+				// log(events, 2);
 		
 				// Recursive search for objects to push upstream
 				var requiredObjects = {};
@@ -1182,7 +1182,7 @@
 					};
 					tryPushMessageUpstream({type: "pulse", data: serializedPulse});
 				}
-				logUngroup();
+				// logUngroup();
 			}
 		};
 		
