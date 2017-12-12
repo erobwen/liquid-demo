@@ -327,13 +327,17 @@
 		 * Traverse the incoming relation structure foobar
 		 */
 		function getReferredObject(referredItem) {
+			trace.get && logGroup("getReferredObject");
 			if (typeof(referredItem) === 'object' && referredItem !== null) {
-				if (typeof(referredItem.referredObject) !== 'undefined' && typeof(referredItem.isSpecifier) === 'undefined') {
+				if (typeof(referredItem.referredObject) !== 'undefined') { //  && typeof(referredItem.isSpecifier) === 'undefined'
+					trace.get && logUngroup();
 					return referredItem.referredObject;
 				} else {
+					trace.get && logUngroup();
 					return referredItem;
 				}
 			}
+			trace.get && logUngroup();
 			return referredItem;
 		}
 		
@@ -1157,10 +1161,10 @@
 				}
 				this.const.target.forEach(function(element) {
 					if (state.incomingStructuresDisabled === 0) {
-						element = getReferredObject(target[key]);
+						element = getReferredObject(element);
 					}
 					callback(element);
-				});
+				}.bind(this));
 			}
 		};
 
@@ -1412,7 +1416,7 @@
 						let descriptor = Object.getOwnPropertyDescriptor(scan, key);
 						if (typeof(descriptor) !== 'undefined' && typeof(descriptor.get) !== 'undefined') {
 							if (trace.get > 0) logUngroup();
-							// if (trace.get) log("returning bound thing...");
+							if (trace.get) log("returning bound thing...");
 							return descriptor.get.bind(this.const.object)();
 						}
 						scan = Object.getPrototypeOf( scan );
@@ -1428,7 +1432,7 @@
 						}
 					}
 					if (state.incomingStructuresDisabled === 0) {
-						// console.log("find referred object");
+						trace.get && log("find referred object");
 						// console.log(key);
 						if (trace.get > 0) logUngroup();
 						return getReferredObject(target[key]);

@@ -67,6 +67,10 @@ if (!liquid.persistent.demoInitialized) {
 		politics = create('Category', {name: 'Politics', description: '', owner: user});
 		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		politics.subCategories.add(georgism);
+		
+		log("all incoming:");
+		log(liquid.configuration, 5);
+		liquid.forAllIncoming(georgism, "subCategories", (parent) => {log(parent);})
 		// log("==========================================================");
 		// log (" Adding... ");
 		// liquid.trace.basic++;

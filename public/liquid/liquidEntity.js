@@ -614,10 +614,18 @@
 		}
 		
 		forEach(callback) {
-			// trace.entity && log("LiquidIndex.forEach");
-			Object.keys(this.contents).forEach(function(key) {		
-				if (!nonContentProperties[key] && typeof(this.contents[key]) !== 'undefined') callback(this.contents[key]);
+			logGroup("LiquidIndex.forEach");
+			trace.get++;
+			Object.keys(this.contents).forEach(function(key) {
+				if (!nonContentProperties[key] && typeof(this.contents[key]) !== 'undefined') {
+					// log(liquid.state.incomingStructuresDisabled);
+					let value = this.contents[key];
+					log(value);
+					callback(value);					
+				} 
 			}.bind(this));
+			trace.get--;
+			logUngroup();
 		}
 		
 		remove(object) {
