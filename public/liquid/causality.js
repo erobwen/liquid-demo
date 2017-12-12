@@ -205,7 +205,7 @@
 					isIncomingStructure : true,
 					referredObject : referredObject, // should be object instead.... 
 					referredObjectProperty : specifierName,
-					parent : null,
+					parent : javascriptObject,
 
 					// Specifier
 					isSpecifier : true,
@@ -1203,6 +1203,8 @@
 			
 			if (key === "const" || key === "nonForwardConst") {
 				return this.const;
+			} else if (constArrayOverrides[key]) {
+				return constArrayOverrides[key].bind(this);
 			} else {
 				if (state.inActiveRecording) {
 					registerChangeObserver(getSpecifier(this.const, "_arrayObservers"));//object
@@ -2345,7 +2347,7 @@
 		}
 
 		function emitEvent(handler, event) {
-			if (event.type === "set" && typeof(event.value) === 'undefined') throw new Error("WTF WTF");
+			// if (event.type === "set" && typeof(event.value) === 'undefined') throw new Error("WTF WTF");
 			if (trace.event) {
 				logGroup("emitEvent: ");// + event.type + " " + event.property);
 				log(event);
