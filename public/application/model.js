@@ -141,7 +141,8 @@
 		}
 		
 		canAddSubCategory(category) {
-			return category.allTransitiveSubCategories()[this.const.id] === 'undefined';
+			log(category.allTransitiveSubCategories(), 2);
+			return typeof(category.allTransitiveSubCategories()[this.const.id]) === 'undefined';
 		}
 		// __() {
 			// liquid.withoutRecording(function() {
