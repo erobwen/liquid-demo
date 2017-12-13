@@ -16,7 +16,7 @@
 	log(liquid.upstreamIdObjectMap);
 	
 	// Setup trace (after initial data is added)
-	liquid.trace.incoming = 1; 
+	// liquid.trace.incoming = 1; 
 
 	
 	// Setup global variables. 

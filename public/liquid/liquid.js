@@ -681,7 +681,7 @@
 				
 				// TODO: refactor this part to the other layer... 
 				while(page.const._pendingUpdates.length > 0) {
-					if(pushMessageDownstreamCallback(page, 'pushChangesFromUpstream', page.const._pendingUpdates.shift())) {
+					if(pushMessageDownstreamCallback(page, page.const._pendingUpdates.shift())) {
 						delete state.dirtyPageSubscritiptions[id];
 					} else {
 						// An update occured before the page has gotten to register its socket id.

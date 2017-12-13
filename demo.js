@@ -286,6 +286,7 @@ liquidSocket.on('connection', function (socket) {
 
 liquid.setPushMessageDownstreamCallback(function(page, message) { //messageType, data
 	log("socket.emit: message");
+	log(message, 10);
 	if (page.const._socket) page.const._socket.emit("message", message);	
 });
 
