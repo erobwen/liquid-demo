@@ -19,6 +19,7 @@
 	
 	// Setup trace (after initial data is added)
 	// liquid.trace.incoming = 1; 
+	liquid.trace.socket = 1; 
 
 	
 	// Setup global variables. 
@@ -68,6 +69,7 @@
 
 		liquid.setPushMessageUpstreamCallback(function(message) {
 			trace.socket && logGroup("socket.emit: message");
+			trace.socket && log(message, 10);
 			socket.emit('message', liquid.instancePage.token, message);	
 			trace.socket && logUngroup();
 		});		

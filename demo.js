@@ -19,7 +19,7 @@ let liquid = require("./public/liquid/liquid.js")(
 );
 // liquid.trace.pulse = 1;
 // liquid.trace.incoming = 1; 
-// liquid.trace.socket = 1; 
+liquid.trace.socket = 1; 
 // liquid.trace.demo = 1; 
 // liquid.trace.liquid = 1; 
 
@@ -276,7 +276,7 @@ liquidSocket.on('connection', function (socket) {
 
 	socket.on("message", function(pageToken, message) {
 		trace.socket && logGroup("socket.on: message");
-		// log(message, 10);
+		trace.socket && log(message, 10);
 		liquid.messageFromDownstream(pageToken, message);
 		trace.socket && logUngroup();
 	});

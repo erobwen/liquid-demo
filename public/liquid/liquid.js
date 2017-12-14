@@ -676,7 +676,13 @@
 				if (typeof(page.const._pendingUpdates) === 'undefined') {
 					page.const._pendingUpdates = [];
 				}
-				page.const._pendingUpdates.push(update);
+				if (Object.keys(update.serializedObjects).length > 0 ||
+					Object.keys(update.unsubscribedUpstreamIds).length > 0 ||
+					update.serializedEvents.length > 0 ||
+					Object.keys(update.idToUpstreamId).length > 0 ||
+					update.idsOfInstantlyHidden.length > 0) {
+					page.const._pendingUpdates.push(update);						
+				}
 
 				// TODO: Use the following not to get pingpong messages. 			
 				// state.pushingChangesFromDownstream;
@@ -791,7 +797,7 @@
 
 			// Add id mapping information
 			result.idToUpstreamId = {};
-			result.idsOfInstantlyHidden = [];
+			result.idsOfInstantlyHidden = []; // TODO: Remove and just have unsubscribedUpstreamIds????
 			if (page.const.idToDownstreamIdMap !== null) {
 				for(id in page.const.idToDownstreamIdMap) {
 					if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
