@@ -71,8 +71,8 @@
 			let result = [];
 			this.ownedCategories.forEach(function(category) {
 				if (typeof(category.parents) === 'undefined') {
-					log("got a strange parents list... ");
-					console.log(category);
+					trace.model && log("got a strange parents list... ");
+					// trace.model && console.log(category);
 				}
 				if (category.parents.length === 0) {
 					result.push(category);
@@ -141,7 +141,7 @@
 		}
 		
 		canAddSubCategory(category) {
-			log(category.allTransitiveSubCategories(), 2);
+			trace.model && log(category.allTransitiveSubCategories(), 2);
 			return typeof(category.allTransitiveSubCategories()[this.const.id]) === 'undefined';
 		}
 		// __() {

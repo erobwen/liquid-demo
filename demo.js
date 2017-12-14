@@ -17,8 +17,11 @@ let liquid = require("./public/liquid/liquid.js")(
 		}
 	}
 );
-liquid.trace.pulse = 1;
+// liquid.trace.pulse = 1;
 // liquid.trace.incoming = 1; 
+// liquid.trace.socket = 1; 
+// liquid.trace.demo = 1; 
+// liquid.trace.liquid = 1; 
 
 
 // log("demo.liquid state: ");
@@ -30,6 +33,7 @@ liquid.assignClassNamesTo(global); // Optional: Make all class names global
 let create = liquid.create;
 
 // let objectlog = require("./public/liquid/objectlog.js");
+let trace = liquid.trace;
 let log = liquid.log;
 let logGroup = liquid.logGroup;
 let logUngroup = liquid.logUngroup;
@@ -48,7 +52,7 @@ var politics;
 if (!liquid.persistent.demoInitialized) {
 
 	liquid.pulse(function() {
-		logGroup("Setup database contents... ");
+		log.demo && logGroup("Setup database contents... ");
 		// Name of persistent object
 		// liquid.persistent.name = "persistent";
 		
@@ -66,10 +70,10 @@ if (!liquid.persistent.demoInitialized) {
 		var funny = create('Category', {name: 'Funny', description: '', owner: user});
 		politics = create('Category', {name: 'Politics', description: '', owner: user});
 		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
-		politics.subCategories.add(georgism);
+		// politics.subCategories.add(georgism);
 		
-		log("all incoming:");
-		log(liquid.configuration, 5);
+		// log("all incoming:");
+		// log(liquid.configuration, 5);
 		liquid.forAllIncoming(georgism, "subCategories", (parent) => {log(parent);})
 		// log("==========================================================");
 		// log (" Adding... ");
@@ -105,7 +109,7 @@ if (!liquid.persistent.demoInitialized) {
 		// Create References
 
 		// log(user, 3);
-		logUngroup("...finished setup.");
+		log.demo && logUngroup("...finished setup.");
 	});
 }
 
@@ -157,12 +161,12 @@ if (!liquid.persistent.demoInitialized) {
 	'' : "LiquidPage",
 	'index': 'LiquidPage',
 	'demo': function(req) { // Note: req follows express conventions.
-		logGroup("create page and session object...");
+		trace.demo && logGroup("create page and session object...");
 		var session = liquid.createOrGetSessionObject(req.session.token);
 		session.user = user; 
 		var page = create('LiquidPage', {session: session});
 		page.service.orderedSubscriptions.push(create({object: user, selector:'Basics'})); //object: user,
-		logUngroup("...");
+		trace.demo && logUngroup("...");
 		return page;
 	},
 	'someurl/:someargument' : 'PageWithArgument'
@@ -185,7 +189,7 @@ for (controllerName in expressControllers) {
 expressHttpServer.use(express.static('public')); // TODO: use grunt to compile to different directory
 
 expressHttpServer.listen(4000, function () {
-  log('Liquid is now listening on port 4000!');
+  log.demo && log('Liquid is now listening on port 4000!');
 });
 
 function createExpressControllers(liquidControllers) {
@@ -215,7 +219,7 @@ function createExpressControllerFromClassName(className) {
 
 function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 	return function(req, res) {
-		logGroup("express controller...");
+		trace.demo && logGroup("express controller...");
 		let page;
 		
 		// Create the page. This is a separate pulse so the creation will not be sent after the pulse
@@ -234,7 +238,7 @@ function createExpressControllerFromPageCreatorFunction(pageCreatorFunction) {
 				data: JSON.stringify(data)
 			});
 		});
-		logUngroup("...");
+		trace.demo && logUngroup("...");
 	}
 }
 
@@ -258,7 +262,7 @@ liquidSocket.on('connection', function (socket) {
 	// trace('serialize', 'Connected a socket!');
 	
 	socket.on('connectPageWithSocket', function(pageToken) {
-		logGroup("socket.on: connectPageWithSocket " + pageToken);
+		trace.socket && logGroup("socket.on: connectPageWithSocket " + pageToken);
 		try {
 			let page = liquid.getPage(pageToken);
 			page.const._socket = socket;
@@ -267,26 +271,26 @@ liquidSocket.on('connection', function (socket) {
 		} catch (error) {
 			socket.emit('couldNotConnectPageWithSocket');
 		}
-		logUngroup();
+		trace.socket && logUngroup();
 	});
 
 	socket.on("message", function(pageToken, message) {
-		logGroup("socket.on: message");
+		trace.socket && logGroup("socket.on: message");
 		// log(message, 10);
 		liquid.messageFromDownstream(pageToken, message);
-		logUngroup();
+		trace.socket && logUngroup();
 	});
 
 	socket.on('disconnect', function(message) {
-		logGroup("socket.on: disconnect: " + message);
+		trace.socket && logGroup("socket.on: disconnect: " + message);
 		liquid.disconnect(socket._liquidPage);
-		logUngroup();
+		trace.socket && logUngroup();
 	});
 });
 
 liquid.setPushMessageDownstreamCallback(function(page, message) { //messageType, data
-	log("socket.emit: message");
-	log(message, 10);
+	trace.socket && log("socket.emit: message");
+	trace.socket && log(message, 10);
 	if (page.const._socket) page.const._socket.emit("message", message);	
 });
 

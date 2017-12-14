@@ -3496,7 +3496,7 @@
 						log("<<< registerActivity: "  + handler.const.name + " >>>");
 						// log(activityListFilter(handler.const.object));
 					}
-					logGroup();
+					// logGroup();
 					// log(handler.target);
 					// Init if not initialized
 					if (typeof(handler.activityListNext) === 'undefined') {
@@ -3518,7 +3518,7 @@
 					activityListFirst = handler;				
 					
 					if (trace.basic) logActivityList();
-					logUngroup();
+					// logUngroup();
 				}
 				
 				state.blockingInitialize--;

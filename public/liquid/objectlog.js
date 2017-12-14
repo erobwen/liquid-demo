@@ -11,6 +11,8 @@
 	
 	// Configuration
 	let configuration = {
+		noLogs : false, // Set this to false to remove all logs in your program.
+		
 		// Count the number of chars that can fit horizontally in your buffer. Set to -1 for one line logging only. 
 		bufferWidth : 83,
 		// bufferWidth : 83
@@ -19,7 +21,7 @@
 		indentToken : "  ",
 		
 		// Change to true in order to find all logs hidden in your code.
-		findLogs : false, 
+		findLogs : true, 
 		
 		// Set to true in web browser that already has a good way to display objects with expandable trees.
 		useConsoleDefault : false
@@ -213,13 +215,15 @@
 
 		// If you need the output as a string.
 		logToString: function(entity, pattern) {
+			if (configuration.noLogs) return "";
 			let context = createToStringContext();
 			logPattern(entity, pattern, context);
 			return context.result;
 		}, 
 		
 		log : function(entity, pattern) {
-			if (objectlog.findLogs) throw new Error("No logs allowed!");
+			if (configuration.noLogs) return;
+			if (configuration.findLogs) throw new Error("No logs allowed!");
 			if (configuration.useConsoleDefault) {
 				console.log(entity);
 			} else {
@@ -228,7 +232,8 @@
 		},
 		
 		group : function(entity, pattern) {
-			if (objectlog.findLogs) throw new Error("No logs allowed!");
+			if (configuration.noLogs) return;
+			if (configuration.findLogs) throw new Error("No logs allowed!");
 			if (configuration.useConsoleDefault) {
 				console.group(entity);
 			} else {
@@ -240,7 +245,8 @@
 		},
 		
 		groupEnd : function(entity, pattern) {
-			if (objectlog.findLogs) throw new Error("No logs allowed!");
+			if (configuration.noLogs) return;
+			if (configuration.findLogs) throw new Error("No logs allowed!");
 			if (configuration.useConsoleDefault) {
 				console.groupEnd();
 			} else {

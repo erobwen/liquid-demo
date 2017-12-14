@@ -2,10 +2,10 @@
 // http://react-toolbox.com/#/components/autocomplete
 //
 // var performScript = function() {
-// 	// console.log("performScript");
+// 	// trace.ui && log("performScript");
 // 	setTimeout(
 // 		function(){
-// 			// console.log("=== Setting name ===")
+// 			// trace.ui && log("=== Setting name ===")
 // 			data.user.setName("Foobar");
 // 		},
 // 		1000
@@ -20,13 +20,28 @@
 // 	);
 // }
 
+// let liquid = window.require('liquid')();
+// console.log(window);
+// console.log(window.require);
+// console.log(window.require('liquid')());
+
+// let trace = liquid.trace;
+// let log = liquid.log;
+// let logGroup = liquid.logGroup;
+// let logUngroup = liquid.logUngroup;
+
+let trace = {};
+let log = function() {};
+let logGroup = function() {};
+let logUngroup = function() {};
+
 window.LiquidApplication = React.createClass(liquidClassData({
 	render: function() {
-		log("render: LiquidApplication");
+		trace.ui && log("render: LiquidApplication");
 		return invalidateUponLiquidChange("LiquidApplication", this, function() {
 			let page = window.page;
-			console.log("RENDERING!!!");
-			console.log(page);
+			trace.ui && log("RENDERING!!!");
+			trace.ui && log(page);
 			let activeUser = page.getActiveUser();
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
@@ -67,9 +82,9 @@ var LoginUI = React.createClass(liquidClassData({
 	},
 	
 	render : function() {
-		log("render: LoginUI");
+		trace.ui && log("render: LoginUI");
 		return invalidateUponLiquidChange("LoginUI", this, function() {
-			// console.log(this.props.page);
+			// trace.ui && log(this.props.page);
 			var page = this.props.page; // same as window.page'
 			// traceTags.repetition = true;
 			var user = page.getActiveUser();
@@ -96,11 +111,11 @@ var LoginUI = React.createClass(liquidClassData({
 
 var UserView = React.createClass(liquidClassData({
 	render: function() {
-		log("render: UserView");
+		trace.ui && log("render: UserView");
 		return invalidateUponLiquidChange("UserView", this, function() {
 			// trace('react', "Render in user view. ");
 			var rootCategories = this.props.user.cached('getRootCategories');
-			// console.log("rootCategories");
+			// trace.ui && log("rootCategories");
 			return (
 				<div className="UserView">
 					<span>{ this.props.user.name }'s categories</span>
@@ -139,17 +154,17 @@ var PropertyField = React.createClass(liquidClassData({
 	render: function() {
 		logGroup("render: PropertyField");
 		let element = invalidateUponLiquidChange("PropertyField", this, function() {
-			log("labelString...");
+			trace.ui && log("labelString...");
 			var labelString = (typeof(this.props.label) !== 'undefined' && this.props.label !== null) ? (this.props.label + ": ") : "";
 			if (this.state.focused) {
-				log("focused...");
+				trace.ui && log("focused...");
 				return (
 					<span onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
 						<span>{ labelString }<input type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
 					</span>
 				);
 			} else {
-				log("unfocused...");
+				trace.ui && log("unfocused...");
 				return (
 					<span onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
 						<span>{ labelString }{this.props.object[this.props.propertyName]}</span>
@@ -165,11 +180,11 @@ var PropertyField = React.createClass(liquidClassData({
 
 var CategoriesView = React.createClass(liquidClassData({	
 	render: function() {
-		log("render: CategoriesView");
+		trace.ui && log("render: CategoriesView");
 		return invalidateUponLiquidChange("CategoriesView", this, function() {
 			var categoriesElements = [];
 			this.props.categories.forEach(function(category) {
-				// console.log("A key: " + category.const.id);
+				// trace.ui && log("A key: " + category.const.id);
 				categoriesElements.push(
 					<CategoryView 
 						key = { category.const.id }
@@ -203,23 +218,23 @@ window.CategoryView = React.createClass(liquidClassData({
 	componentDidMount: function() {
 		if (typeof(this.refs.subCategoriesDiv) !== 'undefined') {
 			var subCategoriesDiv = this.refs.subCategoriesDiv;
-			// console.log(subCategoriesDiv.style.marginLeft);
+			// trace.ui && log(subCategoriesDiv.style.marginLeft);
 			subCategoriesDiv.style.overflow = 'hidden';
 			subCategoriesDiv.style.height = 'auto';
 			subCategoriesDiv.style.transition = 'height .5s';
 			subCategoriesDiv.addEventListener("transitionend", function() {
-				// console.log("Finished transition");
-				// console.log(subCategoriesDiv);
-				// console.log(this);
-				// console.log("Height: " + subCategoriesDiv.clientHeight);
+				// trace.ui && log("Finished transition");
+				// trace.ui && log(subCategoriesDiv);
+				// trace.ui && log(this);
+				// trace.ui && log("Height: " + subCategoriesDiv.clientHeight);
 				if (subCategoriesDiv.clientHeight !== 0) {
-					// console.log("Tree open");
+					// trace.ui && log("Tree open");
 					subCategoriesDiv.style.height = "auto";
-					// console.log(this);
+					// trace.ui && log(this);
 					this.setState({collapsed : false});
 				} else {
-					// console.log("Tree closed");
-					// console.log(this);
+					// trace.ui && log("Tree closed");
+					// trace.ui && log(this);
 					this.setState({collapsed : true});
 				}
 			}.bind(this), false);
@@ -228,21 +243,21 @@ window.CategoryView = React.createClass(liquidClassData({
 		
 	
 	onDragStart: function(event) {
-		// console.log("onDragStart:" + this.props.category.name);
+		// trace.ui && log("onDragStart:" + this.props.category.name);
 		draggedCategory = this.props.category;
 		// event.dataTransfer.setData("categoryId", this.props.category.const.id);
 	},
 	
 	dragEnterCounter: 0,
 	onDragEnter: function(event) {
-		// console.log("onDragEnter:" + this.props.category.name + ", " + this.dragEnterCounter);
+		// trace.ui && log("onDragEnter:" + this.props.category.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter++;
 		var category = this.props.category;
 		if (this.dragEnterCounter === 1) {
-			// console.log("Drag enter counter is one!");
+			// trace.ui && log("Drag enter counter is one!");
 			if (category.writeable() && category.canAddSubCategory(draggedCategory)) {
-				// console.log("Actually enter!");
+				// trace.ui && log("Actually enter!");
 				this.setState({ 
 					draggingOver: true
 				});
@@ -255,14 +270,14 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDragLeave: function(event) {
-		// console.log("onDragLeave:" + this.props.category.name + ", " + this.dragEnterCounter);
+		// trace.ui && log("onDragLeave:" + this.props.category.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter--;
 		var category = this.props.category;
 		if (this.dragEnterCounter === 0) {
-			// console.log("Drag leave counter is zero!");
+			// trace.ui && log("Drag leave counter is zero!");
 			if (category.writeable() && category.canAddSubCategory(draggedCategory)) {
-				// console.log("Actually leave!");
+				// trace.ui && log("Actually leave!");
 				this.setState({ 
 					draggingOver: false
 				});
@@ -275,7 +290,7 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDragExit: function(event) {
-		// console.log("onDragExit:" + this.props.category.name + ", " + this.dragEnterCounter);
+		// trace.ui && log("onDragExit:" + this.props.category.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.setState({ 
 			draggingOver: false
@@ -283,13 +298,13 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDragOver: function(event) {
-		// console.log("onDragOver:" + this.props.category.name);
+		// trace.ui && log("onDragOver:" + this.props.category.name);
 		event.preventDefault();
 	},
 	
 	onDrop: function(event) {
-		console.log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
-		// console.log(this.props.category);
+		//trace.ui && log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
+		// trace.ui && log(this.props.category);
 		event.preventDefault();
 		this.dragEnterCounter = 0;
 		var category = this.props.category;
@@ -297,11 +312,11 @@ window.CategoryView = React.createClass(liquidClassData({
 		draggedCategory = null;
 		if (category.writeable() && category.canAddSubCategory(droppedCategory)) {
 			liquid.pulse(function() {
-				// console.log(droppedCategory.parents.length);
-				// console.log(droppedCategory.parents);
+				// trace.ui && log(droppedCategory.parents.length);
+				// trace.ui && log(droppedCategory.parents);
 				// var parents = copyArray(droppedCategory.parents);
 				droppedCategory.parents.forEach(function(parentCategory) {
-					// console.log("Dropping parent: " + parentCategory.__());
+					// trace.ui && log("Dropping parent: " + parentCategory.__());
 					parentCategory.subCategories.remove(droppedCategory);
 				});
 				category.subCategories.add(droppedCategory);	
@@ -313,15 +328,15 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	collapseOrExpand: function() {
-		// console.log("collapseOrExpand");
+		// trace.ui && log("collapseOrExpand");
 		var subCategoriesDiv = this.refs.subCategoriesDiv;							
 		if (subCategoriesDiv.clientHeight === 0) {
-			// console.log("... opening");
-			// console.log(subCategoriesDiv);
-			// console.log(subCategoriesDiv.scrollHeight);
+			// trace.ui && log("... opening");
+			// trace.ui && log(subCategoriesDiv);
+			// trace.ui && log(subCategoriesDiv.scrollHeight);
 			subCategoriesDiv.style.height = subCategoriesDiv.scrollHeight + "px";
 		} else {
-			// console.log("... closing");
+			// trace.ui && log("... closing");
 			subCategoriesDiv.style.height = subCategoriesDiv.scrollHeight + "px";
 			setTimeout(function() {
 				subCategoriesDiv.style.height = 0; 
@@ -330,7 +345,7 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	render: function() {
-		log("render: CategoryView");
+		trace.ui && log("render: CategoryView");
 		return invalidateUponLiquidChange("CategoryView", this, function() {
 			var subCategories = [];
 			var categoryViewElementName ="CategoryView"
@@ -345,10 +360,10 @@ window.CategoryView = React.createClass(liquidClassData({
 			};
 			
 			// This category is locked
-			// console.log("In rendering!");
+			// trace.ui && log("In rendering!");
 			// var value = this.props.category.readable();
-			// console.log(value);
-			// console.log(typeof(value));
+			// trace.ui && log(value);
+			// trace.ui && log(typeof(value));
 			if (!this.props.category.readable()) {
 				return (
 					<div className="CategoryView">
@@ -374,7 +389,7 @@ window.CategoryView = React.createClass(liquidClassData({
 
 
 			this.props.category.subCategories.forEach(function(category) {
-				console.log(category);
+				trace.ui && log(category);
 				// How to do it with standard syntax:
 
 				subCategories.push(

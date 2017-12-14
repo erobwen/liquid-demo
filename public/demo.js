@@ -1,10 +1,12 @@
 (function(root) {
-	let objectlog = require("../objectlog.js");
-	let log = objectlog.log;
-	let logGroup = objectlog.group;
-	let logUngroup = objectlog.groupEnd;
+	let liquid = require('liquid')();
+	let trace = liquid.trace;
+	let log = liquid.log;
+	let logGroup = liquid.logGroup;
+	let logUngroup = liquid.logUngroup;
+	// console.log(liquid);
 	
-	log("demo.js");
+	trace.demo && log("demo.js");
 	// Create one single liquid instance
 
 	liquid.addClasses(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
@@ -12,8 +14,8 @@
 	
 	// Setup data
 	liquid.receiveInitialDataFromUpstream(data);
-	log("upstreamIdObjectMap");
-	log(liquid.upstreamIdObjectMap);
+	trace.demo && log("upstreamIdObjectMap");
+	trace.demo && log(liquid.upstreamIdObjectMap);
 	
 	// Setup trace (after initial data is added)
 	// liquid.trace.incoming = 1; 
@@ -45,33 +47,33 @@
 		var socket = io('http://localhost:8080');
 
 		socket.on('connect', function(){
-			logGroup("socket.on: connect");
-			log(liquid.instancePage);
+			trace.socket && logGroup("socket.on: connect");
+			trace.socket && log(liquid.instancePage);
 			socket.emit("connectPageWithSocket", liquid.instancePage.token);
-			logUngroup();
+			trace.socket && logUngroup();
 		});
 		
 		socket.on('couldNotConnectPageWithSocket', function() {
-			logGroup("socket.on: couldNotConnectPageWithSocket");
+			trace.socket && logGroup("socket.on: couldNotConnectPageWithSocket");
 			throw new Error("Could not connect propertly with server.");
-			logUngroup();
+			trace.socket && logUngroup();
 		});
 
 		socket.on('message', function(message) {
-			logGroup("socket.on: message");
-			log(message);
+			trace.socket && logGroup("socket.on: message");
+			trace.socket && log(message, 10);
 			liquid.messageFromUpstream(message);
-			logUngroup();
+			trace.socket && logUngroup();
 		});
 
 		liquid.setPushMessageUpstreamCallback(function(message) {
-			logGroup("socket.emit: message");
+			trace.socket && logGroup("socket.emit: message");
 			socket.emit('message', liquid.instancePage.token, message);	
-			logUngroup();
+			trace.socket && logUngroup();
 		});		
 
 		socket.on('disconnect', function(){
-			log("socket.on: disconnect");
+			trace.socket && log("socket.on: disconnect");
 			throw new Error("Unexpected dissconnect.");
 		});		
 	})();

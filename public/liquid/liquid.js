@@ -42,6 +42,9 @@
 		let create = liquid.create;
 		let trace = liquid.trace;
 		trace.serialize = 0;
+		trace.entity = 0;
+		trace.model = 0;
+		trace.ui = 0;
 		
 		// Liquid entity... 
 		let liquidEntity = require("./liquidEntity.js");
@@ -251,7 +254,7 @@
 				} else if (value === null) {
 					return type + ":null";
 				} else {
-					log(value, 2);
+					trace.serialize && log(value, 2);
 					throw new Error("No support for streaming non-liquid objects.");
 				}
 			} else if (type === 'number' || type === 'string') {
@@ -327,7 +330,7 @@
 		function getUnserializedObjectFromSerializedReference(reference, forUpstream) {
 			var fragments = reference.split(":");
 			if (fragments[0] !== 'object') {
-				log(fragments);
+				trace.liquid && log(fragments);
 				throw new Error("Expected an object reference!");
 			}
 			if (fragments[1] === 'null') {
@@ -567,11 +570,11 @@
 		 *----------------------------------------------------------------*/
 
 		function logValue(value) {
-			log("value:");
+			trace.liquid && log("value:");
 			if (liquid.isObject(value)) {
-				log(objectDigest(value));
+				trace.liquid && log(objectDigest(value));
 			} else {
-				log(value);
+				trace.liquid && log(value);
 			}
 		} 
 		 
@@ -597,7 +600,7 @@
 			for (key in selection) {
 				digest.push(objectDigest(selection[key]));
 			}
-			log(digest, 4);
+			trace.liquid && log(digest, 4);
 		}
 		 
 		function addToSelection(selection, object) {
@@ -627,21 +630,21 @@
 		function pushDataDownstream(events) {
 			// logGroup("pushDataDownstream?");
 			if (pushMessageDownstreamCallback === null) return;	
-			logGroup("pushDataDownstream");
+			trace.liquid && logGroup("pushDataDownstream");
 			// log(events, 2);
 			
 			// Send events to pages that has no change in subscription
-			logGroup("Send events to pages that has no change in subscription... ");
+			trace.liquid && logGroup("Send events to pages that has no change in subscription... ");
 			let pagesToNotifyWithNoChangeInSelection = {};
 			events.forEach(function(event) {
 				if (!event.incomingStructureEvent) {
 					let serializedEvent;
 					for (id in event.object.const._observingPages) {
 						let observingPage = event.object.const._observingPages[id];
-						log("found an observing page with id: " + observingPage.token);
+						trace.liquid && log("found an observing page with id: " + observingPage.token);
 						// log(event, 2);
 						if (state.pushingChangesFromPage !== observingPage) { // && !state.dirtyPageSubscritiptions[id]
-							log("actually send data to it... ");
+							trace.liquid && log("actually send data to it... ");
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
 							if (typeof(observingPage.const._pendingEvents) === 'undefined') {
 								observingPage.const._pendingEvents = [];
@@ -649,7 +652,7 @@
 							if (typeof(serializedEvent) === 'undefined') serializedEvent = serializeEvent(event, false);	
 							observingPage.const._pendingEvents.push(serializedEvent);
 						} else {
-							log("do not notify this page... ");
+							trace.liquid && log("do not notify this page... ");
 						}
 					}					
 				}
@@ -661,10 +664,10 @@
 					delete pagesToNotifyWithNoChangeInSelection[id];
 				}
 			}
-			logUngroup();
+			trace.liquid && logUngroup();
 			
 			// Process pages where page subscriptions changed
-			log("dirty page subscriptions: " + Object.keys(state.dirtyPageSubscritiptions).length);
+			trace.liquid && log("dirty page subscriptions: " + Object.keys(state.dirtyPageSubscritiptions).length);
 			for (id in state.dirtyPageSubscritiptions) { // TODO: what if an event concerns an object/page without disturbing the page subscription... it needs to be pushed also.. 
 				// console.log("Push update to page: " + id);
 				var page = state.dirtyPageSubscritiptions[id];
@@ -689,12 +692,12 @@
 					}
 				}
 			}
-			logUngroup();
+			trace.liquid && logUngroup();
 		};
 			
 
 		function getSubscriptionUpdate(page, events) {
-			logGroup("getSubscriptionUpdate");
+			trace.liquid && logGroup("getSubscriptionUpdate");
 			
 			let result = {};
 
@@ -702,10 +705,10 @@
 			if (page.const._dirtySubscriptionSelections) {
 				liquid.uponChangeDo(function() {  
 					let selection = {};
-					log(page.service.orderedSubscriptions, 2);
+					trace.liquid && log(page.service.orderedSubscriptions, 2);
 					page.service.orderedSubscriptions.forEach(function(subscription) {
-						logGroup("process a subscription element ... ");
-						log(subscription, {object: objectDigest});
+						trace.liquid && logGroup("process a subscription element ... ");
+						trace.liquid && log(subscription, {object: objectDigest});
 						
 						// Perform a selection with dependency recording!
 						var subscriptionSelection = {};
@@ -716,24 +719,24 @@
 						subscription.object['select' + subscription.selector](subscriptionSelection);
 						state.isSelecting = false;
 						state.restrictAccessToThatOfPage = null;
-						log("subscriptionSelection:");
-						logSelection(selection); 
+						trace.liquid && log("subscriptionSelection:");
+						trace.liquid && logSelection(selection); 
 					
 						// Add to general selection.
 						for (id in subscriptionSelection) {
 							selection[id] = subscriptionSelection[id];
 						}
-						logUngroup("...");
+						trace.liquid && logUngroup("...");
 					});
-					log("pageSelection:");
-					logSelection(selection); 
+					trace.liquid && log("pageSelection:");
+					trace.liquid && logSelection(selection); 
 					page.const._previousSelection = page.const._selection;
 					page.const._selection = selection;
 					page.const._dirtySubscriptionSelections = false;
 					
 					addedAndRemovedIds = getMapDifference(page.const._previousSelection, selection);
 				}, function() {
-					log("INVALIDATING SELECTION");
+					trace.liquid && log("INVALIDATING SELECTION");
 					state.dirtyPageSubscritiptions[page.const.id] = page;
 					page.const._dirtySubscriptionSelections = true;
 				});
@@ -750,7 +753,7 @@
 				// console.log("Adding page observers");
 				var addedObject = addedAndRemovedIds.added[id];
 				if (typeof(addedObject.const) === 'undefined') {
-					log(addedObject, 3);
+					trace.liquid && log(addedObject, 3);
 				}
 				if (typeof(addedObject.const._observingPages) === 'undefined') {
 					addedObject.const._observingPages = {};
@@ -805,7 +808,7 @@
 				// serializedEvents : serializedEvents,
 				// serializedObjects : serializedObjects
 			// };
-			logUngroup();
+			trace.liquid && logUngroup();
 			return result;
 		};
 		
@@ -849,7 +852,7 @@
 		// throw new Error("What to do with all these data");
 		
 		function unserializeDownstreamPulse(page, pulseData) {
-			logGroup("unserializeDownstreamPulse");
+			trace.liquid && logGroup("unserializeDownstreamPulse");
 			// log(pulseData, 3);
 		
 			// Unserialize all objects
@@ -860,7 +863,7 @@
 
 			// let object = state.pushingChangesFromPage.const._selection[pulseData.serializedEvents[0].objectId];
 			// log(object);
-			logUngroup();
+			trace.liquid && logUngroup();
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
 			// var idToDownstreamIdMap = {};
 		}
@@ -905,8 +908,8 @@
 
 		function messageFromDownstream(pageToken, message) {
 			let page = getPage(pageToken);
-			logGroup("messageFromDownstream pageId:" + page.const.id);
-			log(message, 10);
+			trace.liquid && logGroup("messageFromDownstream pageId:" + page.const.id);
+			trace.liquid && log(message, 10);
 			// log(objectDigest(page));
 			if (typeof(page) !== 'undefined') {
 				Fiber(function() {
@@ -928,10 +931,10 @@
 					
 				}).run();
 			} else {
-				logUngroup();
+				trace.liquid && logUngroup();
 				throw new Error("Invalid page token"); // Consider: Should be soft landing?
 			}
-			logUngroup();
+			trace.liquid && logUngroup();
 		}
 		
 		
@@ -982,11 +985,11 @@
 		function receiveInitialDataFromUpstream(serializedData) {
 			state.pushingChangesFromUpstream = true;
 			liquid.pulse(function() {
-				log("receiveInitialDataFromUpstream");
-				log(serializedData);
+				trace.liquid && log("receiveInitialDataFromUpstream");
+				trace.liquid && log(serializedData);
 				unserializeObjects(serializedData.subscriptionInfo.serializedObjects, false);
 				liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
-				log(liquid);
+				trace.liquid && log(liquid);
 			});			
 			state.pushingChangesFromUpstream = false;
 		}
@@ -1002,8 +1005,8 @@
 		
 		
 		function unserializeUpstreamPulse(pulseData) {
-			logGroup("unserializeUpstreamPulse");
-			log(pulseData, 3);
+			trace.liquid && logGroup("unserializeUpstreamPulse");
+			trace.liquid && log(pulseData, 3);
 			state.pushingChangesFromUpstream = true;
 		
 			// Unserialize all objects
@@ -1029,7 +1032,7 @@
 			// }				
 
 			state.pushingChangesFromUpstream = false;				
-			logUngroup();
+			trace.liquid && logUngroup();
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
 			// var idToDownstreamIdMap = {};
 		}
@@ -1210,7 +1213,7 @@
 			// log("streamInRelevantDirections?...");
 			// log(events.length);
 			if (events.length > 0) {				
-				logGroup("streamInRelevantDirections");
+				trace.liquid && logGroup("streamInRelevantDirections");
 				// log(events, 2);
 				// Notify UI
 				notifyUICallbacks.forEach(function(callback) {
@@ -1222,7 +1225,7 @@
 				
 				// Push data upstream
 				pushDataUpstream(events);
-				logUngroup();
+				trace.liquid && logUngroup();
 				// Store to database, do nothing, leave to eternity, see calling function
 			}
 		}

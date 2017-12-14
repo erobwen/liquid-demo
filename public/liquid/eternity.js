@@ -555,9 +555,8 @@
 		
 		function compileUpdate(events) {
 			if (trace.eternity) log("compileUpdate:");			
-			logGroup();
 			if (trace.eternity) {
-				// if (trace.eternity) log(events);
+				logGroup();
 				log("events:");
 				log(events, 2);				
 			}
@@ -654,7 +653,7 @@
 				});								
 			});
 			if(trace.eternity) log(pendingUpdate, 4);
-			logUngroup();
+			trace.eternity && logUngroup();
 		}
 		
 	
@@ -1963,7 +1962,7 @@
 		
 		function setupDatabase() {
 			// log("setupDatabase");
-			logGroup();
+			trace.eternity && logGroup();
 			imageCausality.pulse(function() {					
 
 				// Clear peek at cache
@@ -1997,7 +1996,7 @@
 				}
 				objectCausality.persistent = createObjectPlaceholderFromDbId(persistentDbId);
 			});
-			logUngroup();
+			trace.eternity && logUngroup();
 		}
 		
 		

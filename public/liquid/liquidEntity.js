@@ -28,7 +28,7 @@
 		logUngroup = liquid.logUngroup;
 	
 		trace = liquid.trace;
-		trace.entity = 1;
+		// trace.entity = 1;
 	}
 
 
@@ -579,9 +579,9 @@
 					// if (liquid.isObject(element) {
 					if (typeof(elementSelector) !== 'undefined') {
 						if (typeof(element["select" + elementSelector]) !== 'function') {
-							log(key);
-							log("select" + elementSelector);
-							log(element);
+							trace.entity && log(key);
+							trace.entity && log("select" + elementSelector);
+							trace.entity && log(element);
 						}
 						element["select" + elementSelector](selection);
 					} else {
@@ -614,18 +614,18 @@
 		}
 		
 		forEach(callback) {
-			logGroup("LiquidIndex.forEach");
-			trace.get++;
+			trace.entity && logGroup("LiquidIndex.forEach");
+			// trace.get++;
 			Object.keys(this.contents).forEach(function(key) {
 				if (!nonContentProperties[key] && typeof(this.contents[key]) !== 'undefined') {
 					// log(liquid.state.incomingStructuresDisabled);
 					let value = this.contents[key];
-					log(value);
-					callback(value);					
+					trace.entity && log(value);
+					callback(value);				
 				} 
 			}.bind(this));
-			trace.get--;
-			logUngroup();
+			// trace.get--;
+			trace.entity && logUngroup();
 		}
 		
 		remove(object) {
