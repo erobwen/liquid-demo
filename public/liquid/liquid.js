@@ -100,12 +100,14 @@
 			action();
 			state.restrictAccessToThatOfPage = null;
 		}
-		
+		let unlockAll = false;
 		liquid.setCustomCanRead(function(object) {
+			if (unlockAll) return true;
 			return readable[getAccessLevel(object)];
 		});
 
 		liquid.setCustomCanWrite(function(object) {
+			if (unlockAll) return true;
 			return !state.isSelecting && writeable[getAccessLevel(object)];
 		});
 		
@@ -876,27 +878,22 @@
 		
 		
 		
-		function receiveCallOnServer(pageToken, callInfo) {
-			state.callOnServer = true;
-			Fiber(function() {
-				if (typeof(pagesMap[pageToken]) !== 'undefined') {
-					var page = pagesMap[pageToken];
-					trace('serialize', "Make call on server ", page);
+		function receiveCallOnServer(page, callInfo) {			
+			trace.liquid && logGroup("Make call on server ");
 
-					liquid.pulse(function() {
-						var object = page.const._selection[callInfo.objectId];
-						var methodName = callInfo.methodName;
-						var argumentList = callInfo.argumentList; // TODO: Convert to
+			liquid.pulse(function() {
+				var object = page.const._selection[callInfo.objectId];
+				var methodName = callInfo.methodName;
+				var argumentList = callInfo.argumentList;
 
-						if (object.allowCallOnServer(page)) {
-							liquid.unlockAll(function() {
-								object[methodName].apply(object, argumentList);
-							});
-						}
-					});
+				if (object.allowCallOnServer(page)) {
+					unlockAll = true;
+					object[methodName].apply(object, argumentList);
+					unlockAll = false;
 				}
-			}).run();
-			state.callOnServer = false;
+			});
+			
+			trace.liquid && logUngroup();
 		}
 
 
@@ -932,7 +929,9 @@
 						state.pushingChangesFromDownstream = false;
 						state.pushingChangesFromPage = null;
 					} else if (message.type === 'call') {
-						
+						state.callOnServer = true;
+						receiveCallOnServer(page, message.data);
+						state.callOnServer = false;
 					}
 					
 				}).run();
@@ -1057,6 +1056,18 @@
 			delete pagesMap[page.token];
 		}
  		
+		let callId = 0;
+		function makeCallOnServer(callData) {
+			if (typeof(pushMessageUpstreamCallback) !== 'undefined') {
+				callData.id = callId++;
+				let serializedArguments = [];
+				callData.argumentList.forEach((element) => {
+					serializedArguments.push(serializeValue(element)); // TODO: verify that this does not cascade push any objects... in that case... leave blanks or throw error... 
+				}); 
+				callData.argumentList = serializedArguments;
+				tryPushMessageUpstream({type: "call", data: callData});
+			}
+		}
 		
 		// This was done on client... wierd... I think that active subscriptions should be updated by server and pushed in same pulse as newly loaded... 
 		// liquid.instancePage.setReceivedSubscriptions(liquid.instancePage.getPageService().getOrderedSubscriptions());
@@ -1273,7 +1284,8 @@
 			upstreamIdObjectMap : upstreamIdObjectMap,
 			disconnect : disconnect,
 			configuration : configuration,
-			restrictAccess : restrictAccess
+			restrictAccess : restrictAccess,
+			makeCallOnServer : makeCallOnServer
 		}); 
 
 		

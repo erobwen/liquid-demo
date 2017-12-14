@@ -509,27 +509,32 @@
 		}
 		
 		callOnServer() {
-			// Split arguments
-			var argumentsArray = argumentsToArray(arguments);
-			var methodName = argumentsArray.shift();
-			var methodArguments = argumentsArray;
-			var callData = {
-				callId: callId++,
-				objectId: this._upstreamId,
-				methodName: methodName,
-				argumentList: cloneAndMapLiquidObjectsDeep(argumentsArray, function(liquidObject) {
-					if (liquidObject._upstreamId != null) {
-						return { id : liquidObject._upstreamId };
-					} else {
-						return null; // TODO: consider, should we push data to server?
-					}
-				})
-			};
+			if (typeof(this.const._upstreamId) !== 'undefined') {
+				// Split arguments
+				var argumentsArray = argumentsToArray(arguments);
+				var methodName = argumentsArray.shift();
+				var methodArguments = argumentsArray;
+				var callData = {
+					objectId: this.const._upstreamId,
+					methodName: methodName,
+					argumentList: argumentsArray 
+				};
+				liquid.makeCallOnServer(callData);				
+			} else {
+				throw new Error("Trying to make a call on server for an object that is not shared by the server!");
+			}
+			
+			//cloneAndMapLiquidObjectsDeep(argumentsArray, function(liquidObject) {
+					// if (liquidObject._upstreamId != null) {
+						// return { id : liquidObject._upstreamId };
+					// } else {
+						// return null; // TODO: consider, should we push data to server?
+					// }
+				// })
 			// traceGroup('serialize', "=== Call on server ===");
 			// trace('serialize', callData.callId, callData.objectId, callData.methodName);
 			// trace('serialize', callData.argumentList);
 			// traceGroupEnd();
-			liquid.makeCallOnServer(callData);
 		}
 	}
 
@@ -635,6 +640,15 @@
 		add(object) {
 			this.contents[liquid.idExpression(object.const.id)] = object;		 
 		}
+		
+		find(pattern) {
+			
+			
+		}
+		
+		// findOne(pattern) {
+			// let the
+		// }
 		
 		// get() {
 			// let result = [];
@@ -856,14 +870,15 @@
 			// console.log(loginName);
 			// console.log(clientEncryptedPassword);
 			var serverEncryptedPassword = encryptPassword(clientEncryptedPassword);
-			var user = liquid.findLocalEntity({name: loginName});
-			if (user != null && user.getEncryptedPassword() === serverEncryptedPassword) {
-				this.getPage().setActiveUser(user);
+			var user = liquid.users.find({name: loginName});
+			if (user != null && user.encryptedPassword === serverEncryptedPassword) {
+				this.page.user = user;
 			}
 		}
 
 		logoutOnServer(loginName, liquidPassword) {
-			this.getPage().setActiveUser(null);
+			log("logoutOnServer");
+			this.page.user = null;
 		}
 	}
 	createIncomingProperty(LiquidPageService, "page", "LiquidPage", "service");
