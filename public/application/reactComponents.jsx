@@ -110,17 +110,67 @@ var LoginUI = React.createClass(liquidClassData({
 }));
 
 var UserView = React.createClass(liquidClassData({
+	onDragEnter: function(event) {
+		event.preventDefault();
+	},
+	
+	onDragLeave: function(event) {
+		event.preventDefault();
+	},
+	
+	onDragExit: function(event) {
+		event.preventDefault();
+	},
+	
+	onDragOver: function(event) {
+		event.preventDefault();
+	},
+	
+	onDrop: function(a) {
+		console.log(a);
+		//trace.ui && log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
+		// trace.ui && log(this.props.category);
+		event.preventDefault();
+		// this.dragEnterCounter = 0;
+		// var category = this.props.category;
+		var droppedCategory = draggedCategory;
+		draggedCategory = null;
+		// if (category.writeable() && category.canAddSubCategory(droppedCategory)) {
+			liquid.pulse(function() {
+				// trace.ui && log(droppedCategory.parents.length);
+				// trace.ui && log(droppedCategory.parents);
+				// var parents = copyArray(droppedCategory.parents);
+				droppedCategory.parents.forEach(function(parentCategory) {
+					// trace.ui && log("Dropping parent: " + parentCategory.__());
+					parentCategory.subCategories.remove(droppedCategory);
+				});
+				// category.subCategories.add(droppedCategory);	
+			});
+		// }
+		// this.setState({ 
+			// draggingOver: false
+		// });
+	},
+	
 	render: function() {
 		trace.ui && log("render: UserView");
 		return invalidateUponLiquidChange("UserView", this, function() {
 			// trace('react', "Render in user view. ");
 			var rootCategories = this.props.user.cached('getRootCategories');
 			// trace.ui && log("rootCategories");
+					// <button onClick= { function() { performScript(); }} >Execute script</button>
+						// onDragStart = { this.onDragStart }
 			return (
 				<div className="UserView">
-					<span>{ this.props.user.name }'s categories</span>
-					<div style={{height: "1em"}}></div>
-					<button onClick= { function() { performScript(); }} >Execute script</button>
+					<span 
+						onDragEnter = { this.onDragEnter }
+						onDragOver = { this.onDragOver }
+						onDragExit = { this.onDragExit }
+						onDragLeave = { this.onDragLeave }
+						onDrop = { this.onDrop }>
+						{ this.props.user.name }'s categories
+					</span>
+					<div style={{height: "1em", draggable: "true"}}></div>
 					<CategoriesView
 						key = { this.props.user.const.id }
 						categories = { rootCategories }  // This should evaluate to a new list upon change. This would not work with a relation... Should we create a new object on every change? However, it still means that both components needs reevaluation
