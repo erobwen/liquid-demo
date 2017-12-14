@@ -146,15 +146,17 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 	trace.ui && log("uponChangeDo...");
 	return liquid.uponChangeDo("Component:" + className,
 	function() {
-		trace.ui && logGroup("Actually rendering! " + className);
+		trace.ui && logGroup("applyingRenderFunction! " + className);
+		// liquid.state.noPulse = true;
 		let element;
-		liquid.pulse(function() {
-			trace.ui && log("renderFunction...");
+		// liquid.pulse(function() {
+			// trace.ui && log("renderFunction...");
 			element = renderFunction();			
-			trace.ui && log("...");
-		});
+			// trace.ui && log("...");
+		// });
 		// console.groupEnd();
 		// traceGroupEnd();
+		// delete liquid.state.noPulse;
 		trace.ui && logUngroup();
 		return element;
 	},

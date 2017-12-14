@@ -2157,7 +2157,9 @@
 		 **********************************/
 		
 		function pulse(action) {
+			// if (state.noPulse) throw new Error("There should not be any pulse!");
 			trace.pulse && logGroup("pulse");
+			// trace.pulse && log(action);
 			
 			state.inPulse++;
 			let result = action();
@@ -2179,6 +2181,7 @@
 
 		function postPulseCleanup() {
 			trace.pulse && logGroup("postPulseCleanup (" + state.pulseEvents.length + " events)");
+			trace.pulse && log(state.pulseEvents);
 			state.inPulse++; // block new pulses!			
 			state.inPostPulseProcess++;
 			

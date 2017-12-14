@@ -1134,9 +1134,10 @@
 		 * idToUpstreamId
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
-		function pushDataUpstream(events) {			
+		function pushDataUpstream(events) {	
+			trace.liquid && log("state.pushingChangesFromUpstream: " + state.pushingChangesFromUpstream);
 			if (typeof(pushMessageUpstreamCallback) !== 'undefined') { // && !state.pushingChangesFromUpstream
-				// logGroup("pushDataUpstream (actually)");
+				trace.liquid && logGroup("pushDataUpstream (actually)");
 				// log(pushMessageUpstreamCallback);
 				// log(events, 2);
 		
@@ -1158,7 +1159,7 @@
 				events.forEach(function(event) {
 					var eventIsFromUpstream = state.pushingChangesFromUpstream && !event.isConsequence;
 					if (!eventIsFromUpstream) {
-						// log("processing event required objects");
+						trace.liquid && log("processing event required objects");
 						if (event.object.const._upstreamId !== null && event.type == 'set' && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
 							addRequiredCascade(event.value);
 						}
@@ -1176,7 +1177,7 @@
 				var serializedEvents = [];
 				events.forEach(function(event) {
 					var eventIsForUpstream = !state.pushingChangesFromUpstream || event.isConsequence; 
-					if (eventIsForUpstream && event.type === 'set' && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
+					if (eventIsForUpstream && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
 						if (event.object.const._upstreamId !== null) {
 							serializedEvents.push(serializeEvent(event, true));
 						}
@@ -1191,7 +1192,7 @@
 					};
 					tryPushMessageUpstream({type: "pulse", data: serializedPulse});
 				}
-				// logUngroup();
+				trace.liquid && logUngroup();
 			}
 		};
 		

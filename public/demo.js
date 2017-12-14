@@ -20,6 +20,8 @@
 	// Setup trace (after initial data is added)
 	// liquid.trace.incoming = 1; 
 	liquid.trace.socket = 1; 
+	liquid.trace.pulse = 1; 
+	liquid.trace.liquid = 1; 
 
 	
 	// Setup global variables. 
