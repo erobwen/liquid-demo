@@ -259,7 +259,7 @@
 					trace.serialize && log(value, 2);
 					throw new Error("No support for streaming non-liquid objects.");
 				}
-			} else if (type === 'number' || type === 'string') {
+			} else if (type === 'number' || type === 'string' || type === 'boolean') {
 				return type + ":" + value;
 			} else {
 				throw new Error("Unsupported type for serialization: " + type);
@@ -412,8 +412,10 @@
 				} else {
 					return parseInt(number);					
 				}
-			} else if (type === 'string'){
+			} else if (type === 'string') {
 				return fragments.join(":");
+			} else if (type === 'boolean') {
+				return fragments[0] === 'true' ? true : false;
 			} else {
 				throw new Error("Unsupported data type for streaming: " + type);
 			}

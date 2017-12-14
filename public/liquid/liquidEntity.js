@@ -563,8 +563,11 @@
 		
 		initialize(data) {
 			super.initialize(data);
-			this.sorter = (data.sorter) ? data.sorter : null;
+			this.setProperty("keyPropertyName", data, "const.id");
+			this.setProperty("keyMethodName", data, null);
+			this.setProperty("keyUnique", data, true);
 			this.attatchIndex("contents", create({}));
+			// this.setProperty("compareMethodName", data, null);
 		}
 		
 		selectTree(selection) {
@@ -642,28 +645,26 @@
 		}
 		
 		find(pattern) {
-			
-			
+			let matchingObjects = [];
+			this.forEach((object) => {
+				let matches = true;
+				for (let property in pattern) {
+					matches = matches && object[property] === pattern[property]
+				}
+				if (matches) {
+					matchingObjects.push(object);
+				}
+			});
+			return matchingObjects;
 		}
 		
-		// findOne(pattern) {
-			// let the
-		// }
-		
-		// get() {
-			// let result = [];
-			// let keys = Object.keys(this.contents);
-			// keys.forEach(function(property) {
-				// if (property !== 'indexParentRelation' && property !== 'indexParent')
-				// result.push(this.contents[property]);
-			// }.bind(this)); 
-			// return result;
-			// // let result = [];
-			// // for(let key in this.contents) {
-				// // result.push(this.contents[key]);
-			// // }
-			// // return result;
-		// }
+		findOne(pattern) {
+			let matchingObjects = this.find(pattern);
+			if (matchingObjects.length > 1) {
+				throw new Error("Expected to find at most one object that matches the pattern.");
+			}
+			return matchingObjects.length === 0 ? null : matchingObjects[0];
+		}
 	 }
 	
 	
