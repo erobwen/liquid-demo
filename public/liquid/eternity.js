@@ -1994,7 +1994,7 @@
 					
 					// gcState = createImagePlaceholderFromDbId(collectionDbId);
 				}
-				objectCausality.persistent = createObjectPlaceholderFromDbId(persistentDbId);
+				instance.persistent = createObjectPlaceholderFromDbId(persistentDbId);
 			});
 			trace.eternity && logUngroup();
 		}
@@ -2004,7 +2004,7 @@
 		function unloadAllAndClearMemory() {
 			objectCausality.resetObjectIds();
 			imageCausality.resetObjectIds();
-			delete objectCausality.persistent;
+			delete instance.persistent;
 			dbIdToDbImageMap = {};
 			setupDatabase();
 		}
@@ -2323,29 +2323,14 @@
 			// incomingStructuresAsCausalityObjects : true
 		});
 		let objectCausality = require("./causality.js")(objectCausalityConfiguration);
-		
-		// Additions 
-		Object.assign(objectCausality, {
-			setPostPulseActionBeforeStorage : setPostPulseActionBeforeStorage
-		});
 		objectCausality.addPostPulseAction(postObjectPulseAction);
-		objectCausality.mockMongoDB = mockMongoDB;
-		objectCausality.unloadAllAndClearMemory = unloadAllAndClearMemory;
-		objectCausality.clearDatabaseAndClearMemory = clearDatabaseAndClearMemory;
-		objectCausality.forAllPersistentIncomingNow = forAllPersistentIncomingNow;
-		objectCausality.createAction = createAction;
-		objectCausality.imageCausality = imageCausality;
-		objectCausality.instance = objectCausality;
-		objectCausality.collectAll = collectAll;
-		objectCausality.oneStepCollection = oneStepCollection;
-		// TODO: install this... 
 		objectCausality.addRemovedLastIncomingRelationCallback(function(dbImage) {
 			// log("incoming relations reaced zero...");
             tryKillObject(dbImage);
         });
+		
+		// TODO: install this... 
 		objectCausality.setActivityListFilter(function(object) {
-			
-			
 			// throw new Error("Here!"); 
 			let isZombie = false;
             // objectCausality.blockInitialize(function() {
@@ -2367,17 +2352,39 @@
 			return true;
 			// TODO: Add and remove to activity list as we persist/unpersist this object....
 		});
-		let trace = objectCausality.trace;
-		trace.killing = 0;
-		trace.loading = 0;
-		trace.zombies = 0;
-		trace.eternity = false;
+		
+		
+		
+		/*-----------------------------------------------
+		 *           Setup instance
+		 *-----------------------------------------------*/
+		// Additions
+		let instance = {};
+		Object.assign(instance, objectCausality);
+		Object.assign(instance, {
+			objectCausality : objectCausality, 
+			imageCausality : imageCausality,
+			setPostPulseActionBeforeStorage : setPostPulseActionBeforeStorage,
+			mockMongoDB : mockMongoDB,
+			unloadAllAndClearMemory : unloadAllAndClearMemory,
+			clearDatabaseAndClearMemory : clearDatabaseAndClearMemory,
+			forAllPersistentIncomingNow : forAllPersistentIncomingNow,
+			createAction : createAction,
+			instance : objectCausality, // TODO: remove? 
+			collectAll : collectAll,
+			oneStepCollection : oneStepCollection
+		});
+
+		let trace = instance.trace;
+		// trace.killing = 0;
+		// trace.loading = 0;
+		// trace.zombies = 0;
+		// trace.eternity = false;
 		
 		// Setup database
 		setupDatabase();
 		
-		
-		return objectCausality;
+		return instance;
 	}
 
 	

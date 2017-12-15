@@ -28,12 +28,16 @@
 		pagesMap = {};
 		sessionsMap = {};
 
-		// Choose causality or eternity.
-		let liquid;
+		// Choose causality or eternity and create a liquid instance
+		let liquid = {};
 		if (configuration.usePersistency) {
-			liquid = require("./eternity.js")(configuration.eternityConfiguration);
+			let eternity = require("./eternity.js")(configuration.eternityConfiguration);
+			Object.assign(liquid, eternity);
+			liquid.eternity = eternity;
 		} else {
-			liquid = require("./causality.js")(configuration.causalityConfiguration);				
+			let causality = require("./causality.js")(configuration.causalityConfiguration);				
+			Object.assign(liquid, causality);
+			liquid.causality = causality;
 		}
 		let log = liquid.log;
 		let logGroup = liquid.logGroup;
