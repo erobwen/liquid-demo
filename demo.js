@@ -18,8 +18,11 @@ let liquid = require("./public/liquid/liquid.js")(
 	}
 );
 // liquid.trace.pulse = 1;
+// liquid.trace.socket = 1; 
+// liquid.trace.eternity = 1;
 // liquid.trace.incoming = 1; 
-liquid.trace.socket = 1; 
+// liquid.trace.eternity = 1;
+
 // liquid.trace.demo = 1; 
 // liquid.trace.liquid = 1; 
 
@@ -51,19 +54,36 @@ var politics;
 
 if (!liquid.persistent.demoInitialized) {
 
+	// logGroup("Commence experiment... ");
+	
+	// liquid.eternity.imageCausality.trace.incoming = 1;
+	// liquid.eternity.imageCausality.trace.pulse = 1;
+	
+	// liquid.pulse(function() {
+		// liquid.persistent.foo = create({});
+	// });
+	
+	// liquid.eternity.imageCausality.trace.pulse = 0;
+	// liquid.eternity.imageCausality.trace.incoming = 0;
+	
+	// logUngroup("... ");
+	// throw new Error("done");
+
 	liquid.pulse(function() {
 		log.demo && logGroup("Setup database contents... ");
+		
 		// Name of persistent object
 		// liquid.persistent.name = "persistent";
 		
 		// Create a simple user index. 
-		// liquid.setIndex(liquid.persistent, "users", create("LiquidIndex"));
+		liquid.setIndex(liquid.persistent, "users", create("LiquidIndex"));
 		
 		// log("==========================================================");
 		// Create user and add to index.
 		user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
-		// liquid.persistent.users.add(user);
-		
+		liquid.persistent.users.add(user);
+	// });
+	// liquid.pulse(function() {
 		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		// log(user.ownedCategories.contents);
 		

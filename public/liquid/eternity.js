@@ -269,6 +269,7 @@
 				contents = {};
 			}
 			let dbImage = imageCausality.create(contents); // Only Object image here... 
+			if (!imageCausality.isObject(dbImage)) throw new Error("WTF!");
 			
 			imageIdToImageMap[dbImage.const.id] = dbImage;
 			connectObjectWithDbImage(object, dbImage);
@@ -558,7 +559,7 @@
 			if (trace.eternity) {
 				logGroup();
 				log("events:");
-				log(events, 2);				
+				// log(events, 2);				
 			}
 			imageCausality.disableIncomingRelations(function () { // All incoming structures fully visible!
 				
@@ -720,12 +721,26 @@
 							rightCausalityInstance = entity.const.causalityInstance === imageCausality;
 						}
 					}
-					
-					console.log(typeCorrect);
-					console.log(notNull);
-					console.log(hasConst);
-					console.log(rightCausalityInstance);
-					log(entity, 1);
+					log("A non object encountered. Examining it! ");
+					log("typeCorrect: " + typeCorrect);
+					log("notNull: " + notNull);
+					log("hasConst:" + hasConst);
+					log("rightCausalityInstance: " + rightCausalityInstance);
+					log(entity, 2);
+					log(typeof(entity));
+					log(typeof(entity.const));
+					log(entity.const);
+					log(entity.const.causalityInstance.configuration.name);
+					// log("");
+					// log("imageCausality.state:");
+					// log(imageCausality.state);
+					// log("");
+					// log("imageCausality.configuration:");
+					// log(imageCausality.configuration, 10);
+					// log("");
+					// log("objectCausality.configuration:");
+					// log(objectCausality.configuration, 10);
+					// log("");
 					throw new Error("Plain object references not allowed!"); 
 				}
 				// log("===========");
@@ -2259,7 +2274,6 @@
 		// let imageCausality = requireUncached("causalityjs_advanced");
 		let imageCausality = require("./causality.js")({ 
 			name : 'imageCausality',
-			id : 'imageCausality:' + JSON.stringify(configuration),
 			recordPulseEvents : true, 
 			incomingStructureChunkSize : configuration.persistentIncomingChunkSize,
 			incomingChunkRemovedCallback : incomingChunkRemovedForImage,
@@ -2311,8 +2325,7 @@
 		// log("Assigning causality");
 		Object.assign(objectCausalityConfiguration, configuration.causalityConfiguration);
 		Object.assign(objectCausalityConfiguration, {
-			name: 'objectCausality', 
-			id: 'objectCausality:' + JSON.stringify(configuration), 
+			name: 'objectCausality',
 			recordPulseEvents : true,
 			objectActivityList : true,
 			incomingReferenceCounters : true, 
@@ -2370,7 +2383,6 @@
 			clearDatabaseAndClearMemory : clearDatabaseAndClearMemory,
 			forAllPersistentIncomingNow : forAllPersistentIncomingNow,
 			createAction : createAction,
-			instance : objectCausality, // TODO: remove? 
 			collectAll : collectAll,
 			oneStepCollection : oneStepCollection
 		});

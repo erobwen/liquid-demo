@@ -612,6 +612,7 @@
 			}
 		} 
 		
+		let stamp = 1;
 		
 		function getIncomingPropertyStructure(referencedObject, propertyKey) {
 			trace.incoming && log("getIncomingPropertyStructure");
@@ -629,22 +630,34 @@
 					isList : true,
 					last: null, 
 					first: null };
+				// if (configuration.name == "imageCausality") {
+					// trace.incoming && log("HERERERER");
+					// trace.incoming && log(configuration.incomingStructuresAsCausalityObjects);					
+				// }				
 				if (configuration.incomingStructuresAsCausalityObjects) {
 					incomingPropertiesStructure = create(incomingPropertiesStructure);
 				}
+				// if (configuration.name == "imageCausality") {
+					// trace.incoming && log(incomingPropertiesStructure, 2);
+					// trace.incoming && log(incomingPropertiesStructure.const.causalityInstance.configuration.name);
+					// trace.incoming && log(isObject(incomingPropertiesStructure));
+					// trace.incoming && log(typeof(incomingPropertiesStructure.const));
+				// }
 				referencedObject.const.incoming = incomingPropertiesStructure;
 			} else {
 				incomingPropertiesStructure = referencedObject.const.incoming;
 			}
 			
 			// Create incoming for this particular property
-			if (trace.incoming) {
-				log(incomingPropertiesStructure);
-				log(propertyKey);
-				log(incomingPropertiesStructure[propertyKey]);
-			}
+			// if (trace.incoming) {
+				// trace.incoming && log(incomingPropertiesStructure);
+				// trace.incoming && log(propertyKey);
+				// trace.incoming && log(incomingPropertiesStructure[propertyKey]);
+			// }
 			if (typeof(incomingPropertiesStructure[propertyKey]) === 'undefined') {
-				let incomingStructure = { 
+				let incomingStructure = {
+					// configurationName : configuration.name,
+					// stamp : stamp++,
 					isIncomingStructure : true, 
 					referredObject: referencedObject,
 					isIncomingPropertyStructure : true,
@@ -656,6 +669,17 @@
 					next: null, 
 					previous: incomingPropertiesStructure.last 
 				};
+				if (configuration.incomingStructuresAsCausalityObjects) {
+					// Disable incoming relations here? otherwise we might end up with incoming structures between 
+					incomingStructure = create(incomingStructure);
+					if (incomingStructure.propertyKey === "property:indexParent") {
+						throw new Error("What is this, should not have incoming structure for indexParent....");
+					}
+					// trace.incoming && log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
+					// trace.incoming && log(incomingStructure, 2);
+					// trace.incoming && log(typeof(incomingStructure));
+					// trace.incoming && log(typeof(incomingStructure.const));
+				}
 				if (incomingPropertiesStructure.first === null) {
 					incomingPropertiesStructure.first = incomingStructure;
 					incomingPropertiesStructure.last = incomingStructure;
@@ -664,15 +688,12 @@
 					incomingPropertiesStructure.last = incomingStructure;
 				}
 				
-				if (configuration.incomingStructuresAsCausalityObjects) {
-					// Disable incoming relations here? otherwise we might end up with incoming structures between 
-					incomingStructure = create(incomingStructure);
-					if (incomingStructure.propertyKey === "property:indexParent") {
-						throw new Error("What is this, should not have incoming structure for indexParent....");
-					}
-					// log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
-					// log(incomingStructure);
-				}
+				// trace.incoming && logGroup("Examine created incoming structure");
+				// trace.incoming && log(configuration);
+				// trace.incoming && log(configuration.incomingStructuresAsCausalityObjects);
+				
+				// trace.incoming && logUngroup("...");
+				
 				incomingPropertiesStructure[propertyKey] = incomingStructure;
 			}
 			
@@ -2158,7 +2179,7 @@
 		
 		function pulse(action) {
 			// if (state.noPulse) throw new Error("There should not be any pulse!");
-			trace.pulse && logGroup("pulse");
+			trace.pulse && logGroup("pulse (" + configuration.name + ")");
 			// trace.pulse && log(action);
 			
 			state.inPulse++;
@@ -2180,8 +2201,8 @@
 		}
 
 		function postPulseCleanup() {
-			trace.pulse && logGroup("postPulseCleanup (" + state.pulseEvents.length + " events)");
-			trace.pulse && log(state.pulseEvents);
+			trace.pulse && logGroup("postPulseCleanup (" + state.pulseEvents.length + " events, " + configuration.name + ")");
+			// trace.pulse && log(state.pulseEvents, 2);
 			state.inPulse++; // block new pulses!			
 			state.inPostPulseProcess++;
 			
@@ -3639,6 +3660,7 @@
 		
 		let causalityInstance = {
 			state : state,
+			configuration : configuration, 
 			
 			// Install causality to global scope. 
 			install : install,
