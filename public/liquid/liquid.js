@@ -889,10 +889,13 @@
 
 			liquid.pulse(function() {
 				var object = page.const._selection[callInfo.objectId];
-				var methodName = callInfo.methodName;
-				var argumentList = callInfo.argumentList;
-
-				if (object.allowCallOnServer(page)) {
+				log(object, 2);
+				let allowCallOnServer = object.allowCallOnServer(page.getActiveUser());
+				trace.liquid && log("Allow call on server: " + allowCallOnServer);
+				if (allowCallOnServer) {
+					var methodName = callInfo.methodName;
+					var argumentList = callInfo.argumentList;
+					
 					unlockAll = true;
 					object[methodName].apply(object, argumentList);
 					unlockAll = false;

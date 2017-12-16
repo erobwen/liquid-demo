@@ -505,6 +505,7 @@
 		}
 		
 		allowCallOnServer(user) {
+			trace.entity && log("LiquidEntity:allowCallOnServer");
 			return false;
 		}
 		
@@ -818,6 +819,8 @@
 		}
 
 		getActiveUser() {
+			// trace.entity && log("getActiveUser");
+			// trace.entity && log(this.session, 2);
 			if (this.session != null) {
 				return this.session.user;
 			}
@@ -852,7 +855,16 @@
 		}
 
 		allowCallOnServer(user) {
-			return user === this.page.getActiveUser();
+			trace.entity && logGroup("LiquidPageService:allowCallOnServer");
+			
+			// trace.entity && log("====================");
+			// trace.entity && log(user);
+			// trace.entity && log("--------------------");
+			// trace.entity && log(this.page.getActiveUser());
+			// trace.entity && log("====================");
+			let result = user.const.id === this.page.getActiveUser().const.id;
+			trace.entity && logUngroup();
+			return result;
 		}
 
 		tryLogin(loginName, liquidPassword) {
@@ -862,23 +874,25 @@
 		}
 
 		logout(loginName, liquidPassword) {
+			trace.entity && log("logout");
 			// Use SHA and similar here!
 			this.callOnServer('logoutOnServer');
 		}
 
 		tryLoginOnServer(loginName, clientEncryptedPassword) {
+			trace.entity && log("tryLoginOnServer");
 			// console.log("Here");
 			// console.log(loginName);
 			// console.log(clientEncryptedPassword);
 			var serverEncryptedPassword = encryptPassword(clientEncryptedPassword);
-			var user = liquid.users.find({name: loginName});
+			var user = liquid.users.find(loginName);
 			if (user != null && user.encryptedPassword === serverEncryptedPassword) {
 				this.page.user = user;
 			}
 		}
 
 		logoutOnServer(loginName, liquidPassword) {
-			log("logoutOnServer");
+			trace.entity && log("logoutOnServer");
 			this.page.user = null;
 		}
 	}

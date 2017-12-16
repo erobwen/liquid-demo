@@ -17,13 +17,15 @@ let liquid = require("./public/liquid/liquid.js")(
 		}
 	}
 );
-// liquid.trace.pulse = 1;
-// liquid.trace.socket = 1; 
+liquid.trace.pulse = 1;
+liquid.trace.socket = 1; 
+liquid.trace.demo = 1; 
+liquid.trace.liquid = 1; 
+liquid.trace.entity = 1;
 // liquid.trace.eternity = 1;
 // liquid.trace.incoming = 1; 
 // liquid.trace.eternity = 1;
 
-// liquid.trace.demo = 1; 
 // liquid.trace.liquid = 1; 
 
 

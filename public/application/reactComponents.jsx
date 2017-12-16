@@ -89,7 +89,7 @@ var LoginUI = React.createClass(liquidClassData({
 			// traceTags.repetition = true;
 			var user = page.getActiveUser();
 			// traceTags.repetition = false;
-			if (user == null) {
+			if (user === null) {
 				return (
 					<div style={{display: 'flex', flexDirection: 'column', border: '1px', margin: '1em', padding: '1em'}}>
 						<span>Username: </span><input ref="usernameInput" type="text" value={ this.state.name }  onChange={ this.nameChanged }></input>
