@@ -4,6 +4,7 @@
 	let log = liquid.log;
 	let logGroup = liquid.logGroup;
 	let logUngroup = liquid.logUngroup;
+	liquid.trace.demo = 1; 
 	// console.log(liquid);
 	
 	trace.demo && log("demo.js");
@@ -13,6 +14,8 @@
 	liquid.assignClassNamesTo(root); // Optional: Make all class names global
 	
 	// Setup data
+	trace.demo && log("Initial serialized data: ");
+	trace.demo && log(data);
 	liquid.receiveInitialDataFromUpstream(data);
 	trace.demo && log("upstreamIdObjectMap");
 	trace.demo && log(liquid.upstreamIdObjectMap);
@@ -22,6 +25,7 @@
 	liquid.trace.socket = 1; 
 	liquid.trace.pulse = 1; 
 	liquid.trace.liquid = 1; 
+	liquid.trace.unserialize = 1; 
 
 	
 	// Setup global variables. 

@@ -1467,6 +1467,7 @@
 			
 			// Write protection
 			if (!canWrite(this.const.object)) {
+				console.log("Unautharized attempt to write property " + key + " of object " + target._);
 				if (trace.set > 0) logUngroup();
 				return;
 			}

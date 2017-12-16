@@ -24,6 +24,7 @@
 	
 	let create = liquid.create
 	let LiquidUser = liquid.LiquidUser;
+	let LiquidPage = liquid.LiquidPage;
 	let LiquidEntity = liquid.LiquidEntity;
 
 	// Reference service
@@ -42,6 +43,13 @@
 		}
 	};
 
+	class Page extends LiquidPage {
+		initialize(data) {
+			// log("User.initialize");
+			super.initialize(data);			
+			this.setProperty("viewedUser", data, null);
+		}
+	}
 	
 	class User extends LiquidUser {
 		initialize(data) {
@@ -203,6 +211,7 @@
 
 	return {
 		User : User,
+		Page : Page,
 		Category : Category,
 		Reference : Reference
 	}	

@@ -19,9 +19,9 @@ let liquid = require("./public/liquid/liquid.js")(
 );
 liquid.trace.pulse = 1;
 liquid.trace.socket = 1; 
-liquid.trace.demo = 1; 
-liquid.trace.liquid = 1; 
-liquid.trace.entity = 1;
+// liquid.trace.demo = 1; 
+// liquid.trace.liquid = 1; 
+// liquid.trace.entity = 1;
 // liquid.trace.eternity = 1;
 // liquid.trace.incoming = 1; 
 // liquid.trace.eternity = 1;
@@ -186,7 +186,7 @@ if (!liquid.persistent.demoInitialized) {
 		trace.demo && logGroup("create page and session object...");
 		var session = liquid.createOrGetSessionObject(req.session.token);
 		session.user = user; 
-		var page = create('LiquidPage', {session: session});
+		var page = create('Page', {session: session, viewedUser : user});
 		page.service.orderedSubscriptions.push(create({object: user, selector:'Basics'})); //object: user,
 		trace.demo && logUngroup("...");
 		return page;

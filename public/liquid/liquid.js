@@ -97,8 +97,7 @@
 			"readAndWrite" : true,
 			"readOnly" : false,
 			"noAccess" : false
-		}
-		
+		}			
 		function restrictAccess(page, action) {
 			state.restrictAccessToThatOfPage = page;
 			action();
@@ -111,7 +110,7 @@
 		});
 
 		liquid.setCustomCanWrite(function(object) {
-			if (unlockAll) return true;
+			if (unlockAll) return true; 
 			return !state.isSelecting && writeable[getAccessLevel(object)];
 		});
 		
@@ -366,6 +365,7 @@
 		
 
 		function unserializeEvents(events, forUpstream) {
+			trace.unserialize && log("unserializeEvents");
 			events.forEach(function(event) {
 				if (typeof(event.objectId) !== 'undefined') {
 					let object;
@@ -374,14 +374,24 @@
 					} else {
 						object = upstreamIdObjectMap[event.objectId];
 					}
+					trace.unserialize && log("object: ");
+					trace.unserialize && log(object);
 					if (event.type === 'set') {
-						// logGroup("setting " + event.property);
+						trace.unserialize && log("setting: " + event.property);
 						// liquid.trace.basic++;
-						object[event.property] = unserializeValue(event.value, forUpstream);
+						let value = unserializeValue(event.value, forUpstream);
+						trace.unserialize && log("value: ");
+						trace.unserialize && log(value);
+						// log(liquid.causality.state, 3);
+						
+						object[event.property] = value;
 						// liquid.trace.basic--;
 						// logUngroup();
 					} else if (event.type === 'delete') {
+						trace.unserialize && log("deleting " + event.property);
 						delete object[event.property];
+					} else {
+						throw new Error("Event not supported yet for unserialize: " + event.type);
 					}
 				}
 			});			
@@ -1003,6 +1013,7 @@
 				trace.liquid && log(serializedData);
 				unserializeObjects(serializedData.subscriptionInfo.serializedObjects, false);
 				liquid.instancePage = getUpstreamEntity(serializedData.pageUpstreamId);	
+				state.restrictAccessToThatOfPage = liquid.instancePage;
 				trace.liquid && log(liquid);
 			});			
 			state.pushingChangesFromUpstream = false;
