@@ -612,8 +612,6 @@
 			}
 		} 
 		
-		let stamp = 1;
-		
 		function getIncomingPropertyStructure(referencedObject, propertyKey) {
 			trace.incoming && log("getIncomingPropertyStructure");
 			
@@ -629,20 +627,10 @@
 					
 					isList : true,
 					last: null, 
-					first: null };
-				// if (configuration.name == "imageCausality") {
-					// trace.incoming && log("HERERERER");
-					// trace.incoming && log(configuration.incomingStructuresAsCausalityObjects);					
-				// }				
+					first: null };				
 				if (configuration.incomingStructuresAsCausalityObjects) {
 					incomingPropertiesStructure = create(incomingPropertiesStructure);
 				}
-				// if (configuration.name == "imageCausality") {
-					// trace.incoming && log(incomingPropertiesStructure, 2);
-					// trace.incoming && log(incomingPropertiesStructure.const.causalityInstance.configuration.name);
-					// trace.incoming && log(isObject(incomingPropertiesStructure));
-					// trace.incoming && log(typeof(incomingPropertiesStructure.const));
-				// }
 				referencedObject.const.incoming = incomingPropertiesStructure;
 			} else {
 				incomingPropertiesStructure = referencedObject.const.incoming;
@@ -670,15 +658,10 @@
 					previous: incomingPropertiesStructure.last 
 				};
 				if (configuration.incomingStructuresAsCausalityObjects) {
-					// Disable incoming relations here? otherwise we might end up with incoming structures between 
 					incomingStructure = create(incomingStructure);
 					if (incomingStructure.propertyKey === "property:indexParent") {
 						throw new Error("What is this, should not have incoming structure for indexParent....");
 					}
-					// trace.incoming && log("CREATED INCOMING STRUCTURE THAT IS AN OBJECT");
-					// trace.incoming && log(incomingStructure, 2);
-					// trace.incoming && log(typeof(incomingStructure));
-					// trace.incoming && log(typeof(incomingStructure.const));
 				}
 				if (incomingPropertiesStructure.first === null) {
 					incomingPropertiesStructure.first = incomingStructure;
@@ -687,13 +670,7 @@
 					incomingPropertiesStructure.last.next = incomingStructure;
 					incomingPropertiesStructure.last = incomingStructure;
 				}
-				
-				// trace.incoming && logGroup("Examine created incoming structure");
-				// trace.incoming && log(configuration);
-				// trace.incoming && log(configuration.incomingStructuresAsCausalityObjects);
-				
-				// trace.incoming && logUngroup("...");
-				
+								
 				incomingPropertiesStructure[propertyKey] = incomingStructure;
 			}
 			
