@@ -667,7 +667,7 @@
 						let observingPage = event.object.const._observingPages[id];
 						trace.liquid && log("found an observing page with id: " + observingPage.token);
 						// log(event, 2);
-						if (state.pushingChangesFromPage !== observingPage) { // && !state.dirtyPageSubscritiptions[id]
+						if (state.pushingChangesFromPage !== observingPage && !state.dirtyPageSubscritiptions[id]) {  
 							trace.liquid && log("actually send data to it... ");
 							pagesToNotifyWithNoChangeInSelection[id] = observingPage;
 							if (typeof(observingPage.const._pendingEvents) === 'undefined') {
