@@ -50,7 +50,7 @@
 	};
 
 	function encryptPassword(password) {
-		return password + " [encrypted]";
+		return password + "[encrypted]";
 	}
 	
 	/** ---------------------------------
@@ -646,8 +646,16 @@
 		}
 		
 		find(pattern) {
+			log("find...")
+			if (typeof(pattern) === 'string') {
+				let value = pattern;
+				pattern = {};
+				pattern[this.keyPropertyName] = value;
+			}
+			log(pattern);
 			let matchingObjects = [];
 			this.forEach((object) => {
+				log("searching... ");
 				let matches = true;
 				for (let property in pattern) {
 					matches = matches && object[property] === pattern[property]
@@ -834,6 +842,16 @@
 			return false;
 		}
 	}
+	// Add getters and setters
+	Object.defineProperty(LiquidPage, "user", {
+		get: function() {
+			return this.session.user;
+		},
+		set: function(user) {
+			this.session.user = user;
+		}
+	});
+	
 
 	
 
@@ -854,17 +872,10 @@
 			return 'readAndWrite';
 		}
 
-		allowCallOnServer(user) {
-			trace.entity && logGroup("LiquidPageService:allowCallOnServer");
-			
-			// trace.entity && log("====================");
-			// trace.entity && log(user);
-			// trace.entity && log("--------------------");
-			// trace.entity && log(this.page.getActiveUser());
-			// trace.entity && log("====================");
-			let result = user.const.id === this.page.getActiveUser().const.id;
+		pageAllowCallOnServer(page) {
+			trace.entity && logGroup("LiquidPageService:pageAllowCallOnServer");
+			return page === this.page;
 			trace.entity && logUngroup();
-			return result;
 		}
 
 		tryLogin(loginName, liquidPassword) {
@@ -885,15 +896,20 @@
 			// console.log(loginName);
 			// console.log(clientEncryptedPassword);
 			var serverEncryptedPassword = encryptPassword(clientEncryptedPassword);
-			var user = liquid.users.find(loginName);
-			if (user != null && user.encryptedPassword === serverEncryptedPassword) {
-				this.page.user = user;
+			var user = typeof(liquid.persistent) !== 'undefined' ? liquid.persistent.users.findOne(loginName) : liquid.users.findOne(loginName);
+			log(user);
+			if (user != null && user.passwordVault.encryptedPassword === serverEncryptedPassword) {
+				this.page.session.user = user;
+				return true;
 			}
+			log(serverEncryptedPassword);
+			log(user.passwordVault.encryptedPassword);
+			return false;
 		}
 
 		logoutOnServer(loginName, liquidPassword) {
 			trace.entity && log("logoutOnServer");
-			this.page.user = null;
+			this.page.session.user = null;
 		}
 	}
 	createIncomingProperty(LiquidPageService, "page", "LiquidPage", "service");
@@ -970,6 +986,9 @@
 	}
 	
 	class LiquidUserPasswordVault extends LiquidEntity {
+		initialize(data) {
+			this.setProperty("encryptedPassword", data, "");
+		}
 		accessLevel(user) {  // Return values, "noAccess", "readOnly", "readAndWrite".
 			return "noAccess"; // Only accessible on server call.
 		}

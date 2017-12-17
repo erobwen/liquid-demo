@@ -1,5 +1,6 @@
 (function() {
 	let liquid = require("liquid")({
+		name : "clientLiquid",
 		usePersistency: false, 
 		isClient: true,
 		causalityConfiguration : {

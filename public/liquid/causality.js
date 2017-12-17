@@ -1381,8 +1381,7 @@
 		
 		function getHandlerObject(target, key) {
 			if (trace.get > 0) {
-				log("getHandlerObject: "  + this.const.name + "." + key);
-				logGroup();
+				logGroup("getHandlerObject: "  + this.const.name + "." + key);
 			}
 			key = key.toString();
 			// log("getHandlerObject: " + key);
@@ -1442,6 +1441,29 @@
 			}
 		}
 				
+		function valueToString(value) {
+			if (isObject(value)) {
+				return "object:" + value.const.id;
+			} else if (typeof(value) !== 'object'){
+				return value;
+			} else {
+				return value;
+			}
+		}
+		
+		function objectDigest(object) {
+			liquid.state.recordingPaused++;
+			liquid.updateInActiveRecording();
+			let result = "[" + getClassName(object) + "." + object.const.id + "]"; // TODO: add name if any... 
+			liquid.state.recordingPaused--;
+			liquid.updateInActiveRecording();
+			return result;
+		} 
+
+		function getClassName(object) {
+			return Object.getPrototypeOf(object).constructor.name
+		}
+
 		
 		function setHandlerObject(target, key, value) {
 			// log("setHandlerObject" + key);
@@ -1449,9 +1471,9 @@
 			
 			// Ensure initialized
 			if (trace.set > 0) {
-				log("setHandlerObject: " + this.const.name + "." + key + "= ");
+				logGroup("setHandlerObject: " + objectDigest(this.const.object) + "." + key + " = " + valueToString(value));
+				console.log(value);
 				// throw new Error("What the actual fuck, I mean jesuz..!!!");
-				logGroup();
 			}
 			ensureInitialized(this, target);
 			
@@ -1488,12 +1510,16 @@
 			// Note if key was undefined and get previous value
 			let keyDefined = key in target;
 			let previousValueOrIncomingStructure = target[key];
+			trace.set && log("previous Value 1: ");
+			trace.set && log(previousValueOrIncomingStructure);
 			let previousValue;
 			if (keyDefined && typeof(previousValueOrIncomingStructure) === 'object' && state.incomingStructuresDisabled === 0) {
 				previousValue = getReferredObject(previousValueOrIncomingStructure);
 			} else {
 				previousValue = previousValueOrIncomingStructure;
 			}
+			trace.set && log("previous Value: ");
+			trace.set && log(previousValue);
 			
 			// If same value as already set, do nothing.
 			if (keyDefined) {

@@ -78,7 +78,7 @@ if (!liquid.persistent.demoInitialized) {
 		// liquid.persistent.name = "persistent";
 		
 		// Create a simple user index. 
-		liquid.setIndex(liquid.persistent, "users", create("LiquidIndex"));
+		liquid.setIndex(liquid.persistent, "users", create("LiquidIndex", {'keyPropertyName' : 'name'}));
 		
 		// log("==========================================================");
 		// Create user and add to index.
@@ -134,6 +134,8 @@ if (!liquid.persistent.demoInitialized) {
 		log.demo && logUngroup("...finished setup.");
 	});
 }
+
+// liquid.users = liquid.persistent.users
 
 // log("experiments");
 // logGroup();

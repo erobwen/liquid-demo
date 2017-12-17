@@ -382,9 +382,15 @@
 						let value = unserializeValue(event.value, forUpstream);
 						trace.unserialize && log("value: ");
 						trace.unserialize && log(value);
-						// log(liquid.causality.state, 3);
+						trace.unserialize && log(object);
+						// configuration. causality //foo
 						
+						// trace.unserialize && !configuration.usePersistency && liquid.causality.trace.set++;
+						trace.unserialize && liquid.trace.set++;
 						object[event.property] = value;
+						trace.unserialize && liquid.trace.set--;
+						
+						trace.unserialize && log(object[event.property]);
 						// liquid.trace.basic--;
 						// logUngroup();
 					} else if (event.type === 'delete') {
@@ -900,14 +906,18 @@
 			liquid.pulse(function() {
 				var object = page.const._selection[callInfo.objectId];
 				log(object, 2);
-				let allowCallOnServer = object.allowCallOnServer(page.getActiveUser());
+				let allowCallOnServer = object.pageAllowCallOnServer(page);
 				trace.liquid && log("Allow call on server: " + allowCallOnServer);
 				if (allowCallOnServer) {
 					var methodName = callInfo.methodName;
-					var argumentList = callInfo.argumentList;
+					
+					let unerializedArguments = [];
+					callInfo.argumentList.forEach((element) => {
+						unerializedArguments.push(unserializeValue(element, false)); // TODO: ???? verify that this does not cascade push any objects... in that case... leave blanks or throw error... 
+					}); 
 					
 					unlockAll = true;
-					object[methodName].apply(object, argumentList);
+					object[methodName].apply(object, unerializedArguments);
 					unlockAll = false;
 				}
 			});
@@ -1006,7 +1016,7 @@
 		}
 		
 
-		function receiveInitialDataFromUpstream(serializedData) {
+		function receiveInitialDataFromUpstream(serializedData) { //foo
 			state.pushingChangesFromUpstream = true;
 			liquid.pulse(function() {
 				trace.liquid && log("receiveInitialDataFromUpstream");
@@ -1033,7 +1043,9 @@
 			trace.liquid && logGroup("unserializeUpstreamPulse");
 			trace.liquid && log(pulseData, 3);
 			state.pushingChangesFromUpstream = true;
-		
+			let savedRestrictAccessToThatOfPage = state.restrictAccessToThatOfPage;
+			state.restrictAccessToThatOfPage = null;
+
 			// Unserialize all objects
 			liquid.pulse(function() {
 				unserializeObjects(pulseData.serializedObjects, false)
@@ -1056,6 +1068,7 @@
 				// liquid.instancePage.upstreamPulseReceived();
 			// }				
 
+			state.restrictAccessToThatOfPage = savedRestrictAccessToThatOfPage;
 			state.pushingChangesFromUpstream = false;				
 			trace.liquid && logUngroup();
 			// TODO: deal with instantly hidden objects, keep track of idToSerializedIdMap...? Or a set of instantly hidden... 
@@ -1082,7 +1095,7 @@
 				callData.id = callId++;
 				let serializedArguments = [];
 				callData.argumentList.forEach((element) => {
-					serializedArguments.push(serializeValue(element)); // TODO: verify that this does not cascade push any objects... in that case... leave blanks or throw error... 
+					serializedArguments.push(serializeValue(element, true)); // TODO: verify that this does not cascade push any objects... in that case... leave blanks or throw error... 
 				}); 
 				callData.argumentList = serializedArguments;
 				tryPushMessageUpstream({type: "call", data: callData});
@@ -1191,8 +1204,10 @@
 					var eventIsFromUpstream = state.pushingChangesFromUpstream && !event.isConsequence;
 					if (!eventIsFromUpstream) {
 						trace.liquid && log("processing event required objects");
-						if (event.object.const._upstreamId !== null && event.type == 'set' && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
-							addRequiredCascade(event.value);
+						if (event.object.const._upstreamId !== null && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
+							if (event.type == 'set') {
+								addRequiredCascade(event.value);								
+							}
 						}
 					}
 				});
