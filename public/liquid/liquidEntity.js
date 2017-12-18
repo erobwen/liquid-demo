@@ -414,58 +414,6 @@
 				}.bind(this)
 			);
 		}
-					
-		// selectAll(selection) {
-			// // log("selectAll: ");
-			// // log(liquid.objectDigest(this));
-			// // logGroup();//console
-			// function selectAllObjects(object) {
-				// // log("try selecting a plain liquid-object (no class)");
-				// if (!liquid.canRead(object)) {
-					// // log("no read access...");
-					// return;
-				// }
-				
-				// if (typeof(selection[object.const.id]) === 'undefined') {
-					// selection[object.const.id] = object; 
-					// Object.keys(object).forEach(function(key) {
-						// let value = object[key];
-						// if (value instanceof LiquidEntity) { //liquid.isObject(value)
-							// value.selectAll(selection);
-						// } if (liquid.isObject(value)) {
-							// selectAllObjects(value);
-						// }
-					// });
-				// }
-			// }
-			
-			// // trace('selection', liquid.canRead(this));
-			// if (!liquid.canRead(this)) {
-				// // log("no read access...");
-				// return;
-			// }
-			
-			// if (typeof(selection[this.const.id]) === 'undefined') {
-				// // console.log("Selecting " + this.__());
-				// selection[this.const.id] = this;
-				
-				// Object.keys(this).forEach(function(key) {
-					// // log("selecting property: " + key);
-					// // logGroup();
-					// // log("indented");
-					// let value = this[key];
-					// // liquid.logValue(value);
-					// if (value instanceof LiquidEntity) { //liquid.isObject(value)
-						// value.selectAll(selection);
-					// } else if (liquid.isObject(value)) {
-						// // Warning: potentially dangerous. Could select A LOT...
-						// selectAllObjects(value); 
-					// }
-					// // logUngroup();
-				// }.bind(this));
-			// }
-			// // logUngroup();
-		// }
 		
 		isLoaded() {
 			// if (liquid.onClient) {
@@ -482,6 +430,78 @@
 			// } else {
 				// return true;
 			// }
+		}
+		
+		
+		select(selectionTag) {
+			let selection = {};
+			this["select" + selectionTag](selection);
+			return selection;
+		}
+		
+		copySelection(selectionTag) {
+			let selection = this.select(selectionTag);
+			
+			function copyRecursivley(entity, limit) {
+				if (liquid.isObject(entity)) {
+					if (typeof(limit[object.const.id]) !== 'undefined') {
+						let copy = liquid.create(this.className());
+						Object.keys(this).forEach((key) => {
+							copy[key] = copyRecursivley(this[key], limit);
+						});	
+						return copy;				
+					} else {
+						return null;
+					}					
+				} else {
+					return entity;
+				}
+			}
+			
+			return copyRecursivley(this, selection); 
+		}
+		
+		copyFromSelection(source, selectionTag) {
+			let sourceToFinishedTargetMap = {};
+			let targetReusedMap = {};
+			let selection = this.select(selectionTag);
+			
+			function copyFromSelectionRecursive(source, targetCandidate) {
+				if (typeof(selection[source.const.id]) !== 'undefined') {
+					// Already copied
+					if (typeof(sourceToFinishedTargetMap[source.const.id]) !== 'undefined') {
+						return sourceToFinishedTargetMap[source.const.id];
+					}
+					
+					// Create a copy, candidate not already in use.
+					let target;
+					if (liquid.isObject(targetCandidate) && typeof(targetReusedMap[targetCandidate.const.id]) === 'undefined') {
+						targetReusedMap[targetCandidate.const.id] = true; // Mark target as reused.
+						sourceToFinishedTargetMap[source.const.id] = targetCandidate; // Map source to this target
+						target = targetCandidate;
+						
+						// Clear out unused properties (that will not be overwritten)
+						Object.keys(target).forEach((key) => {
+							if (typeof(source[key]) !== 'undefined') {
+								delete target[key];
+							}
+						});
+					} else {
+						target = liquid.create(source.className());
+					}
+					
+					Object.keys(source).forEah((key) => {
+						target[key] = copyFromSelectionRecursive(source[key], target[key]);
+					});
+					
+					return target;
+				} else {
+					// No copy for you
+					return source;
+				}
+			}
+			
+			copyFromSelectionRecursive(source, this);
 		}
 		
 		pageAccessLevel(page) {

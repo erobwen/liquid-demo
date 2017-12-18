@@ -1,11 +1,13 @@
+TODO: Support for 
+TODO: Make it possible to make invincible objects in eternity. Objects that cannot be killed, because they hold page information. Expose a tryKill function to test when a page releases an object.
 TODO: Make support for expression-ids in keys when streaming to and from server.
-TODO: Causality: Should upon change do start a pulse?
-TODO: Take use of bower in some intelligent way... 
-TODO: Put all state variables in the state object, so that context switching is possible. 
-TODO: Rebuild selections so that they refer to the objects they include, to avoid global id->object map.
+
+
+TODO: Rebuild selections so that they include selection-tags. Make an observer interface for selection tags.
 TODO: consider selection logics and loop control... selectAll especially creates a need for loop control, but loop control could backfire... 
 TODO: rethink and validate the unstreaming of indicies... what if the leaf of an index tree is unserialized first... then the referringObject cannot be determined...
 
+TODO: Take use of bower in some intelligent way... 
 
 isLoaded(object, selector).... should it perhaps use a selection locally to see if everything is loaded?... or should it depend on loading tags?.... 
 
