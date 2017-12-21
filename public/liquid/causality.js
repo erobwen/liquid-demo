@@ -2725,6 +2725,7 @@
 		}
 
 		function repeatOnChange() { // description(optional), action
+			state.inPulse++;
 			// Arguments
 			let repeaterAction;
 			let description = '';
@@ -2740,7 +2741,8 @@
 				description: description,
 				action: repeaterAction,
 				remove : function() {
-					// console.log("removeRepeater: " + repeater.const.id + "." + repeater.description);
+					throw new Error("Should nt happen");
+					console.log("removeRepeater: " + repeater.const.id + "." + repeater.description);
 					removeChildContexts(this);
 					detatchRepeater(this);
 					this.micro.remove(); // Remove recorder!
@@ -2749,10 +2751,13 @@
 				previousDirty : null
 			}
 			if (configuration.reactiveStructuresAsCausalityObjects) repeater = createImmutable(repeater)
-			return refreshRepeater(repeater);
+			let result = refreshRepeater(repeater);
+			if (--state.inPulse === 0) postPulseCleanup();
+			return result;
 		}
 
 		function refreshRepeater(repeater) {
+			console.log("=====================Refresh =====");
 			state.refreshingRepeater = true;
 			enterContext('repeater_refreshing', repeater);
 			// console.log("parent context type: " + repeater.parent.type);
@@ -2768,6 +2773,7 @@
 			);
 			leaveContext();
 			state.refreshingRepeater = false;
+			console.log("=================================");
 			return repeater;
 		}
 

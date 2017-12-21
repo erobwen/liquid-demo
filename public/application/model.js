@@ -67,6 +67,7 @@
 		
 		
 		selectBasics(selection) {
+			liquid.addToSelection(selection, this.todoList);
 			trace.selection && logGroup(this.const.id + ".selectBasics");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);

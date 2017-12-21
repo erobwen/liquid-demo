@@ -51,7 +51,8 @@ liquid.addNotifyUICallback(function() {
 	componentsNeedOfForceUpdate.forEach(function(component) {
 		// console.log("Force update!");
 		if (component._mounted) {
-			// console.log("Actual force update!");
+			log("Actual force update!");
+			log(component);
 			component.forceUpdate();
 		}
 	});
@@ -162,6 +163,7 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 	},
 	function() {
 		trace.ui && log("Component:" + className + " in need of update");
+		log(component);
 		// trace('react', "Component:" + className + " in need of update");
 		componentsNeedOfForceUpdate.push(component);
 	});

@@ -83,6 +83,10 @@ if (!liquid.persistent.demoInitialized) {
 		// log("==========================================================");
 		// Create user and add to index.
 		user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
+		user.todoList = create([]);
+		user.todoList.push("Foo");
+		user.todoList.push("Bar");
+		user.todoList.push("Fum");
 		liquid.persistent.users.add(user);
 	// });
 	// liquid.pulse(function() {

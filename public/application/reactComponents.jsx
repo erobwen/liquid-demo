@@ -31,7 +31,8 @@
 // let logUngroup = liquid.logUngroup;
 
 let trace = {};
-let log = function() {};
+// let log = function() {};
+let log = console.log;
 let logGroup = function() {};
 let logUngroup = function() {};
 
@@ -42,6 +43,7 @@ window.LiquidApplication = React.createClass(liquidClassData({
 			let page = window.page;
 			trace.ui && log("RENDERING!!!");
 			trace.ui && log(page);
+					// <TodoList user = { page.viewedUser.todoList }/>
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
 					<LoginUI page = { page }/>
@@ -126,6 +128,7 @@ var UserView = React.createClass(liquidClassData({
 	},
 	
 	onDrop: function(a) {
+		// https://www.kirupa.com/html5/get_element_position_using_javascript.htm
 		console.log(a);
 		//trace.ui && log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
 		// trace.ui && log(this.props.category);
@@ -209,14 +212,14 @@ var PropertyField = React.createClass(liquidClassData({
 				trace.ui && log("focused...");
 				return (
 					<span onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
-						<span>{ labelString }<input type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
+						<span>{ labelString }<input className="propertyContents" type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
 					</span>
 				);
 			} else {
 				trace.ui && log("unfocused...");
 				return (
 					<span onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
-						<span>{ labelString }{this.props.object[this.props.propertyName]}</span>
+						<span className="propertyContents">{ labelString }{this.props.object[this.props.propertyName]}</span>
 					</span>
 				);
 			}
@@ -262,6 +265,15 @@ var draggedCategory = null;
 window.CategoryView = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { draggingOver : false, collapsed: false };
+	},
+
+	getHeadPropertyField() {
+		if (typeof(this.categoryHeadDiv) !== 'undefined') {
+			let propertyContents = this.categoryHeadDiv.getElementsByClassName('propertyContents');
+			return propertyContents[0];
+		} else {
+			throw new Error("could not find property field... ");
+		}
 	},
 	
 	componentDidMount: function() {
@@ -352,6 +364,17 @@ window.CategoryView = React.createClass(liquidClassData({
 	},
 	
 	onDrop: function(event) {
+		let headPropertyField = this.getHeadPropertyField();
+		log("dropping");
+		log(this);
+		log("headPropertyField:");
+		log(headPropertyField);
+		log(headPropertyField.offsetLeft);
+		log(headPropertyField.clientWidth);
+		log("event:");
+		log(event.pageX);
+		log(event.screenX);
+		log(event.scrollX);
 		//trace.ui && log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
 		// trace.ui && log(this.props.category);
 		event.preventDefault();
@@ -468,6 +491,7 @@ window.CategoryView = React.createClass(liquidClassData({
 			return (
 				<div className="CategoryView">
 					<div 
+						ref= {(div) => { this.categoryHeadDiv = div; }}
 						draggable = "true"
 						style={{ marginBottom: this.state.draggingOver ? "0.6em" : "0em"}}
 						onDragStart = { this.onDragStart }
