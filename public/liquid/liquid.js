@@ -1269,9 +1269,11 @@
 				trace.liquid && logGroup("streamInRelevantDirections");
 				// log(events, 2);
 				// Notify UI
+				trace.liquid && logGroup("UI refresh...");
 				notifyUICallbacks.forEach(function(callback) {
 					callback(events);
 				});
+				trace.liquid && logUngroup();
 					
 				// Push data downstream
 				pushDataDownstream(events);

@@ -1271,8 +1271,7 @@
 				}
 			}
 
-			state.observerNotificationPostponed--;
-			proceedWithPostponedNotifications();
+			if (--state.observerNotificationPostponed === 0) proceedWithPostponedNotifications();
 			if (--state.inPulse === 0) postPulseCleanup();
 
 			if( target[key] !== value && !(Number.isNaN(target[key]) && Number.isNaN(value)) ) return false; // Write protected?
@@ -2199,8 +2198,7 @@
 			state.inPulse++;
 			state.observerNotificationPostponed++;
 			action();
-			state.observerNotificationPostponed--;
-			proceedWithPostponedNotifications();
+			if (--state.observerNotificationPostponed === 0) proceedWithPostponedNotifications();
 			if (--state.inPulse === 0) postPulseCleanup();
 		}
 
@@ -2628,16 +2626,21 @@
 		let lastObserverToNotifyChange = null;
 		
 		function proceedWithPostponedNotifications() {
-			if (state.observerNotificationPostponed == 0) {
+			trace.set && logGroup("proceedWithPostponedNotifications");
+			trace.set && log("state.observerNotificationPostponed: " + state.observerNotificationPostponed);
+			if (state.observerNotificationPostponed === 0) {
+				trace.set && log(nextObserverToNotifyChange);
 				while (nextObserverToNotifyChange !== null) {
+					trace.set && log("found an observer to notify...")
 					let recorder = nextObserverToNotifyChange;
 					nextObserverToNotifyChange = nextObserverToNotifyChange.nextToNotify;
+					if (nextObserverToNotifyChange === null) lastObserverToNotifyChange = null;
 					// blockSideEffects(function() {
 					performAction(recorder.uponChangeAction);
 					// });
 				}
-				lastObserverToNotifyChange = null;
 			}
+			trace.set && logUngroup();
 		}
 
 		function nullifyObserverNotification(callback) {
@@ -2650,6 +2653,8 @@
 		// Recorders is a map from id => recorder
 		// A bit like "for all incoming"...
 		function notifyChangeObservers(observers) {
+			trace.set && log("notifyChangeObservers...");
+			trace.set && log("state.observerNotificationNullified: " + state.observerNotificationNullified);
 			if (typeof(observers.isChunkListHead) !== 'undefined') {
 				if (state.observerNotificationNullified > 0) {
 					return;
@@ -2657,6 +2662,7 @@
 
 				let contents = observers.contents;
 				for (id in contents) {
+					// trace.set && log("notifying a change observer!!!");
 					notifyChangeObserver(contents[id]);
 				}
 
@@ -2674,14 +2680,21 @@
 		}
 
 		function notifyChangeObserver(observer) {
+			trace.set && logGroup("notifyChangeObserver");
+			trace.set && log(observer);
 			if (observer != state.microContext) {
+				trace.set && log("not writing to itself...");
 				if (typeof(observer.remove) === 'function') {
+					trace.set && log("removing observer	...");
 					observer.remove(); // Cannot be any more dirty than it already is!					
 				}
+				trace.set && log("state.observerNotificationPostponed: " + state.observerNotificationPostponed);
 				if (state.observerNotificationPostponed > 0) {
 					if (lastObserverToNotifyChange !== null) {
+						trace.set && log("Add last...");
 						lastObserverToNotifyChange.nextToNotify = observer;
 					} else {
+						trace.set && log("Add first and last...");
 						nextObserverToNotifyChange = observer;
 					}
 					lastObserverToNotifyChange = observer;
@@ -2690,7 +2703,10 @@
 					performAction(observer.uponChangeAction);
 					// });
 				}
+			} else {
+				trace.set && log("observer same as microcontext, do not notify self!!!");
 			}
+			trace.set && logUngroup();
 		}
 
 
@@ -2758,6 +2774,7 @@
 
 		function refreshRepeater(repeater) {
 			console.log("=====================Refresh =====");
+			state.inPulse++;
 			state.refreshingRepeater = true;
 			enterContext('repeater_refreshing', repeater);
 			// console.log("parent context type: " + repeater.parent.type);
@@ -2773,6 +2790,7 @@
 			);
 			leaveContext();
 			state.refreshingRepeater = false;
+			if (--state.inPulse === 0) postPulseCleanup();
 			console.log("=================================");
 			return repeater;
 		}

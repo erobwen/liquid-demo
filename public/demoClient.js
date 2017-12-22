@@ -22,11 +22,22 @@
 	
 	// Setup trace (after initial data is added)
 	// liquid.trace.incoming = 1; 
-	liquid.trace.socket = 1; 
-	liquid.trace.ui = 1; 
-	liquid.trace.pulse = 1; 
-	liquid.trace.liquid = 1; 
-	liquid.trace.unserialize = 1; 
+	// liquid.trace.socket = 1; 
+	// liquid.trace.ui = 1; 
+	// liquid.trace.pulse = 1; 
+	// liquid.trace.liquid = 1; 
+	// liquid.trace.unserialize = 1; 
+	
+	window.test = function() {
+		liquid.repeat(() => {
+			logGroup("<<<<< inside repeater >>>>>");
+			favourite.name = funny.name + " too"; 
+			logUngroup();
+		});
+		trace.set = 1;
+		funny.name = "X";
+		trace.set = 0;
+	}
 
 	
 	// Setup global variables. 

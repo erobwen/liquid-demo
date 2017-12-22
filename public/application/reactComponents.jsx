@@ -129,7 +129,7 @@ var UserView = React.createClass(liquidClassData({
 	
 	onDrop: function(a) {
 		// https://www.kirupa.com/html5/get_element_position_using_javascript.htm
-		console.log(a);
+		// console.log(a);
 		//trace.ui && log("onDrop:" + this.props.category.name + ", " + this.dragEnterCounter);
 		// trace.ui && log(this.props.category);
 		event.preventDefault();
