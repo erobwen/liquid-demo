@@ -2773,8 +2773,8 @@
 		}
 
 		function refreshRepeater(repeater) {
-			console.log("=====================Refresh =====");
-			state.inPulse++;
+			// console.log("=====================Refresh =====");
+			// state.inPulse++;
 			state.refreshingRepeater = true;
 			enterContext('repeater_refreshing', repeater);
 			// console.log("parent context type: " + repeater.parent.type);
@@ -2790,8 +2790,8 @@
 			);
 			leaveContext();
 			state.refreshingRepeater = false;
-			if (--state.inPulse === 0) postPulseCleanup();
-			console.log("=================================");
+			// if (--state.inPulse === 0) postPulseCleanup();
+			// console.log("=================================");
 			return repeater;
 		}
 
