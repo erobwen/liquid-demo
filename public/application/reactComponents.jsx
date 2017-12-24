@@ -43,11 +43,11 @@ window.LiquidApplication = React.createClass(liquidClassData({
 			let page = window.page;
 			trace.ui && log("RENDERING!!!");
 			trace.ui && log(page);
-					// <TodoList user = { page.viewedUser.todoList }/>
+			// <UserView user = { page.viewedUser }/>
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
 					<LoginUI page = { page }/>
-					<UserView user = { page.viewedUser }/>
+					<TodoList todoList = { page.viewedUser.todoList }/>
 				</div>
 			);
 		}.bind(this));
@@ -184,7 +184,7 @@ var UserView = React.createClass(liquidClassData({
 }));
 
 
-var PropertyField = React.createClass(liquidClassData({
+window.PropertyField = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { focused : false };
 	},

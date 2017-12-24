@@ -68,6 +68,9 @@
 		
 		selectBasics(selection) {
 			liquid.addToSelection(selection, this.todoList);
+			this.todoList.forEach((item) => {
+				liquid.addToSelection(selection, item);
+			});
 			trace.selection && logGroup(this.const.id + ".selectBasics");
 			liquid.addToSelection(selection, this);
 			liquid.addToSelection(selection, this.passwordVault);
@@ -210,10 +213,21 @@
 	liquid.createIncomingSetProperty(Reference, "categories", Category, "references"); 
 	liquid.createIncomingProperty(Reference, "owner", User, "addedReferences"); 
 
+	class TodoItem extends LiquidEntity {
+		initialize(data) {
+			super.initialize(data);
+
+			this.setProperty("name", data, "");
+			this.setProperty("done", data, false);
+		}
+	}
+
+	
 	return {
 		User : User,
 		Page : Page,
 		Category : Category,
-		Reference : Reference
+		Reference : Reference,
+		TodoItem : TodoItem
 	}	
 }));
