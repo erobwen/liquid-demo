@@ -492,8 +492,8 @@ window.CategoryView = React.createClass(liquidClassData({
 				<div className="CategoryView">
 					<div 
 						ref= {(div) => { this.categoryHeadDiv = div; }}
-						draggable = "true"
 						style={{ marginBottom: this.state.draggingOver ? "0.6em" : "0em"}}
+						draggable = "true"
 						onDragStart = { this.onDragStart }
 						onDragEnter = { this.onDragEnter }
 						onDragOver = { this.onDragOver }

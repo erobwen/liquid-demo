@@ -29,18 +29,131 @@ window.TodoList = React.createClass(liquidClassData({
 }));
 
 
-var draggedCategory = null;
+var draggedTodo = null;
 window.TodoItem = React.createClass(liquidClassData({
 	getInitialState: function() {
-		return { };
+		return { draggingOver : false };
 	},
 
+	getHeadPropertyField() {
+		if (typeof(this.itemHeadDiv) !== 'undefined') {
+			let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
+			return propertyContents[0];
+		} else {
+			throw new Error("could not find property field... ");
+		}
+	},
+
+	
+	onDragStart: function(event) {
+		// trace.ui && log("onDragStart:" + this.props.item.name);
+		draggedTodo = this.props.item;
+		// event.dataTransfer.setData("itemId", this.props.item.const.id);
+	},
+	
+	dragEnterCounter: 0,
+	onDragEnter: function(event) {
+		// trace.ui && log("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
+		event.preventDefault();
+		this.dragEnterCounter++;
+		var item = this.props.item;
+		if (this.dragEnterCounter === 1) {
+			// trace.ui && log("Drag enter counter is one!");
+			// if (item.writeable() && item.canAddSubCategory(draggedCategory)) {
+				// trace.ui && log("Actually enter!");
+				this.setState({ 
+					draggingOver: true
+				});
+			// } else {
+				// this.setState({});
+			// }
+		} else {
+			this.setState({});
+		}
+	},
+	
+	onDragLeave: function(event) {
+		// trace.ui && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
+		event.preventDefault();
+		this.dragEnterCounter--;
+		var item = this.props.item;
+		if (this.dragEnterCounter === 0) {
+			// trace.ui && log("Drag leave counter is zero!");
+			if (item.writeable() && item.canAddSubCategory(draggedCategory)) {
+				// trace.ui && log("Actually leave!");
+				this.setState({ 
+					draggingOver: false
+				});
+			} else {
+				this.setState({});
+			}
+		}  else {
+			this.setState({});
+		}
+	},
+	
+	onDragExit: function(event) {
+		// trace.ui && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
+		event.preventDefault();
+		this.setState({ 
+			draggingOver: false
+		});
+	},
+	
+	onDragOver: function(event) {
+		// trace.ui && log("onDragOver:" + this.props.item.name);
+		event.preventDefault();
+	},
+	
+	onDrop: function(event) {
+		let headPropertyField = this.getHeadPropertyField();
+		log("dropping");
+		log(this);
+		log("headPropertyField:");
+		log(headPropertyField);
+		log(headPropertyField.offsetLeft);
+		log(headPropertyField.clientWidth);
+		log("event:");
+		log(event.pageX);
+		log(event.screenX);
+		log(event.scrollX);
+		//trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
+		// trace.ui && log(this.props.item);
+		event.preventDefault();
+		this.dragEnterCounter = 0;
+		var item = this.props.item;
+		var droppedCategory = draggedCategory;
+		draggedCategory = null;
+		if (item.writeable() && item.canAddSubCategory(droppedCategory)) {
+			liquid.pulse(function() {
+				// trace.ui && log(droppedCategory.parents.length);
+				// trace.ui && log(droppedCategory.parents);
+				// var parents = copyArray(droppedCategory.parents);
+				droppedCategory.parents.forEach(function(parentCategory) {
+					// trace.ui && log("Dropping parent: " + parentCategory.__());
+					parentCategory.subCategories.remove(droppedCategory);
+				});
+				item.subCategories.add(droppedCategory);	
+			});
+		}
+		this.setState({ 
+			draggingOver: false
+		});
+	},
+	
 	render: function() {
 		return invalidateUponLiquidChange("TodoItem", this, function() {
 			trace.ui && log("render: TodoItem");
 			return (
-				<div className="TodoItem">
-					<span>
+				<div className="TodoItem"
+					draggable = "true"
+					onDragStart = { this.onDragStart }
+					onDragEnter = { this.onDragEnter }
+					onDragOver = { this.onDragOver }
+					onDragExit = { this.onDragExit }
+					onDragLeave = { this.onDragLeave }
+					onDrop = { this.onDrop }>
+					<span ref= {(element) => { this.itemHeadDiv = element; }}>
 						<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
 					</span>				
 				</div>
