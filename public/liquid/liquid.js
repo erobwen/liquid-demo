@@ -397,7 +397,7 @@
 						trace.unserialize && log("deleting " + event.property);
 						delete object[event.property];
 					} else {
-						throw new Error("Event not supported yet for unserialize: " + event.type);
+						// throw new Error("Event not supported yet for unserialize: " + event.type);
 					}
 				}
 			});			

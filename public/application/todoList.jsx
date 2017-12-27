@@ -6,13 +6,27 @@ window.TodoList = React.createClass(liquidClassData({
 
 	addAfter : function(referenceItem, item) {
 		let i = 0;
+		let itemIndex;
+		this.props.todoList.forEach((scannedItem) => {
+			if (scannedItem === item) {
+				itemIndex = i; 
+			}
+			i++;
+		});
+		// console.log("remove old object at index:" + itemIndex);
+		this.props.todoList.splice(itemIndex, 1);
+		
 		let referenceIndex;
+		i = 0;
 		this.props.todoList.forEach((scannedItem) => {
 			if (scannedItem === referenceItem) {
-				referenceIndex = i; 
+				referenceIndex = i + 1; 
 			}
+			i++;
 		});
+		// console.log("remove old object at index:" + referenceIndex);
 		this.props.todoList.splice(referenceIndex, 0, item);
+		// this.props.todoList.push(item);
 	},
 	
 	render: function() {
@@ -41,7 +55,9 @@ window.TodoList = React.createClass(liquidClassData({
 }));
 
 
-var draggedItem = null;
+let draggedItem = null;
+let draggedElement = null;
+
 window.TodoItem = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { draggingOver : false, isDragging : false };
@@ -62,6 +78,7 @@ window.TodoItem = React.createClass(liquidClassData({
 	onDragStart: function(event) {
 		// trace.ui && log("onDragStart:" + this.props.item.name);
 		draggedItem = this.props.item;
+		draggedElement = this.todoItem;
 		this.setState({ 
 			isDragging: true, 
 			draggingOver : false
@@ -74,6 +91,10 @@ window.TodoItem = React.createClass(liquidClassData({
 
 		// style={{ transform: this.state.isDragging ? "translateX(-9999px)" : "translateX(0px)"}}
 		// event.dataTransfer.setData("itemId", this.props.item.const.id);
+	},
+
+	onDragEnd : function(event) {
+		this.todoItem.removeAttribute("style");//element.removeAttribute("style")
 	},
 	
 	dragEnterCounter: 0,
@@ -160,11 +181,18 @@ window.TodoItem = React.createClass(liquidClassData({
 	
 	onDrop: function(event) {
 		//trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
+
+		// event.persist() // NOTE: don't forget to remove it post debug
+		// console.log(event);
 		// trace.ui && log(this.props.item);
 		event.preventDefault();
 		this.dragEnterCounter = 0;
 		var item = this.props.item;
 		var droppedItem = draggedItem;
+		// delete this.todoItem.style.transform;
+		// this.todoItem.style.transform = "";
+		draggedElement.removeAttribute("style");//element.removeAttribute("style")
+		console.log(this.todoItem);
 		this.props.addAfter(this.props.item, droppedItem);
 		draggedItem = null;
 		this.setState({ 
@@ -218,6 +246,7 @@ window.TodoItem = React.createClass(liquidClassData({
 					<div className="TodoItem" ref= {(element) => { this.todoItem = element; }}
 						draggable = "true"
 						onDragStart = { this.onDragStart }
+						onDragEnd = { this.onDragEnd }
 						onDragEnter = { this.onDragEnter }
 						onDragOver = { this.onDragOver }
 						onDragExit = { this.onDragExit }

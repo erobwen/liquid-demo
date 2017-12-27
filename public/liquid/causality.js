@@ -585,11 +585,16 @@
 			// Remove incoming relations for removed
 			if (removedOrIncomingStructures !== null) {
 				removedOrIncomingStructures.forEach(function(removedOrIncomingStructure) {
-					if (isIncomingStructure(previousStructure)) {
-						if ((previousValue.const.incomingReferences -= 1) === 0)  removedLastIncomingRelation(removedElement); // TODO: Move elsewhere... 
-						removeReverseReference(proxy.const.id, removedOrIncomingStructure);
-						if (typeof(removedOrIncomingStructure.const.incoming[referringRelation].observers) !== 'undefined') {
-							notifyChangeObservers(removedOrIncomingStructure.const.incoming[referringRelation].observers);
+					let isIncomingStructure = isIncomingStructure(removedOrIncomingStructure);
+					let isObject = isObject(removedOrIncomingStructure);
+					if (isIncomingStructure || isObject) {
+						let removedObject = isObject ? removedOrIncomingStructure : getReferredObject(removedOrIncomingStructure);
+						if ((removedObject.const.incomingReferences -= 1) === 0)  removedLastIncomingRelation(removedObject);
+						if (isIncomingStructure) {
+							removeReverseReference(proxy.const.id, removedOrIncomingStructure);
+							if (typeof(removedObject.const.incoming[referringRelation].observers) !== 'undefined') {
+								notifyChangeObservers(removedObject.const.incoming[referringRelation].observers);
+							}
 						}
 					}					
 				});					
