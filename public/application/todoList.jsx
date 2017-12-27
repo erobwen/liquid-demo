@@ -4,6 +4,17 @@ window.TodoList = React.createClass(liquidClassData({
 		return { state : create({}) };
 	},
 
+	addAfter : function(referenceItem, item) {
+		let i = 0;
+		let referenceIndex;
+		this.props.todoList.forEach((scannedItem) => {
+			if (scannedItem === referenceItem) {
+				referenceIndex = i; 
+			}
+		});
+		this.props.todoList.splice(referenceIndex, 0, item);
+	},
+	
 	render: function() {
 		trace.ui && log("render: TodoList");
 		return invalidateUponLiquidChange("TodoList", this, function() {
@@ -15,6 +26,7 @@ window.TodoList = React.createClass(liquidClassData({
 					<TodoItem 
 						key = { item.const.id }
 						item = { item }
+						addAfter = { this.addAfter }
 					/>
 				);
 				// todoItems.push(<TodoDropPlaceholder/>); 
@@ -152,24 +164,25 @@ window.TodoItem = React.createClass(liquidClassData({
 		event.preventDefault();
 		this.dragEnterCounter = 0;
 		var item = this.props.item;
-		var droppedCategory = draggedItem;
+		var droppedItem = draggedItem;
+		this.props.addAfter(this.props.item, droppedItem);
 		draggedItem = null;
-		// if (item.writeable()) {
-			// liquid.pulse(function() {
-				// // trace.ui && log(droppedCategory.parents.length);
-				// // trace.ui && log(droppedCategory.parents);
-				// // var parents = copyArray(droppedCategory.parents);
-				// droppedCategory.parents.forEach(function(parentCategory) {
-					// // trace.ui && log("Dropping parent: " + parentCategory.__());
-					// parentCategory.subCategories.remove(droppedCategory);
-				// });
-				// item.subCategories.add(droppedCategory);	
-			// });
-		// }
 		this.setState({ 
 			draggingOver: false,
 			isDragging : false
 		});
+		// if (item.writeable()) {
+			// liquid.pulse(function() {
+				// // trace.ui && log(droppedItem.parents.length);
+				// // trace.ui && log(droppedItem.parents);
+				// // var parents = copyArray(droppedItem.parents);
+				// droppedItem.parents.forEach(function(parentCategory) {
+					// // trace.ui && log("Dropping parent: " + parentCategory.__());
+					// parentCategory.subCategories.remove(droppedItem);
+				// });
+				// item.subCategories.add(droppedItem);	
+			// });
+		// }
 	},
 	
 	render: function() {
@@ -347,18 +360,18 @@ window.TodoItem = React.createClass(liquidClassData({
 		// event.preventDefault();
 		// this.dragEnterCounter = 0;
 		// var item = this.props.item;
-		// var droppedCategory = draggedItem;
+		// var droppedItem = draggedItem;
 		// draggedItem = null;
-		// if (item.writeable() && item.canAddSubCategory(droppedCategory)) {
+		// if (item.writeable() && item.canAddSubCategory(droppedItem)) {
 			// liquid.pulse(function() {
-				// // trace.ui && log(droppedCategory.parents.length);
-				// // trace.ui && log(droppedCategory.parents);
-				// // var parents = copyArray(droppedCategory.parents);
-				// droppedCategory.parents.forEach(function(parentCategory) {
+				// // trace.ui && log(droppedItem.parents.length);
+				// // trace.ui && log(droppedItem.parents);
+				// // var parents = copyArray(droppedItem.parents);
+				// droppedItem.parents.forEach(function(parentCategory) {
 					// // trace.ui && log("Dropping parent: " + parentCategory.__());
-					// parentCategory.subCategories.remove(droppedCategory);
+					// parentCategory.subCategories.remove(droppedItem);
 				// });
-				// item.subCategories.add(droppedCategory);	
+				// item.subCategories.add(droppedItem);	
 			// });
 		// }
 		// this.setState({ 
