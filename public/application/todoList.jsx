@@ -29,10 +29,10 @@ window.TodoList = React.createClass(liquidClassData({
 }));
 
 
-var draggedTodo = null;
+var draggedItem = null;
 window.TodoItem = React.createClass(liquidClassData({
 	getInitialState: function() {
-		return { draggingOver : false };
+		return { draggingOver : false, isDragging : false };
 	},
 
 	getHeadPropertyField() {
@@ -40,6 +40,8 @@ window.TodoItem = React.createClass(liquidClassData({
 			let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
 			return propertyContents[0];
 		} else {
+			console.log(this.itemHeadDiv);
+			window.errorDiv = this.itemHeadDiv;
 			throw new Error("could not find property field... ");
 		}
 	},
@@ -47,7 +49,18 @@ window.TodoItem = React.createClass(liquidClassData({
 	
 	onDragStart: function(event) {
 		// trace.ui && log("onDragStart:" + this.props.item.name);
-		draggedTodo = this.props.item;
+		draggedItem = this.props.item;
+		this.setState({ 
+			isDragging: true, 
+			draggingOver : false
+		});
+		
+		setTimeout(function(){
+			this.todoItem.style.transform = "translateX(-9999px)";
+		}.bind(this));
+
+
+		// style={{ transform: this.state.isDragging ? "translateX(-9999px)" : "translateX(0px)"}}
 		// event.dataTransfer.setData("itemId", this.props.item.const.id);
 	},
 	
@@ -56,19 +69,22 @@ window.TodoItem = React.createClass(liquidClassData({
 		// trace.ui && log("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter++;
-		var item = this.props.item;
-		if (this.dragEnterCounter === 1) {
-			// trace.ui && log("Drag enter counter is one!");
-			// if (item.writeable() && item.canAddSubCategory(draggedCategory)) {
-				// trace.ui && log("Actually enter!");
-				this.setState({ 
-					draggingOver: true
-				});
-			// } else {
-				// this.setState({});
-			// }
-		} else {
-			this.setState({});
+		if (draggedItem !== this.props.item) {
+			var item = this.props.item;
+			if (this.dragEnterCounter === 1) {
+				// trace.ui && log("Drag enter counter is one!");
+				// if (item.writeable() && item.canAddSubCategory(draggedItem)) {
+					// trace.ui && log("Actually enter!");
+					this.setState({ 
+						draggingOver: true,
+						isDragging : false
+					});
+				// } else {
+					// this.setState({});
+				// }
+			} else {
+				this.setState({});
+			}			
 		}
 	},
 	
@@ -79,14 +95,15 @@ window.TodoItem = React.createClass(liquidClassData({
 		var item = this.props.item;
 		if (this.dragEnterCounter === 0) {
 			// trace.ui && log("Drag leave counter is zero!");
-			if (item.writeable() && item.canAddSubCategory(draggedCategory)) {
+			// if (item.writeable() && item.canAddSubCategory(draggedItem)) {
 				// trace.ui && log("Actually leave!");
 				this.setState({ 
-					draggingOver: false
+					draggingOver: false,
+					isDragging : false
 				});
-			} else {
-				this.setState({});
-			}
+			// } else {
+				// this.setState({});
+			// }
 		}  else {
 			this.setState({});
 		}
@@ -96,68 +113,110 @@ window.TodoItem = React.createClass(liquidClassData({
 		// trace.ui && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		this.setState({ 
-			draggingOver: false
+			draggingOver : false
 		});
 	},
 	
 	onDragOver: function(event) {
+		let headPropertyField = this.getHeadPropertyField();
+		window.headPropertyField = headPropertyField;
+		// log("onDragOver");
+		// log(this);
+		// log("headPropertyField:");
+		// log(headPropertyField);
+		// log(headPropertyField.offsetLeft);
+		// log(headPropertyField.offsetWidth);
+		// log("event:");
+		// log(event.pageX);
+		// log(event.screenX);
+		let xWithinField = event.screenX - headPropertyField.offsetLeft;
+		let halfWidth = headPropertyField.offsetWidth / 2;
+		
+		let left = xWithinField <= halfWidth;
+		this.setState({
+			draggingOver : true,
+			addAsNextSibling : left,
+			addAsFirstChild : !left,
+			isDragging : false
+		});
+		// log(left);
+		// log(event.scrollX);
+
 		// trace.ui && log("onDragOver:" + this.props.item.name);
 		event.preventDefault();
 	},
 	
 	onDrop: function(event) {
-		let headPropertyField = this.getHeadPropertyField();
-		log("dropping");
-		log(this);
-		log("headPropertyField:");
-		log(headPropertyField);
-		log(headPropertyField.offsetLeft);
-		log(headPropertyField.clientWidth);
-		log("event:");
-		log(event.pageX);
-		log(event.screenX);
-		log(event.scrollX);
 		//trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
 		// trace.ui && log(this.props.item);
 		event.preventDefault();
 		this.dragEnterCounter = 0;
 		var item = this.props.item;
-		var droppedCategory = draggedCategory;
-		draggedCategory = null;
-		if (item.writeable() && item.canAddSubCategory(droppedCategory)) {
-			liquid.pulse(function() {
-				// trace.ui && log(droppedCategory.parents.length);
-				// trace.ui && log(droppedCategory.parents);
-				// var parents = copyArray(droppedCategory.parents);
-				droppedCategory.parents.forEach(function(parentCategory) {
-					// trace.ui && log("Dropping parent: " + parentCategory.__());
-					parentCategory.subCategories.remove(droppedCategory);
-				});
-				item.subCategories.add(droppedCategory);	
-			});
-		}
+		var droppedCategory = draggedItem;
+		draggedItem = null;
+		// if (item.writeable()) {
+			// liquid.pulse(function() {
+				// // trace.ui && log(droppedCategory.parents.length);
+				// // trace.ui && log(droppedCategory.parents);
+				// // var parents = copyArray(droppedCategory.parents);
+				// droppedCategory.parents.forEach(function(parentCategory) {
+					// // trace.ui && log("Dropping parent: " + parentCategory.__());
+					// parentCategory.subCategories.remove(droppedCategory);
+				// });
+				// item.subCategories.add(droppedCategory);	
+			// });
+		// }
 		this.setState({ 
-			draggingOver: false
+			draggingOver: false,
+			isDragging : false
 		});
 	},
 	
 	render: function() {
 		return invalidateUponLiquidChange("TodoItem", this, function() {
 			trace.ui && log("render: TodoItem");
-			return (
-				<div className="TodoItem"
-					draggable = "true"
-					onDragStart = { this.onDragStart }
-					onDragEnter = { this.onDragEnter }
-					onDragOver = { this.onDragOver }
-					onDragExit = { this.onDragExit }
-					onDragLeave = { this.onDragLeave }
-					onDrop = { this.onDrop }>
-					<span ref= {(element) => { this.itemHeadDiv = element; }}>
-						<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
-					</span>				
-				</div>
-			);
+			
+			if (this.props.isPreview) {			
+				return (
+					<div className="TodoItem">
+						<span ref= {(element) => { this.itemHeadDiv = element; }}>
+							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
+						</span>				
+					</div>
+				);				
+			} else {
+				// Get the drop item
+				let dropItem;
+				if (this.state.draggingOver) {
+					if (this.state.addAsNextSibling) {
+						dropItem = (<TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/>);
+					} else {
+						dropItem = (
+							<div style={{ marginLeft: this.state.draggingOver ? "0.6em" : "0em"}}>
+								<TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/>
+							</div>
+						);
+					}
+				} else {
+					dropItem = (<div></div>);
+				}
+				
+				return (
+					<div className="TodoItem" ref= {(element) => { this.todoItem = element; }}
+						draggable = "true"
+						onDragStart = { this.onDragStart }
+						onDragEnter = { this.onDragEnter }
+						onDragOver = { this.onDragOver }
+						onDragExit = { this.onDragExit }
+						onDragLeave = { this.onDragLeave }
+						onDrop = { this.onDrop }>
+						<span ref= {(element) => { this.itemHeadDiv = element; }} >
+							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
+							{ dropItem }
+						</span>				
+					</div>
+				);				
+			}
 		}.bind(this));
 	}
 }));
@@ -195,7 +254,7 @@ window.TodoItem = React.createClass(liquidClassData({
 // http://unitstep.net/blog/2015/03/03/using-react-animations-to-transition-between-ui-states/
 // https://css-tricks.com/restart-css-animation/
 			 
-// var draggedCategory = null;
+// var draggedItem = null;
 // window.TodoItem = React.createClass(liquidClassData({
 	// getInitialState: function() {
 		// return { draggingOver : false, collapsed: false };
@@ -212,7 +271,7 @@ window.TodoItem = React.createClass(liquidClassData({
 	
 	// onDragStart: function(event) {
 		// // trace.ui && log("onDragStart:" + this.props.item.name);
-		// draggedCategory = this.props.item;
+		// draggedItem = this.props.item;
 		// // event.dataTransfer.setData("itemId", this.props.item.const.id);
 	// },
 	
@@ -225,7 +284,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		// var item = this.props.item;
 		// if (this.dragEnterCounter === 1) {
 			// // trace.ui && log("Drag enter counter is one!");
-			// if (item.writeable() && item.canAddSubCategory(draggedCategory)) {
+			// if (item.writeable() && item.canAddSubCategory(draggedItem)) {
 				// // trace.ui && log("Actually enter!");
 				// this.setState({ 
 					// draggingOver: true
@@ -245,7 +304,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		// var item = this.props.item;
 		// if (this.dragEnterCounter === 0) {
 			// // trace.ui && log("Drag leave counter is zero!");
-			// if (item.writeable() && item.canAddSubCategory(draggedCategory)) {
+			// if (item.writeable() && item.canAddSubCategory(draggedItem)) {
 				// // trace.ui && log("Actually leave!");
 				// this.setState({ 
 					// draggingOver: false
@@ -288,8 +347,8 @@ window.TodoItem = React.createClass(liquidClassData({
 		// event.preventDefault();
 		// this.dragEnterCounter = 0;
 		// var item = this.props.item;
-		// var droppedCategory = draggedCategory;
-		// draggedCategory = null;
+		// var droppedCategory = draggedItem;
+		// draggedItem = null;
 		// if (item.writeable() && item.canAddSubCategory(droppedCategory)) {
 			// liquid.pulse(function() {
 				// // trace.ui && log(droppedCategory.parents.length);
