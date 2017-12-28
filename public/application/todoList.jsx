@@ -17,7 +17,73 @@ window.DemoApplication = React.createClass(liquidClassData({
 
 window.TodoList = React.createClass(liquidClassData({	
 	getInitialState: function() {
-		return { state : create({}) };
+		return { draggingOver: false };
+	},
+	
+	/**
+	* Drag n drop target for adding first
+	*/
+	dragEnterCounter: 0,
+	onDragEnter: function(event) {
+		trace.ui && log("onDragEnter (root): " + this.dragEnterCounter);
+		event.preventDefault();
+		this.dragEnterCounter++;
+		if (draggedItem !== this.props.item) {
+			var item = this.props.item;
+			if (this.dragEnterCounter === 1) {
+				this.setState({ 
+					draggingOver: true
+				});
+			} else {
+				this.setState({});
+			}			
+		}
+	},
+	
+	onDragLeave: function(event) {
+		trace.ui && log("onDragLeave (root): " + this.dragEnterCounter);
+		event.preventDefault();
+		this.dragEnterCounter--;
+		var item = this.props.item;
+		if (this.dragEnterCounter === 0) {
+			this.setState({ 
+				draggingOver: false
+			});
+		}  else {
+			this.setState({});
+		}
+	},
+	
+	onDragExit: function(event) {
+		trace.ui && log("onDragExit (root): " + this.dragEnterCounter);
+		event.preventDefault();
+		this.setState({ 
+			draggingOver : false
+		});
+	},
+	
+	onDragOver: function(event) {
+		trace.ui && log("onDragOver (root): " + this.dragEnterCounter);
+		event.preventDefault();
+		this.setState({
+			draggingOver : true,
+		});
+	},
+
+	onDrop: function(event) {
+		trace.ui && log("onDrop (root): " + this.dragEnterCounter);
+		event.preventDefault();
+		
+		// Reset dragging
+		var droppedItem = draggedItem;
+		draggedItem = null;
+		this.dragEnterCounter = 0;
+		draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
+
+		this.props.todoList.unshift(droppedItem);
+		this.setState({
+			draggingOver : false,
+		});
 	},
 
 	addAfter : function(referenceItem, item) {
@@ -68,6 +134,7 @@ window.TodoList = React.createClass(liquidClassData({
 						onDrop = { this.onDrop }
 						style={{ height: "1em"}}>
 					</div>
+					{ (this.state.draggingOver) ? <TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/> : null }
 					{ (() => { return this.todoItems(); })() }
 				</div>
 			);
