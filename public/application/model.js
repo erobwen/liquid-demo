@@ -47,7 +47,7 @@
 		initialize(data) {
 			// log("User.initialize");
 			super.initialize(data);			
-			this.setProperty("viewedUser", data, null);
+			// this.setProperty("viewedUser", data, null);
 		}
 	}
 	

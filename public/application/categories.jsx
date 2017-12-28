@@ -36,23 +36,6 @@ let log = console.log;
 let logGroup = function() {};
 let logUngroup = function() {};
 
-window.LiquidApplication = React.createClass(liquidClassData({
-	render: function() {
-		trace.ui && log("render: LiquidApplication");
-		return invalidateUponLiquidChange("LiquidApplication", this, function() {
-			let page = window.page;
-			trace.ui && log("RENDERING!!!");
-			trace.ui && log(page);
-			// <UserView user = { page.viewedUser }/>
-			return (
-				<div onClick={ function(event) { dropFocus(event);} }>
-					<LoginUI page = { page }/>
-					<TodoList todoList = { page.viewedUser.todoList }/>
-				</div>
-			);
-		}.bind(this));
-	}
-}));
 
 // <div>
 // <span>Username: </span><input type="text"></input>

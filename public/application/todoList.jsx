@@ -1,4 +1,20 @@
 
+window.DemoApplication = React.createClass(liquidClassData({
+	render: function() {
+		trace.ui && log("render: DemoApplication");
+		return invalidateUponLiquidChange("DemoApplication", this, function() {
+			let page = window.page;
+			return (
+				<div onClick={ function(event) { dropFocus(event);} }>
+					<LoginUI page = { page }/>
+					{ (page.session.user === null) ? null : <TodoList todoList = { page.session.user.todoList }/> }
+				</div>
+			);
+		}.bind(this));
+	}
+}));
+
+
 window.TodoList = React.createClass(liquidClassData({	
 	getInitialState: function() {
 		return { state : create({}) };

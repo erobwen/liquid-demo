@@ -2,7 +2,7 @@
 // traceGroup('setup', "=== Render page first time: ===");
 
 var reactRootComponentInstance = ReactDOM.render(
-	<LiquidApplication />,
+	<DemoApplication />,
 	document.getElementById("ReactRootDiv")
 );
 // traceGroupEnd();
