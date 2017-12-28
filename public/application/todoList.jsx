@@ -29,25 +29,30 @@ window.TodoList = React.createClass(liquidClassData({
 		// this.props.todoList.push(item);
 	},
 	
+	todoItems : function() {
+		var result = [];
+		// result.push(<TodoDropPlaceholder state = { this.state } />); 
+		this.props.todoList.forEach(function(item) {
+			// trace.ui && log("A key: " + item.const.id);
+			result.push(
+				<TodoItem 
+					key = { item.const.id }
+					item = { item }
+					addAfter = { this.addAfter }
+				/>
+			);
+			// result.push(<TodoDropPlaceholder/>); 
+		}.bind(this));
+		return result;
+	},
+	
 	render: function() {
 		trace.ui && log("render: TodoList");
 		return invalidateUponLiquidChange("TodoList", this, function() {
-			var todoItems = [];
-			// todoItems.push(<TodoDropPlaceholder state = { this.state } />); 
-			this.props.todoList.forEach(function(item) {
-				// trace.ui && log("A key: " + item.const.id);
-				todoItems.push(
-					<TodoItem 
-						key = { item.const.id }
-						item = { item }
-						addAfter = { this.addAfter }
-					/>
-				);
-				// todoItems.push(<TodoDropPlaceholder/>); 
-			}.bind(this));
-			return ( 
+			return (
 				<div className="TodoList">
-					{todoItems}
+					<div style={{ height: "1em"}}></div>
+					{ (() => { return this.todoItems(); })() }
 				</div>
 			);
 		}.bind(this));
@@ -74,7 +79,6 @@ window.TodoItem = React.createClass(liquidClassData({
 			throw new Error("could not find property field... ");
 		}
 	},
-
 	
 	onDragStart: function(event) {
 		let headPropertyField = this.getHeadPropertyField();
@@ -247,7 +251,8 @@ window.TodoItem = React.createClass(liquidClassData({
 						);
 					}
 				} else {
-					dropItem = (<div></div>);
+					// dropItem = (<div></div>);
+					dropItem = null;
 				}
 				
 				return (
@@ -262,8 +267,8 @@ window.TodoItem = React.createClass(liquidClassData({
 						onDrop = { this.onDrop }>
 						<span ref= {(element) => { this.itemHeadDiv = element; }} >
 							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
-							{ dropItem }
 						</span>				
+						{ dropItem }
 					</div>
 				);				
 			}
