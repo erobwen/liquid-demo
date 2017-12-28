@@ -1,3 +1,4 @@
+TODO: Support for references between indexes. Make sure getReferingObject does not record observers?... 
 TODO: Support for 
 TODO: Make it possible to make invincible objects in eternity. Objects that cannot be killed, because they hold page information. Expose a tryKill function to test when a page releases an object.
 TODO: Make support for expression-ids in keys when streaming to and from server.

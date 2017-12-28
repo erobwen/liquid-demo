@@ -57,6 +57,7 @@ window.TodoList = React.createClass(liquidClassData({
 
 let draggedItem = null;
 let draggedElement = null;
+let leftEdgeOffset = 0;
 
 window.TodoItem = React.createClass(liquidClassData({
 	getInitialState: function() {
@@ -76,6 +77,11 @@ window.TodoItem = React.createClass(liquidClassData({
 
 	
 	onDragStart: function(event) {
+		let headPropertyField = this.getHeadPropertyField();
+		window.headPropertyField = headPropertyField;
+		leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
+		log("leftEdgeOffset: " + leftEdgeOffset);
+		
 		// trace.ui && log("onDragStart:" + this.props.item.name);
 		draggedItem = this.props.item;
 		draggedElement = this.todoItem;
@@ -86,6 +92,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		
 		setTimeout(function(){
 			this.todoItem.style.transform = "translateX(-9999px)";
+			this.todoItem.style.height = "0";
 		}.bind(this));
 
 
@@ -163,9 +170,10 @@ window.TodoItem = React.createClass(liquidClassData({
 		// log(event.pageX);
 		// log(event.screenX);
 		let xWithinField = event.screenX - headPropertyField.offsetLeft;
-		let halfWidth = headPropertyField.offsetWidth / 2;
+		let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
+		let divider = 10; //headPropertyField.offsetWidth / 2;
 		
-		let left = xWithinField <= halfWidth;
+		let left = leftEdgeXWithinField <= divider;
 		this.setState({
 			draggingOver : true,
 			addAsNextSibling : left,

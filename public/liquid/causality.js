@@ -585,14 +585,16 @@
 			// Remove incoming relations for removed
 			if (removedOrIncomingStructures !== null) {
 				removedOrIncomingStructures.forEach(function(removedOrIncomingStructure) {
-					let isIncomingStructure = isIncomingStructure(removedOrIncomingStructure);
-					let isObject = isObject(removedOrIncomingStructure);
-					if (isIncomingStructure || isObject) {
-						let removedObject = isObject ? removedOrIncomingStructure : getReferredObject(removedOrIncomingStructure);
+					let isIncomingStructureResult = isIncomingStructure(removedOrIncomingStructure);
+					let isObjectResult = isObject(removedOrIncomingStructure);
+					if (isIncomingStructureResult || isObjectResult) {
+						let removedObject = isObjectResult ? removedOrIncomingStructure : getReferredObject(removedOrIncomingStructure);
 						if ((removedObject.const.incomingReferences -= 1) === 0)  removedLastIncomingRelation(removedObject);
-						if (isIncomingStructure) {
-							removeReverseReference(proxy.const.id, removedOrIncomingStructure);
-							if (typeof(removedObject.const.incoming[referringRelation].observers) !== 'undefined') {
+						if (isIncomingStructureResult) {
+							removeReverseReference(arrayProxy.const.id, removedOrIncomingStructure);
+							if (typeof(removedObject.const.incoming) !== 'undefined' 
+								&& typeof(removedObject.const.incoming[referringRelation]) !== 'undefined' 
+								&& typeof(removedObject.const.incoming[referringRelation].observers) !== 'undefined') {
 								notifyChangeObservers(removedObject.const.incoming[referringRelation].observers);
 							}
 						}
