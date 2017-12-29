@@ -1,4 +1,30 @@
 
+function removeFromList(list, item) {
+	let itemIndex;
+	let i = 0;
+	list.forEach((scannedItem) => {
+		if (scannedItem === item) {
+			itemIndex = i; 
+		}
+		i++;
+	});
+	list.splice(itemIndex, 1);
+}
+
+
+function addAfterInList(list, referenceItem, item) {
+	let referenceIndex;
+	let i = 0;
+	list.forEach((scannedItem) => {
+		if (scannedItem === referenceItem) {
+			referenceIndex = i + 1; 
+		}
+		i++;
+	});
+	list.splice(referenceIndex, 0, item);	
+}
+
+
 window.DemoApplication = React.createClass(liquidClassData({
 	render: function() {
 		trace.ui && log("render: DemoApplication");
@@ -80,6 +106,7 @@ window.TodoList = React.createClass(liquidClassData({
 		this.dragEnterCounter = 0;
 		draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
 
+		removeFromList(this.props.todoList, droppedItem);
 		this.props.todoList.unshift(droppedItem);
 		this.setState({
 			draggingOver : false,
@@ -87,25 +114,8 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	addAfter : function(referenceItem, item) {
-		let i = 0;
-		let itemIndex;
-		this.props.todoList.forEach((scannedItem) => {
-			if (scannedItem === item) {
-				itemIndex = i; 
-			}
-			i++;
-		});
-		this.props.todoList.splice(itemIndex, 1);
-		
-		let referenceIndex;
-		i = 0;
-		this.props.todoList.forEach((scannedItem) => {
-			if (scannedItem === referenceItem) {
-				referenceIndex = i + 1; 
-			}
-			i++;
-		});
-		this.props.todoList.splice(referenceIndex, 0, item);
+		removeFromList(this.props.todoList, item);
+		addAfterInList(this.props.todoList, referenceItem, item);
 	},
 	
 	todoItems : function() {
@@ -123,18 +133,18 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	render: function() {
-		trace.ui && log("render: TodoList");
+		// trace.ui && log("render: TodoList");
 		return invalidateUponLiquidChange("TodoList", this, function() {
 			return (
 				<div className="TodoList">
-					<div onDragEnter = { this.onDragEnter }
+					<div key = "dropTarget" onDragEnter = { this.onDragEnter }
 						onDragOver = { this.onDragOver }
 						onDragExit = { this.onDragExit }
 						onDragLeave = { this.onDragLeave }
 						onDrop = { this.onDrop }
 						style={{ height: "1em"}}>
 					</div>
-					{ (this.state.draggingOver) ? <TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/> : null }
+					{ (this.state.draggingOver) ? <TodoItem key = "dropPreview" item = { draggedItem } isPreview = { true }/> : null }
 					{ (() => { return this.todoItems(); })() }
 				</div>
 			);
@@ -150,8 +160,7 @@ let leftEdgeOffset = 0;
 window.TodoItem = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { 
-			draggingOver : false, 
-			isDragging : false 
+			draggingOver : false
 		};
 	},
 
@@ -166,36 +175,61 @@ window.TodoItem = React.createClass(liquidClassData({
 		}
 	},
 
+	componentDidMount: function() {
+		if (typeof(this.todoItem) !== 'undefined') {
+			this.todoItem.style.transition = 'height .9s';
+			this.todoItem.style.height = 'auto';
+			this.todoItem.style.overflow = 'hidden';
+			// setTimeout(function(){
+				// this.todoItem.style.transition = "height 3s";
+				// this.todoItem.style.overflow = 'hidden';
+			// }.bind(this));
+		} else {
+			console.log("WTFWTFWTFWTFWTFWTF");
+		}
+	},
+	
 	/**
 	*  Dragging this todoItem
 	*/	
 	onDragStart: function(event) {
-		let headPropertyField = this.getHeadPropertyField();
-		window.headPropertyField = headPropertyField;
-		leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
-		log("leftEdgeOffset: " + leftEdgeOffset);
+		trace.ui && log("onDragStart:" + this.props.item.name);
+		// let headPropertyField = this.getHeadPropertyField();
+		// window.headPropertyField = headPropertyField;
+		// leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
 		
-		// trace.ui && log("onDragStart:" + this.props.item.name);
 		draggedItem = this.props.item;
 		draggedElement = this.todoItem;
-		this.setState({ 
-			isDragging: true, 
-			draggingOver : false
-			// addAsNextSibling : false, // only when dragging over
-			// addAsFirstChild : false,
-		});
 		
+		// setTimeout(function(){
+		// }.bind(this));
+			// this.todoItem.style.transform = "translateX(-9999px)";
+		// setTimeout(function(){
+		let a1 = this.todoItem.clientHeight;
+		let a2 = this.todoItem.scrollHeight;
+		let a3 = this.todoItem.offsetHeight;
+		let a4 = this.todoItem.style.height;
+		console.log(a1);
+		console.log(a2);
+		console.log(a3);
+		console.log(a4);
+		console.log(this.todoItem.style.transition);
+		console.log(this.todoItem.style);
+		window.div = this.todoItem;
+		this.todoItem.style.height = this.todoItem.clientHeight + "px";
 		setTimeout(function(){
 			this.todoItem.style.transform = "translateX(-9999px)";
-			this.todoItem.style.height = "0";
+			this.todoItem.style.height = "0px";
 		}.bind(this));
-
-		// style={{ transform: this.state.isDragging ? "translateX(-9999px)" : "translateX(0px)"}}
-		// event.dataTransfer.setData("itemId", this.props.item.const.id);
+		// }.bind(this));
 	},
 
 	onDragEnd : function(event) {
-		this.todoItem.removeAttribute("style");//element.removeAttribute("style")
+		trace.ui && log("onDragEnd:" + this.props.item.name);
+		this.todoItem.style.transform = "translateX(0px)";
+		setTimeout(function(){
+			this.todoItem.style.height = "auto";
+		}.bind(this));
 	},
 	
 	
@@ -204,78 +238,77 @@ window.TodoItem = React.createClass(liquidClassData({
 	*/
 	dragEnterCounter: 0,
 	onDragEnter: function(event) {
-		// trace.ui && log("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.ui && log("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		this.dragEnterCounter++;
-		if (draggedItem !== this.props.item) {
-			var item = this.props.item;
-			if (this.dragEnterCounter === 1) {
-				this.setState({ 
-					draggingOver: true,
-					isDragging : false
-				});
-			} else {
-				this.setState({});
-			}			
+		let current = this.dragEnterCounter++;
+		log(current);
+		if (this.props.item === draggedItem) return;
+		if (current === 0) {
+			console.log("START DRAGGING OVER!!!!!");
+			this.setState({ draggingOver: true });
+			setTimeout(function(){
+				if (this.preview) {
+					console.log("setting height to:" + this.preview.scrollHeight);
+					window.div = this.preview;
+					this.preview.style.height = this.preview.scrollHeight + "px";					
+				}
+			}.bind(this));
 		}
 	},
 	
 	onDragLeave: function(event) {
-		// trace.ui && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.ui && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		this.dragEnterCounter--;
-		var item = this.props.item;
-		if (this.dragEnterCounter === 0) {
+		if (this.props.item === draggedItem) return;
+		if (--this.dragEnterCounter === 0) {
 			this.setState({ 
-				draggingOver: false,
-				isDragging : false
+				draggingOver: false
 			});
-		}  else {
-			this.setState({});
+			// this.preview.style.height = "0px";
 		}
 	},
 	
 	onDragExit: function(event) {
-		// trace.ui && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.ui && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		this.setState({ 
-			draggingOver : false
-		});
+		if (this.props.item === draggedItem) return;
+		throw new Error("did not expect this...");
 	},
 	
 	onDragOver: function(event) {
-		// trace.ui && log("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
-		let headPropertyField = this.getHeadPropertyField();
-		window.headPropertyField = headPropertyField;
-		let xWithinField = event.screenX - headPropertyField.offsetLeft;
-		let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-		let divider = 10; //headPropertyField.offsetWidth / 2;
+		trace.ui && log("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
+		if (this.props.item === draggedItem) return;
+		// let headPropertyField = this.getHeadPropertyField();
+		// window.headPropertyField = headPropertyField;
+		// let xWithinField = event.screenX - headPropertyField.offsetLeft;
+		// let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
+		// let divider = 10; //headPropertyField.offsetWidth / 2;
+		// let left = leftEdgeXWithinField <= divider;
 		
-		let left = leftEdgeXWithinField <= divider;
-		this.setState({
-			draggingOver : true,
-			addAsNextSibling : left,
-			addAsFirstChild : !left,
-			isDragging : false
-		});
+		// this.setState({
+			// draggingOver : true,
+		// });
 		event.preventDefault();
 	},
 
 	onDrop: function(event) {
-		//trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
+		if (this.props.item === draggedItem) return;
 		
 		// Reset dragging
 		var droppedItem = draggedItem;
 		draggedItem = null;
 		this.dragEnterCounter = 0;
-		draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
+		// draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
+		// this.todoItem.style.transform = "translateX(0px)";
+		this.todoItem.style.height = "auto";
 
 		this.props.addAfter(this.props.item, droppedItem);
 		this.setState({ 
-			draggingOver : false,
-			isDragging : false
+			draggingOver : false
 		});
+		// this.preview.style.height = "0px";
 	},
 
 	/**
@@ -283,11 +316,13 @@ window.TodoItem = React.createClass(liquidClassData({
 	*/
 	render: function() {
 		return invalidateUponLiquidChange("TodoItem", this, function() {
-			trace.ui && log("render: TodoItem");
+			// trace.ui && log("render: TodoItem");
 			
 			if (this.props.isPreview) {			
 				return (
-					<div className="TodoItem">
+					<div className="TodoItem" 
+						style = {{ transition : 'height 3s', color : "gray"}}
+						ref= {(element) => { this.todoItem = element; }}>
 						<span ref= {(element) => { this.itemHeadDiv = element; }}>
 							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
 						</span>				
@@ -295,24 +330,38 @@ window.TodoItem = React.createClass(liquidClassData({
 				);				
 			} else {
 				// Get the drop item
-				let dropItem;
+				let preview;
 				if (this.state.draggingOver) {
-					if (this.state.addAsNextSibling) {
-						dropItem = (<TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/>);
-					} else {
-						dropItem = (
-							<div style={{ marginLeft: this.state.draggingOver ? "0.6em" : "0em"}}>
-								<TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/>
-							</div>
-						);
-					}
+					// if (this.state.addAsNextSibling) {
+						preview = (<div className = "preview"
+										ref = {(element) => { this.preview = element; }} 
+										style = {{transition: "height .9s", height: "0px"}}>
+										<TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/>
+									</div>);
+					// } else {
+						// preview = (
+							// <div style={{ marginLeft: this.state.draggingOver ? "0.6em" : "0em"}}>
+								// <TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/>
+							// </div>
+						// );
+					// }
 				} else {
 					// dropItem = (<div></div>);
-					dropItem = null;
+					preview = null;
 				}
 				
 				return (
-					<div className="TodoItem" ref= {(element) => { this.todoItem = element; }}
+					<div className="TodoItem" 
+						ref = {(element) => { this.todoItem = element; }}
+						// style = {{ 
+							// transition : 'height 3s',
+							// height : 'auto',
+							// overflow : 'hidden'
+							// // , 
+							// // transform : (this.state.isDragging ? "translateX(200px)" : "translateX(0px)"), 
+							// // height: (this.state.isDragging ? "0" : "auto")
+						// }}
+					
 						draggable = "true"						
 						onDragStart = { this.onDragStart }
 						onDragEnd = { this.onDragEnd }
@@ -325,7 +374,7 @@ window.TodoItem = React.createClass(liquidClassData({
 						<span ref= {(element) => { this.itemHeadDiv = element; }} >
 							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
 						</span>				
-						{ dropItem }
+						{ preview }
 					</div>
 				);				
 			}

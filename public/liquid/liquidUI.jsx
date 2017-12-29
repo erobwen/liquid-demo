@@ -20,7 +20,7 @@ window.LoginUI = React.createClass(liquidClassData({
 	},
 	
 	render : function() {
-		trace.ui && log("render: LoginUI");
+		// trace.ui && log("render: LoginUI");
 		return invalidateUponLiquidChange("LoginUI", this, function() {
 			// trace.ui && log(this.props.page);
 			var page = this.props.page; // same as window.page'
@@ -68,19 +68,19 @@ window.PropertyField = React.createClass(liquidClassData({
 		this.props.object[this.props.propertyName] = event.target.value;
 	},	
 	render: function() {
-		logGroup("render: PropertyField");
+		// logGroup("render: PropertyField");
 		let element = invalidateUponLiquidChange("PropertyField", this, function() {
-			trace.ui && log("labelString...");
+			// trace.ui && log("labelString...");
 			var labelString = (typeof(this.props.label) !== 'undefined' && this.props.label !== null) ? (this.props.label + ": ") : "";
 			if (this.state.focused) {
-				trace.ui && log("focused...");
+				// trace.ui && log("focused...");
 				return (
 					<span onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
 						<span className="propertyContents">{ labelString }<input type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
 					</span>
 				);
 			} else {
-				trace.ui && log("unfocused...");
+				// trace.ui && log("unfocused...");
 				return (
 					<span onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
 						<span className="propertyContents">{ labelString }{this.props.object[this.props.propertyName]}</span>
@@ -88,7 +88,7 @@ window.PropertyField = React.createClass(liquidClassData({
 				);
 			}
 		}.bind(this));
-		logUngroup();
+		// logUngroup();
 		return element;
 	}
 }));

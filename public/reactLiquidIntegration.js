@@ -51,8 +51,8 @@ liquid.addNotifyUICallback(function() {
 	componentsNeedOfForceUpdate.forEach(function(component) {
 		// console.log("Force update!");
 		if (component._mounted) {
-			trace.ui && log("Actual force update!");
-			trace.ui && log(component);
+			// trace.ui && log("Actual force update!");
+			// trace.ui && log(component);
 			component.forceUpdate();
 		}
 	});
@@ -144,10 +144,10 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 	// stackDump();
 	// console.log(componentsNeedOfForceUpdate);
 	component._ = "<" + className + " />";
-	trace.ui && log("uponChangeDo...");
+	// trace.ui && log("uponChangeDo...");
 	return liquid.uponChangeDo("Component:" + className,
 	function() {
-		trace.ui && logGroup("applyingRenderFunction! " + className);
+		// trace.ui && logGroup("applyingRenderFunction! " + className);
 		// liquid.state.noPulse = true;
 		let element;
 		// liquid.pulse(function() {
@@ -158,12 +158,12 @@ var invalidateUponLiquidChange = function(className, component, renderFunction) 
 		// console.groupEnd();
 		// traceGroupEnd();
 		// delete liquid.state.noPulse;
-		trace.ui && logUngroup();
+		// trace.ui && logUngroup();
 		return element;
 	},
 	function() {
-		trace.ui && log("Component:" + className + " in need of update");
-		trace.ui && log(component);
+		// trace.ui && log("Component:" + className + " in need of update");
+		// trace.ui && log(component);
 		// trace('react', "Component:" + className + " in need of update");
 		componentsNeedOfForceUpdate.push(component);
 	});

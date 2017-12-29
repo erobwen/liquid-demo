@@ -222,18 +222,26 @@
 				serialized.previousValue = serializeValue(event.previousValue, forUpstream);
 			}
 			if (typeof(event.added) !== 'undefined') {
-				let serializedAdded = [];
-				event.added.forEach(function(added) {
-					serializedAdded.push(serializeValue(added, forUpstream));					
-				});
-				serialized.added = serializedAdded;
+				if (event.added === null) {
+					serialized.added = [];
+				} else {
+					let serializedAdded = [];
+					event.added.forEach(function(added) {
+						serializedAdded.push(serializeValue(added, forUpstream));					
+					});
+					serialized.added = serializedAdded;					
+				}
 			}
 			if (typeof(event.removed) !== 'undefined') {
-				let serializedRemoved = [];
-				event.removed.forEach(function(removed) {
-					serializedRemoved.push(serializeValue(removed, forUpstream));					
-				});
-				serialized.removed = serializedRemoved;
+				if (event.removed === null) {
+					serialized.removed = [];					
+				} else {
+					let serializedRemoved = [];
+					event.removed.forEach(function(removed) {
+						serializedRemoved.push(serializeValue(removed, forUpstream));					
+					});
+					serialized.removed = serializedRemoved;					
+				}
 			}
 			trace.serialize && log(serialized, 3);
 			trace.serialize && logUngroup();
