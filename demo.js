@@ -87,6 +87,9 @@ if (!liquid.persistent.demoInitialized) {
 		user.todoList.push(create('TodoItem', {name : "Foo", done: false}));
 		user.todoList.push(create('TodoItem', {name : "Fie", done: false}));
 		user.todoList.push(create('TodoItem', {name : "Fum", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Fum1", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Fum2", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Fum3", done: false}));
 		liquid.persistent.users.add(user);
 	// });
 	// liquid.pulse(function() {
