@@ -182,7 +182,7 @@ window.TodoItem = React.createClass(liquidClassData({
 			// trace.event && logGroup("setState");
 			// this.setState({ draggingOver: true });
 			// trace.event && logUngroup();
-			// if (this.previewArea) this.previewArea.style.display = "inline"
+			if (this.previewArea) this.previewArea.style.display = "block"
 			this.previewArea.innerHTML = "...preview..."; 
 			setTimeout(function(){
 				if (this.previewArea) {
@@ -264,7 +264,7 @@ window.TodoItem = React.createClass(liquidClassData({
 			console.log(this);
 			if (this.previewArea) {
 				// console.log(this);
-				// this.previewArea.style.display = "none";
+				this.previewArea.style.display = "none";
 			}
 		}.bind(this));
 		// this.setState({ 
