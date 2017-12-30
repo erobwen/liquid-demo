@@ -27,7 +27,7 @@ function addAfterInList(list, referenceItem, item) {
 
 window.DemoApplication = React.createClass(liquidClassData({
 	render: function() {
-		trace.ui && log("render: DemoApplication");
+		trace.render && log("render: DemoApplication");
 		return invalidateUponLiquidChange("DemoApplication", this, function() {
 			let page = window.page;
 			return (
@@ -51,7 +51,7 @@ window.TodoList = React.createClass(liquidClassData({
 	*/
 	dragEnterCounter: 0,
 	onDragEnter: function(event) {
-		trace.ui && log("onDragEnter (root): " + this.dragEnterCounter);
+		trace.event && log("onDragEnter (root): " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter++;
 		if (draggedItem !== this.props.item) {
@@ -67,7 +67,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	onDragLeave: function(event) {
-		trace.ui && log("onDragLeave (root): " + this.dragEnterCounter);
+		trace.event && log("onDragLeave (root): " + this.dragEnterCounter);
 		event.preventDefault();
 		this.dragEnterCounter--;
 		var item = this.props.item;
@@ -81,7 +81,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	onDragExit: function(event) {
-		trace.ui && log("onDragExit (root): " + this.dragEnterCounter);
+		trace.event && log("onDragExit (root): " + this.dragEnterCounter);
 		event.preventDefault();
 		this.setState({ 
 			draggingOver : false
@@ -89,7 +89,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	onDragOver: function(event) {
-		trace.ui && log("onDragOver (root): " + this.dragEnterCounter);
+		trace.event && log("onDragOver (root): " + this.dragEnterCounter);
 		event.preventDefault();
 		this.setState({
 			draggingOver : true,
@@ -97,7 +97,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	onDrop: function(event) {
-		trace.ui && log("onDrop (root): " + this.dragEnterCounter);
+		trace.event && log("onDrop (root): " + this.dragEnterCounter);
 		event.preventDefault();
 		
 		// Reset dragging
@@ -133,7 +133,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	render: function() {
-		// trace.ui && log("render: TodoList");
+		trace.render && log("render: TodoList");
 		return invalidateUponLiquidChange("TodoList", this, function() {
 			return (
 				<div className="TodoList">
@@ -195,7 +195,7 @@ window.TodoItem = React.createClass(liquidClassData({
 	*  Dragging this todoItem
 	*/	
 	onDragStart: function(event) {
-		trace.ui && log("onDragStart:" + this.props.item.name);
+		trace.event && logGroup("onDragStart:" + this.props.item.name);
 		// let headPropertyField = this.getHeadPropertyField();
 		// window.headPropertyField = headPropertyField;
 		// leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
@@ -207,27 +207,30 @@ window.TodoItem = React.createClass(liquidClassData({
 		// }.bind(this));
 			// this.todoItem.style.transform = "translateX(-9999px)";
 		// setTimeout(function(){
-		let a1 = this.todoItem.clientHeight;
-		let a2 = this.todoItem.scrollHeight;
-		let a3 = this.todoItem.offsetHeight;
-		let a4 = this.todoItem.style.height;
-		console.log(a1);
-		console.log(a2);
-		console.log(a3);
-		console.log(a4);
-		console.log(this.todoItem.style.transition);
-		console.log(this.todoItem.style);
+		// let a1 = this.todoItem.clientHeight;
+		// let a2 = this.todoItem.scrollHeight;
+		// let a3 = this.todoItem.offsetHeight;
+		// let a4 = this.todoItem.style.height;
+		// console.log(a1);
+		// console.log(a2);
+		// console.log(a3);
+		// console.log(a4);
+		// console.log(this.todoItem.style.transition);
+		// console.log(this.todoItem.style);
 		window.div = this.todoItem;
 		this.todoItem.style.height = this.todoItem.clientHeight + "px";
 		setTimeout(function(){
+			trace.event && logGroup("onDragStart:" + this.props.item.name + " , set height of dragged to 0... ");
 			this.todoItem.style.transform = "translateX(-9999px)";
 			this.todoItem.style.height = "0px";
+			trace.event && logUngroup();
 		}.bind(this));
+		trace.event && logUngroup();
 		// }.bind(this));
 	},
 
 	onDragEnd : function(event) {
-		trace.ui && log("onDragEnd:" + this.props.item.name);
+		trace.event && log("onDragEnd:" + this.props.item.name);
 		this.todoItem.style.transform = "translateX(0px)";
 		setTimeout(function(){
 			this.todoItem.style.height = "auto";
@@ -240,27 +243,38 @@ window.TodoItem = React.createClass(liquidClassData({
 	*/
 	dragEnterCounter: 0,
 	onDragEnter: function(event) {
-		trace.ui && log("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && logGroup("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		let current = this.dragEnterCounter++;
 		log(current);
 		if (this.props.item === draggedItem) return;
 		if (current === 0) {
 			console.log("START DRAGGING OVER!!!!!");
+			trace.event && logGroup("setState");
 			this.setState({ draggingOver: true });
+			trace.event && logUngroup();
 			// if (this.previewArea) this.previewArea.style.display = "inline"
 			setTimeout(function(){
 				if (this.previewArea) {
-					console.log("setting height to:" + this.previewArea.scrollHeight);
-					window.div = this.previewArea;
-					this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
+					trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
+					// this.previewArea.style.display = "inline";
+					setTimeout(function(){
+						console.log("setting height to:" + this.previewArea.scrollHeight);
+						window.div = this.previewArea;
+						this.previewArea.style.height = "0px";					
+						setTimeout(function(){
+							this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
+						}.bind(this));
+					}.bind(this));
+					trace.event && logUngroup();
 				}
 			}.bind(this));
 		}
+		trace.event && logUngroup();
 	},
 	
 	onDragLeave: function(event) {
-		trace.ui && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		if (this.props.item === draggedItem) return;
 		if (--this.dragEnterCounter === 0) {
@@ -276,14 +290,14 @@ window.TodoItem = React.createClass(liquidClassData({
 	},
 	
 	onDragExit: function(event) {
-		trace.ui && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		if (this.props.item === draggedItem) return;
 		throw new Error("did not expect this...");
 	},
 	
 	onDragOver: function(event) {
-		trace.ui && log("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && log("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
 		if (this.props.item === draggedItem) return;
 		// let headPropertyField = this.getHeadPropertyField();
 		// window.headPropertyField = headPropertyField;
@@ -299,7 +313,7 @@ window.TodoItem = React.createClass(liquidClassData({
 	},
 
 	onDrop: function(event) {
-		trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		if (this.props.item === draggedItem) return;
 		
@@ -319,7 +333,7 @@ window.TodoItem = React.createClass(liquidClassData({
 			console.log(this);
 			if (this.previewArea) {
 				// console.log(this);
-				this.previewArea.style.display = "none";
+				// this.previewArea.style.display = "none";
 			}
 		}.bind(this));
 		this.setState({ 
@@ -332,7 +346,7 @@ window.TodoItem = React.createClass(liquidClassData({
 	*/
 	render: function() {
 		return invalidateUponLiquidChange("TodoItem", this, function() {
-			// trace.ui && log("render: TodoItem");
+			trace.render && log("render: TodoItem");
 			// 
 			if (this.props.isPreview) {			
 				return (
@@ -385,205 +399,3 @@ window.TodoItem = React.createClass(liquidClassData({
 		//
 	}
 }));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Useful pages
-// onDrag onDragEnd onDragEnter onDragExit onDragLeave onDragOver onDragStart 
-// https://jsfiddle.net/lovedota/22hmo479/
-// http://stackoverflow.com/questions/21339924/drop-event-not-firing-in-chrome
-// http://unitstep.net/blog/2015/03/03/using-react-animations-to-transition-between-ui-states/
-// https://css-tricks.com/restart-css-animation/
-			 
-// var draggedItem = null;
-// window.TodoItem = React.createClass(liquidClassData({
-	// getInitialState: function() {
-		// return { draggingOver : false, collapsed: false };
-	// },
-
-	// // getHeadPropertyField() {
-		// // if (typeof(this.itemHeadDiv) !== 'undefined') {
-			// // let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
-			// // return propertyContents[0];
-		// // } else {
-			// // throw new Error("could not find property field... ");
-		// // }
-	// // },
-	
-	// onDragStart: function(event) {
-		// // trace.ui && log("onDragStart:" + this.props.item.name);
-		// draggedItem = this.props.item;
-		// // event.dataTransfer.setData("itemId", this.props.item.const.id);
-	// },
-	
-	// dragEnterCounter: 0,
-	
-	// onDragEnter: function(event) {
-		// // trace.ui && log("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
-		// event.preventDefault();
-		// this.dragEnterCounter++;
-		// var item = this.props.item;
-		// if (this.dragEnterCounter === 1) {
-			// // trace.ui && log("Drag enter counter is one!");
-			// if (item.writeable() && item.canAddSubCategory(draggedItem)) {
-				// // trace.ui && log("Actually enter!");
-				// this.setState({ 
-					// draggingOver: true
-				// });
-			// } else {
-				// this.setState({});
-			// }
-		// } else {
-			// this.setState({});
-		// }
-	// },
-	
-	// onDragLeave: function(event) {
-		// // trace.ui && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
-		// event.preventDefault();
-		// this.dragEnterCounter--;
-		// var item = this.props.item;
-		// if (this.dragEnterCounter === 0) {
-			// // trace.ui && log("Drag leave counter is zero!");
-			// if (item.writeable() && item.canAddSubCategory(draggedItem)) {
-				// // trace.ui && log("Actually leave!");
-				// this.setState({ 
-					// draggingOver: false
-				// });
-			// } else {
-				// this.setState({});
-			// }
-		// }  else {
-			// this.setState({});
-		// }
-	// },
-	
-	// onDragExit: function(event) {
-		// // trace.ui && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
-		// event.preventDefault();
-		// this.setState({ 
-			// draggingOver: false
-		// });
-	// },
-	
-	// onDragOver: function(event) {
-		// // trace.ui && log("onDragOver:" + this.props.item.name);
-		// event.preventDefault();
-	// },
-	
-	// onDrop: function(event) {
-		// let headPropertyField = this.getHeadPropertyField();
-		// log("dropping");
-		// log(this);
-		// log("headPropertyField:");
-		// log(headPropertyField);
-		// log(headPropertyField.offsetLeft);
-		// log(headPropertyField.clientWidth);
-		// log("event:");
-		// log(event.pageX);
-		// log(event.screenX);
-		// log(event.scrollX);
-		// //trace.ui && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
-		// // trace.ui && log(this.props.item);
-		// event.preventDefault();
-		// this.dragEnterCounter = 0;
-		// var item = this.props.item;
-		// var droppedItem = draggedItem;
-		// draggedItem = null;
-		// if (item.writeable() && item.canAddSubCategory(droppedItem)) {
-			// liquid.pulse(function() {
-				// // trace.ui && log(droppedItem.parents.length);
-				// // trace.ui && log(droppedItem.parents);
-				// // var parents = copyArray(droppedItem.parents);
-				// droppedItem.parents.forEach(function(parentCategory) {
-					// // trace.ui && log("Dropping parent: " + parentCategory.__());
-					// parentCategory.subCategories.remove(droppedItem);
-				// });
-				// item.subCategories.add(droppedItem);	
-			// });
-		// }
-		// this.setState({ 
-			// draggingOver: false
-		// });
-	// },
-	
-	// render: function() {
-		// trace.ui && log("render: CategoryView");
-		// return invalidateUponLiquidChange("CategoryView", this, function() {
-			// var subCategories = [];
-			// var itemViewElementName ="CategoryView"
-
-			// // To replace the plus sign when not showing
-			// var createCollapseSpacer = function() {
-				// return (
-					// <span
-						// style={{opacity: 0, marginRight: "0.61em"}}
-						// className={ "fa fa-plus-square-o" }>
-					// </span>);
-			// };
-			
-			// // this.props.item.subCategories.forEach(function(item) {
-				// // trace.ui && log(item);
-				// // // How to do it with standard syntax:
-
-				// // subCategories.push(
-					// // <CategoryView 
-						// // key = { this.props.item.const.id + "." + item.const.id }
-						// // item = {item}
-					// // />
-				// // );
-				
-				// // // How to do it if we get element name as a string:
-				// // // subCategories.push(React.createElement(window[itemViewElementName], { key : item.const.id, item : item }));				
-			// // }.bind(this));
-
-
-					
-			// return (
-				// <div className="CategoryView">
-					// <div 
-						// ref= {(div) => { this.itemHeadDiv = div; }}
-						// draggable = "true"
-						// // style={{ marginBottom: this.state.draggingOver ? "0.6em" : "0em"}}
-						// onDragStart = { this.onDragStart }
-						// onDragEnter = { this.onDragEnter }
-						// onDragOver = { this.onDragOver }
-						// onDragExit = { this.onDragExit }
-						// onDragLeave = { this.onDragLeave }
-						// onDrop = { this.onDrop }>
-						// <span>
-							// <PropertyField label={null} object = { this.props.item} propertyName = "name"/>
-						// </span>
-					// </div>
-					// <div ref="subCategoriesDiv" style={{marginLeft:'1em'}}>
-						// { subCategories }
-					// </div>
-				// </div>
-			// );
-		// }.bind(this));
-	// }
-// }));
