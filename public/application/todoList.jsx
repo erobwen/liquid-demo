@@ -85,7 +85,7 @@ window.TodoList = React.createClass(liquidClassData({
 let draggedItem = null;
 let draggedElement = null;
 let leftEdgeOffset = 0;
-
+let draggedHtml = null;
 window.TodoItem = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { 
@@ -146,6 +146,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		// console.log(a4);
 		// console.log(this.todoItem.style.transition);
 		// console.log(this.todoItem.style);
+		draggedHtml = this.itemHeadDiv.cloneNode(true);
 		window.div = this.todoItem;
 		this.todoItem.style.height = this.todoItem.clientHeight + "px";
 		setTimeout(function(){
@@ -183,7 +184,8 @@ window.TodoItem = React.createClass(liquidClassData({
 			// this.setState({ draggingOver: true });
 			// trace.event && logUngroup();
 			if (this.previewArea) this.previewArea.style.display = "block"
-			this.previewArea.innerHTML = "...preview..."; 
+			// this.previewArea.innerHTML = "...preview..."; 
+			this.previewArea.appendChild(draggedHtml); 
 			setTimeout(function(){
 				if (this.previewArea) {
 					trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
