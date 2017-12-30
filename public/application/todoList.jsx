@@ -160,11 +160,12 @@ window.TodoItem = React.createClass(liquidClassData({
 	},
 
 	onDragEnd : function(event) {
-		trace.event && log("onDragEnd:" + this.props.item.name);
+		trace.event && logGroup("onDragEnd:" + this.props.item.name);
 		this.todoItem.style.transform = "translateX(0px)";
 		setTimeout(function(){
 			this.todoItem.style.height = "auto";
 		}.bind(this));
+		trace.event && logUngroup();
 	},
 	
 	
@@ -175,103 +176,110 @@ window.TodoItem = React.createClass(liquidClassData({
 	onDragEnter: function(event) {
 		trace.event && logGroup("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		let current = this.dragEnterCounter++;
-		log(current);
-		if (this.props.item === draggedItem) return;
-		if (current === 0) {
-			console.log("START DRAGGING OVER!!!!!");
-			// trace.event && logGroup("setState");
-			// this.setState({ draggingOver: true });
-			// trace.event && logUngroup();
-			if (this.previewArea) this.previewArea.style.display = "block"
-			// this.previewArea.innerHTML = "...preview..."; 
-			this.previewArea.appendChild(draggedHtml); 
-			setTimeout(function(){
-				if (this.previewArea) {
-					trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
-					// this.previewArea.style.display = "inline";
-					setTimeout(function(){
-						console.log("setting height to:" + this.previewArea.scrollHeight);
-						window.div = this.previewArea;
-						this.previewArea.style.height = "0px";					
+		if (this.props.item !== draggedItem) {				
+			let current = this.dragEnterCounter++;
+			if (current === 0) {
+				console.log("START DRAGGING OVER!!!!!");
+				// trace.event && logGroup("setState");
+				// this.setState({ draggingOver: true });
+				// trace.event && logUngroup();
+				if (this.previewArea) this.previewArea.style.display = "block"
+				// this.previewArea.innerHTML = "...preview..."; 
+				this.previewArea.appendChild(draggedHtml); 
+				setTimeout(function(){
+					if (this.previewArea) {
+						trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
+						// this.previewArea.style.display = "inline";
 						setTimeout(function(){
-							this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
+							console.log("setting height to:" + this.previewArea.scrollHeight);
+							window.div = this.previewArea;
+							this.previewArea.style.height = "0px";					
+							setTimeout(function(){
+								this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
+							}.bind(this));
 						}.bind(this));
-					}.bind(this));
-					trace.event && logUngroup();
-				}
-			}.bind(this));
+						trace.event && logUngroup();
+					}
+				}.bind(this));
+			}
 		}
 		trace.event && logUngroup();
 	},
 	
 	onDragLeave: function(event) {
-		trace.event && log("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && logGroup("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item === draggedItem) return;
-		if (--this.dragEnterCounter === 0) {
-			if (this.previewArea) {
-				console.log(this);
-				this.previewArea.style.height = "0px";
+		if (this.props.item !== draggedItem) {
+			if (--this.dragEnterCounter === 0) {
+				if (this.previewArea) {
+					console.log(this);
+					this.previewArea.style.height = "0px";
+				}
+				this.previewArea.innerHTML = "";
+				// this.setState({ 
+					// draggingOver: false
+				// });
+				// this.preview.style.height = "0px";
 			}
-			this.previewArea.innerHTML = "";
-			// this.setState({ 
-				// draggingOver: false
-			// });
-			// this.preview.style.height = "0px";
 		}
+		trace.event && logUngroup();
 	},
 	
 	onDragExit: function(event) {
-		trace.event && log("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && logGroup("onDragExit:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item === draggedItem) return;
-		throw new Error("did not expect this...");
+		if (this.props.item !== draggedItem) {
+			throw new Error("did not expect this...");			
+		}
+		trace.event && logUngroup();
 	},
 	
 	onDragOver: function(event) {
-		trace.event && log("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
-		if (this.props.item === draggedItem) return;
-		// let headPropertyField = this.getHeadPropertyField();
-		// window.headPropertyField = headPropertyField;
-		// let xWithinField = event.screenX - headPropertyField.offsetLeft;
-		// let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-		// let divider = 10; //headPropertyField.offsetWidth / 2;
-		// let left = leftEdgeXWithinField <= divider;
-		
-		// this.setState({
-			// draggingOver : true,
-		// });
+		trace.event && logGroup("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
+		if (this.props.item !== draggedItem) {			
+			// let headPropertyField = this.getHeadPropertyField();
+			// window.headPropertyField = headPropertyField;
+			// let xWithinField = event.screenX - headPropertyField.offsetLeft;
+			// let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
+			// let divider = 10; //headPropertyField.offsetWidth / 2;
+			// let left = leftEdgeXWithinField <= divider;
+			
+			// this.setState({
+				// draggingOver : true,
+			// });
+		}
+		trace.event && logUngroup();
 	},
 
 	onDrop: function(event) {
-		trace.event && log("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && logGroup("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item === draggedItem) return;
-		
-		// Reset dragging
-		var droppedItem = draggedItem;
-		draggedItem = null;
-		this.dragEnterCounter = 0;
-		// draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
-		// this.todoItem.style.transform = "translateX(0px)";
-		this.todoItem.style.height = "auto";
+		if (this.props.item !== draggedItem) {			
+			// Reset dragging
+			var droppedItem = draggedItem;
+			draggedItem = null;
+			this.dragEnterCounter = 0;
+			// draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
+			// this.todoItem.style.transform = "translateX(0px)";
+			this.todoItem.style.height = "auto";
 
-		this.props.addAfter(this.props.item, droppedItem);
-		if (this.previewArea) {
-			this.previewArea.style.height = "0px";
-		}
-		setTimeout(function(){
-			console.log(this);
+			this.props.addAfter(this.props.item, droppedItem);
 			if (this.previewArea) {
-				// console.log(this);
-				this.previewArea.style.display = "none";
+				this.previewArea.style.height = "0px";
 			}
-		}.bind(this));
-		// this.setState({ 
-			// draggingOver : false
-		// });			
+			setTimeout(function(){
+				console.log(this);
+				if (this.previewArea) {
+					// console.log(this);
+					this.previewArea.style.display = "none";
+				}
+			}.bind(this));
+			// this.setState({ 
+				// draggingOver : false
+			// });			
+		}
+		trace.event && logUngroup();
 	},
 
 	/**
