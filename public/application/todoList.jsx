@@ -46,73 +46,6 @@ window.TodoList = React.createClass(liquidClassData({
 		return { draggingOver: false };
 	},
 	
-	/**
-	* Drag n drop target for adding first
-	*/
-	dragEnterCounter: 0,
-	onDragEnter: function(event) {
-		trace.event && log("onDragEnter (root): " + this.dragEnterCounter);
-		event.preventDefault();
-		this.dragEnterCounter++;
-		if (draggedItem !== this.props.item) {
-			var item = this.props.item;
-			if (this.dragEnterCounter === 1) {
-				this.setState({ 
-					draggingOver: true
-				});
-			} else {
-				this.setState({});
-			}			
-		}
-	},
-	
-	onDragLeave: function(event) {
-		trace.event && log("onDragLeave (root): " + this.dragEnterCounter);
-		event.preventDefault();
-		this.dragEnterCounter--;
-		var item = this.props.item;
-		if (this.dragEnterCounter === 0) {
-			this.setState({ 
-				draggingOver: false
-			});
-		}  else {
-			this.setState({});
-		}
-	},
-	
-	onDragExit: function(event) {
-		trace.event && log("onDragExit (root): " + this.dragEnterCounter);
-		event.preventDefault();
-		this.setState({ 
-			draggingOver : false
-		});
-	},
-	
-	onDragOver: function(event) {
-		trace.event && log("onDragOver (root): " + this.dragEnterCounter);
-		event.preventDefault();
-		this.setState({
-			draggingOver : true,
-		});
-	},
-
-	onDrop: function(event) {
-		trace.event && log("onDrop (root): " + this.dragEnterCounter);
-		event.preventDefault();
-		
-		// Reset dragging
-		var droppedItem = draggedItem;
-		draggedItem = null;
-		this.dragEnterCounter = 0;
-		draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
-
-		removeFromList(this.props.todoList, droppedItem);
-		this.props.todoList.unshift(droppedItem);
-		this.setState({
-			draggingOver : false,
-		});
-	},
-
 	addAfter : function(referenceItem, item) {
 		removeFromList(this.props.todoList, item);
 		addAfterInList(this.props.todoList, referenceItem, item);
@@ -132,19 +65,15 @@ window.TodoList = React.createClass(liquidClassData({
 		return result;
 	},
 	
+	// { (this.state.draggingOver) ? <TodoItem key = "dropPreview" item = { draggedItem } isPreview = { true }/> : null }
 	render: function() {
 		trace.render && log("render: TodoList");
 		return invalidateUponLiquidChange("TodoList", this, function() {
 			return (
 				<div className="TodoList">
-					<div key = "dropTarget" onDragEnter = { this.onDragEnter }
-						onDragOver = { this.onDragOver }
-						onDragExit = { this.onDragExit }
-						onDragLeave = { this.onDragLeave }
-						onDrop = { this.onDrop }
+					<div key = "dropTarget" 
 						style={{ height: "1em"}}>
 					</div>
-					{ (this.state.draggingOver) ? <TodoItem key = "dropPreview" item = { draggedItem } isPreview = { true }/> : null }
 					{ (() => { return this.todoItems(); })() }
 				</div>
 			);
@@ -250,10 +179,11 @@ window.TodoItem = React.createClass(liquidClassData({
 		if (this.props.item === draggedItem) return;
 		if (current === 0) {
 			console.log("START DRAGGING OVER!!!!!");
-			trace.event && logGroup("setState");
-			this.setState({ draggingOver: true });
-			trace.event && logUngroup();
+			// trace.event && logGroup("setState");
+			// this.setState({ draggingOver: true });
+			// trace.event && logUngroup();
 			// if (this.previewArea) this.previewArea.style.display = "inline"
+			this.previewArea.innerHTML = "...preview..."; 
 			setTimeout(function(){
 				if (this.previewArea) {
 					trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
@@ -282,9 +212,10 @@ window.TodoItem = React.createClass(liquidClassData({
 				console.log(this);
 				this.previewArea.style.height = "0px";
 			}
-			this.setState({ 
-				draggingOver: false
-			});
+			this.previewArea.innerHTML = "";
+			// this.setState({ 
+				// draggingOver: false
+			// });
 			// this.preview.style.height = "0px";
 		}
 	},
@@ -336,9 +267,9 @@ window.TodoItem = React.createClass(liquidClassData({
 				// this.previewArea.style.display = "none";
 			}
 		}.bind(this));
-		this.setState({ 
-			draggingOver : false
-		});			
+		// this.setState({ 
+			// draggingOver : false
+		// });			
 	},
 
 	/**
@@ -348,53 +279,54 @@ window.TodoItem = React.createClass(liquidClassData({
 		return invalidateUponLiquidChange("TodoItem", this, function() {
 			trace.render && log("render: TodoItem");
 			// 
-			if (this.props.isPreview) {			
-				return (
-					<div className="TodoItem" 
-						style = {{ color : "gray"}}
-						ref= {(element) => { this.todoItem = element; }}>
-						<span ref= {(element) => { this.itemHeadDiv = element; }}>
-							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
-						</span>				
-					</div>
-				);				
-			} else {
+			// if (this.props.isPreview) {			
+				// return (
+					// <div className="TodoItem" 
+						// style = {{ color : "gray"}}
+						// ref= {(element) => { this.todoItem = element; }}>
+						// <span ref= {(element) => { this.itemHeadDiv = element; }}>
+							// <PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
+						// </span>				
+					// </div>
+				// );				
+			// } else {
 
-				let preview = (this.state.draggingOver) ? <TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/> : null;
+			// let preview = (this.state.draggingOver) ? <TodoItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/> : null;
+			// let preview = (this.state.draggingOver) ? <div>preview</div> : null;
+			// { preview }
 
+			
+			return (
+				<div className="TodoItem" 
+					ref = {(element) => { this.todoItem = element; }}
+					style = {{ 
+						transition : 'height .5s',
+						height : 'auto',
+						overflow : 'hidden'
+						// , 
+						// transform : (this.state.isDragging ? "translateX(200px)" : "translateX(0px)"), 
+						// height: (this.state.isDragging ? "0" : "auto")
+					}}
 				
-				return (
-					<div className="TodoItem" 
-						ref = {(element) => { this.todoItem = element; }}
-						style = {{ 
-							transition : 'height .5s',
-							height : 'auto',
-							overflow : 'hidden'
-							// , 
-							// transform : (this.state.isDragging ? "translateX(200px)" : "translateX(0px)"), 
-							// height: (this.state.isDragging ? "0" : "auto")
-						}}
+					draggable = "true"						
+					onDragStart = { this.onDragStart }
+					onDragEnd = { this.onDragEnd }
 					
-						draggable = "true"						
-						onDragStart = { this.onDragStart }
-						onDragEnd = { this.onDragEnd }
-						
-						onDragEnter = { this.onDragEnter }
-						onDragOver = { this.onDragOver }
-						onDragExit = { this.onDragExit }
-						onDragLeave = { this.onDragLeave }
-						onDrop = { this.onDrop }>
-						<span ref= {(element) => { this.itemHeadDiv = element; }} >
-							<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
-						</span>				
-						<div className = "previewArea"
-							ref = {(element) => { this.previewArea = element; }} 
-							style = {{transition: "height .5s", height: "0px"}}>
-							{ preview }
-						</div>
+					onDragEnter = { this.onDragEnter }
+					onDragOver = { this.onDragOver }
+					onDragExit = { this.onDragExit }
+					onDragLeave = { this.onDragLeave }
+					onDrop = { this.onDrop }>
+					<span ref= {(element) => { this.itemHeadDiv = element; }} >
+						<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
+					</span>				
+					<div className = "previewArea"
+						ref = {(element) => { this.previewArea = element; }} 
+						style = {{transition: "height .5s", height: "0px"}}>
 					</div>
-				);				
-			}
+				</div>
+			);
+			// }
 		}.bind(this));
 		//
 	}
