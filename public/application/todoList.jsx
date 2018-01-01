@@ -40,57 +40,158 @@ window.DemoApplication = React.createClass(liquidClassData({
 	}
 }));
 
+// "2168-0002  2107-0445"
+let draggedItem = null;
+let draggedHtml = null;
+let leftEdgeOffset = 0;
 
-window.TodoList = React.createClass(liquidClassData({	
+let currentDivider = null;
+let currentDividerIndex = null;
+
+
+window.TodoList = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { draggingOver: false };
 	},
-	
-	addAfter : function(referenceItem, item) {
-		removeFromList(this.props.todoList, item);
-		addAfterInList(this.props.todoList, referenceItem, item);
+
+	clearDivider : function(divider) {
+		log("...clear divider: " + currentDividerIndex);
+		divider.style.height = "0px";
+		divider.innerHTML = "";
+		divider.style.display = "none";
+		// setTimeout(function(){
+		// }.bind(this));		
 	},
 	
-	todoItems : function() {
-		var result = [];
-		this.props.todoList.forEach(function(item) {
-			result.push(
-				<TodoItem 
-					key = { item.const.id }
-					item = { item }
-					addAfter = { this.addAfter }
-				/>
-			);
+	softCloseDivider : function(divider) {
+		log("...start soft close: " + currentDividerIndex);
+		divider.style.height = divider.clientHeight + "px";
+		divider.innerHTML = "";
+		console.log(divider);
+		setTimeout(function(){
+			log("...initiate soft close...");
+			divider.style.height = "0px";
 		}.bind(this));
+		setTimeout(function(){
+			log("...killing it after 500 ms");
+			divider.style.display = "none";
+		}.bind(this), 500);		
+	},
+	
+	openDivider : function(divider) {
+		log("...open divider: " + currentDividerIndex);
+		divider.style.display = "block";
+		divider.style.height = "0px";
+		divider.innerHTML = "...preview... ";
+		// divider.appendChild(draggedHtml);
+		setTimeout(function(){
+			divider.style.height = divider.scrollHeight + "px";
+		}.bind(this));
+	},
+	
+	previewAfter : function(itemIndex) {
+		log("...preview after...");
+		let newDividerIndex = itemIndex + 1;
+		let newDivider = this.dividers[newDividerIndex];
+		if (currentDivider !== newDivider) {
+			if (currentDivider !== null) {
+				this.softCloseDivider(currentDivider);
+			}
+			currentDividerIndex = newDividerIndex;
+			currentDivider = newDivider;
+			this.openDivider(currentDivider);
+		}
+		// 
+	}, 
+	
+	abortDragging : function() {
+		this.clearDivider(currentDivider);
+
+		draggedItem = null;
+		draggedHtml = null;
+		leftEdgeOffset = 0;
+		
+		currentDividerIndex = null;
+		currentDivider = null;		
+	},
+	
+	dropDraggedItem : function() {
+		logGroup("drop dragged item");
+		console.log(this.dividers);
+		// this.dividers.forEach(function(divider) {
+			// if (divider !== null) {
+				// divider.style.display = "none";				
+			// }
+		// });
+		this.clearDivider(currentDivider);
+		
+		let referenceIndex = currentDividerIndex - 1;
+		let referenceItem = this.props.todoList[currentDividerIndex - 1];
+		let item = draggedItem;
+		
+		draggedItem = null;
+		draggedHtml = null;
+		leftEdgeOffset = 0;
+		
+		currentDivider = null;
+		currentDividerIndex = null;
+		
+		// removeFromList(this.props.todoList, item);
+		// addAfterInList(this.props.todoList, referenceItem, item);
+		logUngroup();
+	},
+
+
+	todoItems : function() {
+		let todoList = this.props.todoList;
+		var result = [];
+		if (todoList.length > 0) {
+			result.push(<div ref= {(element) => { if (element !== null) this.dividers.push(element); }}
+							key = { this.dividersCount++ } 
+							style = {{display : "none", transition: "height .5s", height: "0px"}}>
+						</div>); 
+			let index = 0;
+			todoList.forEach(function(item) {
+				result.push(
+					<TodoItem 
+						key = { item.const.id }
+						item = { item }
+						itemIndex = { index++ }
+						dropDraggedItem = { this.dropDraggedItem }
+						abortDragging = { this.abortDragging }
+						previewAfter = { this.previewAfter }
+					/>
+				);
+				result.push(<div ref= {(element) => { if (element !== null) this.dividers.push(element); }}
+								key = { this.dividersCount++ } 
+								style = {{display : "none", transition: "height .5s", height: "0px"}}>
+							</div>); 
+			}.bind(this));			
+		}
 		return result;
 	},
 	
 	// { (this.state.draggingOver) ? <TodoItem key = "dropPreview" item = { draggedItem } isPreview = { true }/> : null }
 	render: function() {
-		trace.render && log("render: TodoList");
 		return invalidateUponLiquidChange("TodoList", this, function() {
-			return (
+			trace.render && log("render: TodoList");
+			this.dividers = [];
+			this.dividersCount = 0;
+			let result = (
 				<div className="TodoList">
-					<div key = "dropTarget" 
-						style={{ height: "1em"}}>
-					</div>
 					{ (() => { return this.todoItems(); })() }
 				</div>
 			);
+			console.log(this.dividers);
+			return result;
 		}.bind(this));
 	}
 }));
 
 
-let draggedItem = null;
-let draggedElement = null;
-let leftEdgeOffset = 0;
-let draggedHtml = null;
 window.TodoItem = React.createClass(liquidClassData({
-	getInitialState: function() {
-		return { 
-			draggingOver : false
-		};
+	getInitialState: function() { 
+		return {}; 
 	},
 
 	getHeadPropertyField() {
@@ -130,7 +231,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		// leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
 		
 		draggedItem = this.props.item;
-		draggedElement = this.todoItem;
+		draggedHtml = this.itemHeadDiv.cloneNode(true);
 		
 		// setTimeout(function(){
 		// }.bind(this));
@@ -146,8 +247,6 @@ window.TodoItem = React.createClass(liquidClassData({
 		// console.log(a4);
 		// console.log(this.todoItem.style.transition);
 		// console.log(this.todoItem.style);
-		draggedHtml = this.itemHeadDiv.cloneNode(true);
-		window.div = this.todoItem;
 		this.todoItem.style.height = this.todoItem.clientHeight + "px";
 		setTimeout(function(){
 			trace.event && logGroup("onDragStart:" + this.props.item.name + " , set height of dragged to 0... ");
@@ -161,6 +260,7 @@ window.TodoItem = React.createClass(liquidClassData({
 
 	onDragEnd : function(event) {
 		trace.event && logGroup("onDragEnd:" + this.props.item.name);
+		this.props.abortDragging();
 		this.todoItem.style.transform = "translateX(0px)";
 		setTimeout(function(){
 			this.todoItem.style.height = "auto";
@@ -180,27 +280,31 @@ window.TodoItem = React.createClass(liquidClassData({
 			let current = this.dragEnterCounter++;
 			if (current === 0) {
 				console.log("START DRAGGING OVER!!!!!");
-				// trace.event && logGroup("setState");
-				// this.setState({ draggingOver: true });
-				// trace.event && logUngroup();
-				if (this.previewArea) this.previewArea.style.display = "block"
-				// this.previewArea.innerHTML = "...preview..."; 
-				this.previewArea.appendChild(draggedHtml); 
-				setTimeout(function(){
-					if (this.previewArea) {
-						trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
-						// this.previewArea.style.display = "inline";
-						setTimeout(function(){
-							console.log("setting height to:" + this.previewArea.scrollHeight);
-							window.div = this.previewArea;
-							this.previewArea.style.height = "0px";					
-							setTimeout(function(){
-								this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
-							}.bind(this));
-						}.bind(this));
-						trace.event && logUngroup();
-					}
-				}.bind(this));
+				
+				this.props.previewAfter(this.props.itemIndex);
+				
+				// Preview area: 
+				// // trace.event && logGroup("setState");
+				// // this.setState({ draggingOver: true });
+				// // trace.event && logUngroup();
+				// if (this.previewArea) this.previewArea.style.display = "block"
+				// // this.previewArea.innerHTML = "...preview..."; 
+				// this.previewArea.appendChild(draggedHtml); 
+				// setTimeout(function(){
+					// if (this.previewArea) {
+						// trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
+						// // this.previewArea.style.display = "inline";
+						// setTimeout(function(){
+							// console.log("setting height to:" + this.previewArea.scrollHeight);
+							// window.div = this.previewArea;
+							// this.previewArea.style.height = "0px";					
+							// setTimeout(function(){
+								// this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
+							// }.bind(this));
+						// }.bind(this));
+						// trace.event && logUngroup();
+					// }
+				// }.bind(this));
 			}
 		}
 		trace.event && logUngroup();
@@ -211,11 +315,13 @@ window.TodoItem = React.createClass(liquidClassData({
 		event.preventDefault();
 		if (this.props.item !== draggedItem) {
 			if (--this.dragEnterCounter === 0) {
-				if (this.previewArea) {
-					console.log(this);
-					this.previewArea.style.height = "0px";
-				}
-				this.previewArea.innerHTML = "";
+				// Preview area..
+				// if (this.previewArea) {
+					// console.log(this);
+					// this.previewArea.style.height = "0px";
+				// }
+				// this.previewArea.innerHTML = "";
+				
 				// this.setState({ 
 					// draggingOver: false
 				// });
@@ -235,7 +341,7 @@ window.TodoItem = React.createClass(liquidClassData({
 	},
 	
 	onDragOver: function(event) {
-		trace.event && logGroup("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
+		// trace.event && logGroup("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		if (this.props.item !== draggedItem) {			
 			// let headPropertyField = this.getHeadPropertyField();
@@ -249,36 +355,35 @@ window.TodoItem = React.createClass(liquidClassData({
 				// draggingOver : true,
 			// });
 		}
-		trace.event && logUngroup();
+		// trace.event && logUngroup();
 	},
 
 	onDrop: function(event) {
 		trace.event && logGroup("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item !== draggedItem) {			
-			// Reset dragging
-			var droppedItem = draggedItem;
-			draggedItem = null;
+		// if (this.props.item !== draggedItem) {
 			this.dragEnterCounter = 0;
+			// Reset dragging
 			// draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
 			// this.todoItem.style.transform = "translateX(0px)";
-			this.todoItem.style.height = "auto";
+			// this.todoItem.style.height = "auto";
 
-			this.props.addAfter(this.props.item, droppedItem);
-			if (this.previewArea) {
-				this.previewArea.style.height = "0px";
-			}
-			setTimeout(function(){
-				console.log(this);
-				if (this.previewArea) {
-					// console.log(this);
-					this.previewArea.style.display = "none";
-				}
-			}.bind(this));
+			this.props.dropDraggedItem();
+			
+			// if (this.previewArea) {
+				// this.previewArea.style.height = "0px";
+			// }
+			// setTimeout(function(){
+				// console.log(this);
+				// if (this.previewArea) {
+					// // console.log(this);
+					// this.previewArea.style.display = "none";
+				// }
+			// }.bind(this));
 			// this.setState({ 
 				// draggingOver : false
 			// });			
-		}
+		// }
 		trace.event && logUngroup();
 	},
 
