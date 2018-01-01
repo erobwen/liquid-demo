@@ -54,6 +54,29 @@ window.TodoList = React.createClass(liquidClassData({
 		return { draggingOver: false };
 	},
 
+	onDragEnterDivider : function(event) {
+		event.preventDefault();
+	},
+	
+	onDragOverDivider : function(event) {
+		event.preventDefault();
+	},
+	
+	onDragExitDivider : function(event) {
+		event.preventDefault();
+	},
+	
+	onDragLeaveDivider : function(event) {
+		event.preventDefault();
+	},
+	
+	onDropDivider : function(event) {
+		trace.event && logGroup("onDropDivider:");
+		event.preventDefault();
+		this.dropDraggedItem();
+		trace.event && logUngroup();
+	},
+
 	clearDivider : function(divider) {
 		log("...clear divider: " + currentDividerIndex);
 		divider.style.height = "0px";
@@ -94,6 +117,21 @@ window.TodoList = React.createClass(liquidClassData({
 		}.bind(this));
 	},
 	
+	previewBefore : function(itemIndex) {
+		log("...preview before...");
+		let newDividerIndex = itemIndex;
+		let newDivider = this.dividers[newDividerIndex];
+		if (currentDivider !== newDivider) {
+			if (currentDivider !== null) {
+				this.softCloseDivider(currentDivider);
+			}
+			currentDividerIndex = newDividerIndex;
+			currentDivider = newDivider;
+			this.openDivider(currentDivider);
+		}
+		// 
+	}, 
+
 	previewAfter : function(itemIndex) {
 		log("...preview after...");
 		let newDividerIndex = itemIndex + 1;
@@ -154,7 +192,13 @@ window.TodoList = React.createClass(liquidClassData({
 		let todoList = this.props.todoList;
 		var result = [];
 		if (todoList.length > 0) {
-			result.push(<div ref = {(element) => { if (element !== null) this.dividers.push(element); }}
+			result.push(<div draggable = "true"
+							onDragEnter = { this.onDragEnterDivider }
+							onDragOver = { this.onDragOverDivider }
+							onDragExit = { this.onDragExitDivider }
+							onDragLeave = { this.onDragLeaveDivider }
+							onDrop = { this.onDropDivider }
+							ref = {(element) => { if (element !== null) this.dividers.push(element); }}
 							key = { this.dividersCount++ } 
 							style = {{display : "none", transition: "height .5s", height: "0px"}}>
 						</div>); 
@@ -168,9 +212,16 @@ window.TodoList = React.createClass(liquidClassData({
 						dropDraggedItem = { this.dropDraggedItem }
 						abortDragging = { this.abortDragging }
 						previewAfter = { this.previewAfter }
+						previewBefore = { this.previewBefore }
 					/>
 				);
-				result.push(<div ref= {(element) => { if (element !== null) this.dividers.push(element); }}
+				result.push(<div  draggable = "true"
+								onDragEnter = { this.onDragEnterDivider }
+								onDragOver = { this.onDragOverDivider }
+								onDragExit = { this.onDragExitDivider }
+								onDragLeave = { this.onDragLeaveDivider }
+								onDrop = { this.onDropDivider }
+								ref= {(element) => { if (element !== null) this.dividers.push(element); }}
 								key = { this.dividersCount++ } 
 								style = {{display : "none", transition: "height .5s", height: "0px"}}>
 							</div>); 
@@ -296,32 +347,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		if (this.props.item !== draggedItem) {				
 			let current = this.dragEnterCounter++;
 			if (current === 0) {
-				console.log("START DRAGGING OVER!!!!!");
-				
 				this.props.previewAfter(this.props.itemIndex);
-				
-				// Preview area: 
-				// // trace.event && logGroup("setState");
-				// // this.setState({ draggingOver: true });
-				// // trace.event && logUngroup();
-				// if (this.previewArea) this.previewArea.style.display = "block"
-				// // this.previewArea.innerHTML = "...preview..."; 
-				// this.previewArea.appendChild(draggedHtml); 
-				// setTimeout(function(){
-					// if (this.previewArea) {
-						// trace.event && logGroup("onDragEnter:" + this.props.item.name + ", opening preview area... ");
-						// // this.previewArea.style.display = "inline";
-						// setTimeout(function(){
-							// console.log("setting height to:" + this.previewArea.scrollHeight);
-							// window.div = this.previewArea;
-							// this.previewArea.style.height = "0px";					
-							// setTimeout(function(){
-								// this.previewArea.style.height = this.previewArea.scrollHeight + "px";					
-							// }.bind(this));
-						// }.bind(this));
-						// trace.event && logUngroup();
-					// }
-				// }.bind(this));
 			}
 		}
 		trace.event && logUngroup();
@@ -330,21 +356,10 @@ window.TodoItem = React.createClass(liquidClassData({
 	onDragLeave: function(event) {
 		trace.event && logGroup("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item !== draggedItem) {
-			if (--this.dragEnterCounter === 0) {
-				// Preview area..
-				// if (this.previewArea) {
-					// console.log(this);
-					// this.previewArea.style.height = "0px";
-				// }
-				// this.previewArea.innerHTML = "";
-				
-				// this.setState({ 
-					// draggingOver: false
-				// });
-				// this.preview.style.height = "0px";
-			}
-		}
+		// if (this.props.item !== draggedItem) {
+			// if (--this.dragEnterCounter === 0) {
+			// }
+		// }
 		trace.event && logUngroup();
 	},
 	
@@ -358,21 +373,22 @@ window.TodoItem = React.createClass(liquidClassData({
 	},
 	
 	onDragOver: function(event) {
-		// trace.event && logGroup("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
+		trace.event && logGroup("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
 		if (this.props.item !== draggedItem) {			
-			// let headPropertyField = this.getHeadPropertyField();
-			// window.headPropertyField = headPropertyField;
-			// let xWithinField = event.screenX - headPropertyField.offsetLeft;
-			// let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			// let divider = 10; //headPropertyField.offsetWidth / 2;
-			// let left = leftEdgeXWithinField <= divider;
+			let yWithinField = event.pageY - this.todoItem.offsetTop;
+			log("yWithinField: " + yWithinField);
+			// let leftEdgeXWithinField =  yWithinField - topEdgeOffset;
+			let mouseOverTopPart = yWithinField <= this.todoItem.scrollHeight / 2;
+			log("mouseOverTopPart: " + mouseOverTopPart);
 			
-			// this.setState({
-				// draggingOver : true,
-			// });
+			if (mouseOverTopPart) {
+				this.props.previewBefore(this.props.itemIndex);
+			} else {
+				this.props.previewAfter(this.props.itemIndex);
+			}
 		}
-		// trace.event && logUngroup();
+		trace.event && logUngroup();
 	},
 
 	onDrop: function(event) {
