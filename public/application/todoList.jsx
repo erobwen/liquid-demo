@@ -82,8 +82,13 @@ window.TodoList = React.createClass(liquidClassData({
 		log("...open divider: " + currentDividerIndex);
 		divider.style.display = "block";
 		divider.style.height = "0px";
-		divider.innerHTML = "...preview... ";
-		// divider.appendChild(draggedHtml);
+		// divider.innerHTML = "...preview... ";
+		// divider.innerHTML = "<div>...preview... </div>";
+		// TODO: 
+		// console.log(draggedHtml);
+		// window.div = draggedHtml;
+		divider.innerHTML = "";
+		divider.appendChild(draggedHtml);
 		setTimeout(function(){
 			divider.style.height = divider.scrollHeight + "px";
 		}.bind(this));
@@ -149,7 +154,7 @@ window.TodoList = React.createClass(liquidClassData({
 		let todoList = this.props.todoList;
 		var result = [];
 		if (todoList.length > 0) {
-			result.push(<div ref= {(element) => { if (element !== null) this.dividers.push(element); }}
+			result.push(<div ref = {(element) => { if (element !== null) this.dividers.push(element); }}
 							key = { this.dividersCount++ } 
 							style = {{display : "none", transition: "height .5s", height: "0px"}}>
 						</div>); 
@@ -233,8 +238,17 @@ window.TodoItem = React.createClass(liquidClassData({
 		// window.headPropertyField = headPropertyField;
 		// leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
 		
+		function clearIds(html) {
+			if (typeof(html.removeAttribute) === 'function') html.removeAttribute("data-reactid");
+			html.childNodes.forEach((child) => {
+				clearIds(child);
+			});
+		}
+		
 		draggedItem = this.props.item;
 		draggedHtml = this.itemHeadDiv.cloneNode(true);
+		clearIds(draggedHtml);
+		
 		
 		// setTimeout(function(){
 		// }.bind(this));
