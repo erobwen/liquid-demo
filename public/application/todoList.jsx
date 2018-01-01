@@ -54,6 +54,21 @@ window.TodoList = React.createClass(liquidClassData({
 		return { draggingOver: false };
 	},
 
+	componentDidMount: function() {
+		if (currentDivider !== null) {
+			this.clearDivider(currentDivider);
+			
+			currentDivider = null;
+			currentDividerIndex = null;			
+		}
+		
+		if (draggedItem !== null) {
+			draggedItem = null;
+			draggedHtml = null;
+			leftEdgeOffset = 0;
+		}
+	},
+
 	onDragEnterDivider : function(event) {
 		event.preventDefault();
 	},
@@ -78,7 +93,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	clearDivider : function(divider) {
-		log("...clear divider: " + currentDividerIndex);
+		// log("...clear divider: " + currentDividerIndex);
 		divider.style.height = "0px";
 		divider.innerHTML = "";
 		divider.style.display = "none";
@@ -87,22 +102,22 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	softCloseDivider : function(divider) {
-		log("...start soft close: " + currentDividerIndex);
+		// log("...start soft close: " + currentDividerIndex);
 		divider.style.height = divider.clientHeight + "px";
 		divider.innerHTML = "";
-		console.log(divider);
+		// console.log(divider);
 		setTimeout(function(){
-			log("...initiate soft close...");
+			// log("...initiate soft close...");
 			divider.style.height = "0px";
 		}.bind(this));
 		setTimeout(function(){
-			log("...killing it after 500 ms");
+			// log("...killing it after 500 ms");
 			divider.style.display = "none";
 		}.bind(this), 500);		
 	},
 	
 	openDivider : function(divider) {
-		log("...open divider: " + currentDividerIndex);
+		// log("...open divider: " + currentDividerIndex);
 		divider.style.display = "block";
 		divider.style.height = "0px";
 		// divider.innerHTML = "...preview... ";
@@ -118,7 +133,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	previewBefore : function(itemIndex) {
-		log("...preview before...");
+		// log("...preview before...");
 		let newDividerIndex = itemIndex;
 		let newDivider = this.dividers[newDividerIndex];
 		if (currentDivider !== newDivider) {
@@ -133,7 +148,7 @@ window.TodoList = React.createClass(liquidClassData({
 	}, 
 
 	previewAfter : function(itemIndex) {
-		log("...preview after...");
+		// log("...preview after...");
 		let newDividerIndex = itemIndex + 1;
 		let newDivider = this.dividers[newDividerIndex];
 		if (currentDivider !== newDivider) {
@@ -163,24 +178,24 @@ window.TodoList = React.createClass(liquidClassData({
 	
 	dropDraggedItem : function() {
 		logGroup("drop dragged item");
-		console.log(this.dividers);
+		// console.log(this.dividers);
 		// this.dividers.forEach(function(divider) {
 			// if (divider !== null) {
 				// divider.style.display = "none";				
 			// }
 		// });
-		this.clearDivider(currentDivider);
+		// this.clearDivider(currentDivider);
 		
 		let referenceIndex = currentDividerIndex - 1;
 		let referenceItem = this.props.todoList[currentDividerIndex - 1];
 		let item = draggedItem;
 		
-		draggedItem = null;
-		draggedHtml = null;
-		leftEdgeOffset = 0;
+		// draggedItem = null;
+		// draggedHtml = null;
+		// leftEdgeOffset = 0;
 		
-		currentDivider = null;
-		currentDividerIndex = null;
+		// currentDivider = null;
+		// currentDividerIndex = null;
 		
 		removeFromList(this.props.todoList, item);
 		addAfterInList(this.props.todoList, referenceItem, item);
@@ -241,7 +256,7 @@ window.TodoList = React.createClass(liquidClassData({
 					{ (() => { return this.todoItems(); })() }
 				</div>
 			);
-			console.log(this.dividers);
+			// console.log(this.dividers);
 			return result;
 		}.bind(this));
 	}
@@ -258,7 +273,7 @@ window.TodoItem = React.createClass(liquidClassData({
 			let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
 			return propertyContents[0];
 		} else {
-			console.log(this.itemHeadDiv);
+			// console.log(this.itemHeadDiv);
 			window.errorDiv = this.itemHeadDiv;
 			throw new Error("could not find property field... ");
 		}
@@ -377,10 +392,10 @@ window.TodoItem = React.createClass(liquidClassData({
 		event.preventDefault();
 		if (this.props.item !== draggedItem) {			
 			let yWithinField = event.pageY - this.todoItem.offsetTop;
-			log("yWithinField: " + yWithinField);
+			// log("yWithinField: " + yWithinField);
 			// let leftEdgeXWithinField =  yWithinField - topEdgeOffset;
 			let mouseOverTopPart = yWithinField <= this.todoItem.scrollHeight / 2;
-			log("mouseOverTopPart: " + mouseOverTopPart);
+			// log("mouseOverTopPart: " + mouseOverTopPart);
 			
 			if (mouseOverTopPart) {
 				this.props.previewBefore(this.props.itemIndex);
