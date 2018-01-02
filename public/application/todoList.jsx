@@ -93,7 +93,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	clearDivider : function(divider) {
-		// log("...clear divider: " + currentDividerIndex);
+		trace.event && log("...clear divider: " + currentDividerIndex);
 		divider.style.height = "0px";
 		divider.innerHTML = "";
 		divider.style.display = "none";
@@ -102,7 +102,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	softCloseDivider : function(divider) {
-		// log("...start soft close: " + currentDividerIndex);
+		trace.event && log("...soft close divider: " + currentDividerIndex);
 		divider.style.height = divider.clientHeight + "px";
 		divider.innerHTML = "";
 		// console.log(divider);
@@ -112,11 +112,12 @@ window.TodoList = React.createClass(liquidClassData({
 		}.bind(this));
 		setTimeout(function(){
 			// log("...killing it after 500 ms");
-			divider.style.display = "none";
+			if (divider !== currentDivider) divider.style.display = "none";
 		}.bind(this), 500);		
 	},
 	
 	openDivider : function(divider) {
+		trace.event && log("...open divider... " + currentDividerIndex);
 		// log("...open divider: " + currentDividerIndex);
 		divider.style.display = "block";
 		divider.style.height = "0px";
@@ -133,34 +134,30 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	previewBefore : function(itemIndex) {
-		// log("...preview before...");
+		trace.event && log("...preview before" + this.props.todoList[itemIndex].name);
 		let newDividerIndex = itemIndex;
 		let newDivider = this.dividers[newDividerIndex];
-		if (currentDivider !== newDivider) {
-			if (currentDivider !== null) {
-				this.softCloseDivider(currentDivider);
-			}
-			currentDividerIndex = newDividerIndex;
-			currentDivider = newDivider;
-			this.openDivider(currentDivider);
-		}
-		// 
+		this.previewAtDivider(newDivider, newDividerIndex); 
 	}, 
 
 	previewAfter : function(itemIndex) {
-		// log("...preview after...");
+		trace.event && log("...preview after " + this.props.todoList[itemIndex].name);
 		let newDividerIndex = itemIndex + 1;
 		let newDivider = this.dividers[newDividerIndex];
+		this.previewAtDivider(newDivider, newDividerIndex); 
+	},
+
+	previewAtDivider(newDivider, newDividerIndex) {
 		if (currentDivider !== newDivider) {
+			trace.event && log("preview at index: " + newDividerIndex);			
 			if (currentDivider !== null) {
 				this.softCloseDivider(currentDivider);
 			}
 			currentDividerIndex = newDividerIndex;
 			currentDivider = newDivider;
 			this.openDivider(currentDivider);
-		}
-		// 
-	}, 
+		}		
+	},
 	
 	abortDragging : function() {
 		if (currentDivider) {
@@ -314,7 +311,7 @@ window.TodoItem = React.createClass(liquidClassData({
 		draggedItem = this.props.item;
 		draggedHtml = this.itemHeadDiv.cloneNode(true);
 		clearIds(draggedHtml);
-		
+		draggedHtml.style.opacity = 0.5;
 		
 		// setTimeout(function(){
 		// }.bind(this));
