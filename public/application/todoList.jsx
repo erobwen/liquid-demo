@@ -174,7 +174,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	dropDraggedItem : function() {
-		logGroup("drop dragged item");
+		// logGroup("drop dragged item");
 		// console.log(this.dividers);
 		// this.dividers.forEach(function(divider) {
 			// if (divider !== null) {
@@ -196,7 +196,7 @@ window.TodoList = React.createClass(liquidClassData({
 		
 		removeFromList(this.props.todoList, item);
 		addAfterInList(this.props.todoList, referenceItem, item);
-		logUngroup();
+		// logUngroup();
 	},
 
 
