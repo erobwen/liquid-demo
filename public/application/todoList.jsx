@@ -55,7 +55,7 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	componentDidMount: function() {
-		this.clearAllDividers();
+		// this.clearAllDividers();
 	},
 
 	clearAllDividers : function() {
@@ -168,7 +168,6 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	dropDraggedItem : function() {
-		// this.clearAllDividers();	
 		// logGroup("drop dragged item");
 		// console.log(this.dividers);
 		// this.dividers.forEach(function(divider) {
@@ -182,6 +181,7 @@ window.TodoList = React.createClass(liquidClassData({
 		let referenceItem = this.props.todoList[currentDividerIndex - 1];
 		let item = draggedItem;
 		
+		this.clearAllDividers();	
 		// draggedItem = null;
 		// draggedHtml = null;
 		// leftEdgeOffset = 0;
