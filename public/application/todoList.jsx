@@ -55,18 +55,18 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	componentDidMount: function() {
-		if (currentDivider !== null) {
-			this.clearDivider(currentDivider);
+		// if (currentDivider !== null) {
+			// this.clearDivider(currentDivider);
 			
-			currentDivider = null;
-			currentDividerIndex = null;			
-		}
+			// currentDivider = null;
+			// currentDividerIndex = null;			
+		// }
 		
-		if (draggedItem !== null) {
-			draggedItem = null;
-			draggedHtml = null;
-			leftEdgeOffset = 0;
-		}
+		// if (draggedItem !== null) {
+			// draggedItem = null;
+			// draggedHtml = null;
+			// leftEdgeOffset = 0;
+		// }
 	},
 
 	onDragEnterDivider : function(event) {
@@ -193,9 +193,10 @@ window.TodoList = React.createClass(liquidClassData({
 		
 		// currentDivider = null;
 		// currentDividerIndex = null;
-		
-		removeFromList(this.props.todoList, item);
-		addAfterInList(this.props.todoList, referenceItem, item);
+		liquid.pulse(() => {
+			removeFromList(this.props.todoList, item);
+			addAfterInList(this.props.todoList, referenceItem, item);			
+		});
 		// logUngroup();
 	},
 
@@ -227,7 +228,7 @@ window.TodoList = React.createClass(liquidClassData({
 						previewBefore = { this.previewBefore }
 					/>
 				);
-				result.push(<div  draggable = "true"
+				result.push(<div draggable = "true"
 								onDragEnter = { this.onDragEnterDivider }
 								onDragOver = { this.onDragOverDivider }
 								onDragExit = { this.onDragExitDivider }
@@ -480,10 +481,6 @@ window.TodoItem = React.createClass(liquidClassData({
 					<span ref= {(element) => { this.itemHeadDiv = element; }} >
 						<PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
 					</span>				
-					<div className = "previewArea"
-						ref = {(element) => { this.previewArea = element; }} 
-						style = {{transition: "height .5s", height: "0px"}}>
-					</div>
 				</div>
 			);
 			// }
