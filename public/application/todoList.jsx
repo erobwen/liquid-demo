@@ -55,20 +55,24 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 
 	componentDidMount: function() {
-		// if (currentDivider !== null) {
-			// this.clearDivider(currentDivider);
-			
-			// currentDivider = null;
-			// currentDividerIndex = null;			
-		// }
-		
-		// if (draggedItem !== null) {
-			// draggedItem = null;
-			// draggedHtml = null;
-			// leftEdgeOffset = 0;
-		// }
+		this.clearAllDividers();
 	},
 
+	clearAllDividers : function() {
+		if (currentDivider) {
+			currentDivider = null;
+			currentDividerIndex = null;			
+		}
+		if (draggedItem) {
+			draggedItem = null;
+			draggedHtml = null;
+			leftEdgeOffset = 0;
+		}	
+		this.dividers.forEach((divider) => {
+			this.clearDivider(divider);
+		});		
+	},
+	
 	onDragEnterDivider : function(event) {
 		event.preventDefault();
 	},
@@ -94,9 +98,9 @@ window.TodoList = React.createClass(liquidClassData({
 
 	clearDivider : function(divider) {
 		trace.event && log("...clear divider: " + currentDividerIndex);
-		divider.style.height = "0px";
-		divider.innerHTML = "";
 		divider.style.display = "none";
+		delete divider.style.height;
+		divider.innerHTML = "";
 		// setTimeout(function(){
 		// }.bind(this));		
 	},
@@ -106,14 +110,14 @@ window.TodoList = React.createClass(liquidClassData({
 		divider.style.height = divider.clientHeight + "px";
 		divider.innerHTML = "";
 		// console.log(divider);
-		setTimeout(function(){
+		// setTimeout(function(){
 			// log("...initiate soft close...");
 			divider.style.height = "0px";
-		}.bind(this));
-		setTimeout(function(){
+		// }.bind(this));
+		// setTimeout(function(){
 			// log("...killing it after 500 ms");
-			if (divider !== currentDivider) divider.style.display = "none";
-		}.bind(this), 500);		
+			// if (divider !== currentDivider) divider.style.display = "none";
+		// }.bind(this), 500);		
 	},
 	
 	openDivider : function(divider) {
@@ -128,9 +132,9 @@ window.TodoList = React.createClass(liquidClassData({
 		// window.div = draggedHtml;
 		divider.innerHTML = "";
 		divider.appendChild(draggedHtml);
-		setTimeout(function(){
+		// setTimeout(function(){
 			divider.style.height = divider.scrollHeight + "px";
-		}.bind(this));
+		// }.bind(this));
 	},
 	
 	previewBefore : function(itemIndex) {
@@ -160,20 +164,11 @@ window.TodoList = React.createClass(liquidClassData({
 	},
 	
 	abortDragging : function() {
-		if (currentDivider) {
-			this.clearDivider(currentDivider);			
-			currentDividerIndex = null;
-			currentDivider = null;		
-		} 
-
-		if (draggedItem) {
-			draggedItem = null;
-			draggedHtml = null;
-			leftEdgeOffset = 0;			
-		}		
+		this.clearAllDividers();		
 	},
 	
 	dropDraggedItem : function() {
+		// this.clearAllDividers();	
 		// logGroup("drop dragged item");
 		// console.log(this.dividers);
 		// this.dividers.forEach(function(divider) {
@@ -213,7 +208,7 @@ window.TodoList = React.createClass(liquidClassData({
 							onDrop = { this.onDropDivider }
 							ref = {(element) => { if (element !== null) this.dividers.push(element); }}
 							key = { this.dividersCount++ } 
-							style = {{display : "none", transition: "height .5s", height: "0px"}}>
+							style = {{display : "none", transition: "height .5s"}}>
 						</div>); 
 			let index = 0;
 			todoList.forEach(function(item) {
@@ -236,7 +231,7 @@ window.TodoList = React.createClass(liquidClassData({
 								onDrop = { this.onDropDivider }
 								ref= {(element) => { if (element !== null) this.dividers.push(element); }}
 								key = { this.dividersCount++ } 
-								style = {{display : "none", transition: "height .5s", height: "0px"}}>
+								style = {{display : "none", transition: "height .5s"}}>
 							</div>); 
 			}.bind(this));			
 		}
