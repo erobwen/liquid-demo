@@ -24,6 +24,9 @@ function addAfterInList(list, referenceItem, item) {
 	list.splice(referenceIndex, 0, item);	
 }
 
+					// <div style = {{ backgroundColor: "red", transition: "height 0.5s", overflow: "hidden", height: (page.session.user === null ? "0px" : "100px")}}>
+						// hello!
+					// </div>
 
 window.DemoApplication = React.createClass(liquidClassData({
 	render: function() {
