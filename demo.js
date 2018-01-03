@@ -33,7 +33,7 @@ liquid.trace.socket = 1;
 // log(liquid.state);
 
 liquid.setConfigurationAsDefault();
-liquid.addClasses(require("./public/application/model.js"));  // TODO: Can we make it possible to load everything under a specific library?
+liquid.addClasses(require("./public/application/todoList.js"));  // TODO: Can we make it possible to load everything under a specific library?
 liquid.assignClassNamesTo(global); // Optional: Make all class names global
 let create = liquid.create;
 
@@ -93,17 +93,17 @@ if (!liquid.persistent.demoInitialized) {
 		liquid.persistent.users.add(user);
 	// });
 	// liquid.pulse(function() {
-		var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
+		// var favourite = create('Category', {name: 'Favourite', description: '', owner: user}); // Adds it to users own category index.
 		// log(user.ownedCategories.contents);
 		
-		var funny = create('Category', {name: 'Funny', description: '', owner: user});
-		politics = create('Category', {name: 'Politics', description: '', owner: user});
-		georgism = create('Category', {name: 'Georgism', description: '', owner: user});
+		// var funny = create('Category', {name: 'Funny', description: '', owner: user});
+		// politics = create('Category', {name: 'Politics', description: '', owner: user});
+		// georgism = create('Category', {name: 'Georgism', description: '', owner: user});
 		// politics.subCategories.add(georgism);
 		
 		// log("all incoming:");
 		// log(liquid.configuration, 5);
-		liquid.forAllIncoming(georgism, "subCategories", (parent) => {log(parent);})
+		// liquid.forAllIncoming(georgism, "subCategories", (parent) => {log(parent);})
 		// log("==========================================================");
 		// log (" Adding... ");
 		// liquid.trace.basic++;
