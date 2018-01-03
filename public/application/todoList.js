@@ -47,7 +47,6 @@
 			
 			trace.selection && logUngroup();
 		}
-
 	}
 
 	class TodoItem extends LiquidEntity {

@@ -6,7 +6,7 @@
 				return (
 					<div onClick={ function(event) { dropFocus(event);} }>
 						<LoginUI page = { page }/>
-						{ (page.session.user === null) ? "WTF" : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem" /> }
+						{ (page.session.user === null) ? null : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem" /> }
 					</div>
 				);
 			}.bind(this));
