@@ -299,24 +299,12 @@ window.SortableListItem = React.createClass(liquidClassData({
 		return {}; 
 	},
 
-	getItemViewElement() {
-		// if (typeof(this.itemHeadDiv) !== 'undefined') {
-			// let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
-			// return propertyContents[0];
-		// } else {
-			// window.errorDiv = this.itemHeadDiv;
-			// throw new Error("could not find property field... ");
-		// }
-	},
-	
 	/**
 	*  Dragging this todoItem
 	*/	
 	onDragStart: function(event) {
 		trace.event && logGroup("onDragStart:" + this.props.item.name);
-		// let headPropertyField = this.getItemViewElement();
-		// window.headPropertyField = headPropertyField;
-		// leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
+		leftEdgeOffset = (event.screenX - this.itemViewWrapper.offsetLeft);
 		
 		function clearIds(html) {
 			if (typeof(html.removeAttribute) === 'function') html.removeAttribute("data-reactid");
@@ -326,7 +314,7 @@ window.SortableListItem = React.createClass(liquidClassData({
 		}
 		
 		draggedItem = this.props.item;
-		draggedHtml = this.itemHeadDiv.cloneNode(true);
+		draggedHtml = this.itemViewWrapper.cloneNode(true);
 		clearIds(draggedHtml);
 		draggedHtml.style.opacity = 0.5;
 		this.todoItem.style.height = this.todoItem.clientHeight + "px";
@@ -433,9 +421,9 @@ window.SortableListItem = React.createClass(liquidClassData({
 					onDragExit = { this.onDragExit }
 					onDragLeave = { this.onDragLeave }
 					onDrop = { this.onDrop }>
-					<span ref= {(element) => { this.itemHeadDiv = element; }} >
+					<div className = "ItemViewWrapper" ref= {(element) => { this.itemViewWrapper = element; }} >
 						{ itemView }
-					</span>				
+					</div>
 				</div>
 			);
 		}.bind(this));
