@@ -5,21 +5,26 @@
 	let logGroup = liquid.logGroup;
 	let logUngroup = liquid.logUngroup;
 	liquid.trace.demo = 1; 
-	// console.log(liquid);
-	
 	trace.demo && log("demo.js");
+	
 	// Create one single liquid instance
-
-	liquid.addClasses(require("model"));  // TODO: Can we make it possible to load everything under a specific library?
+	liquid.addClasses(require("todoList"));  // TODO: Can we make it possible to load everything under a specific library?
 	liquid.assignClassNamesTo(root); // Optional: Make all class names global
 	
-	// Setup data
+	// Raw data from server
 	trace.demo && log("Initial serialized data: ");
 	trace.demo && log(data);
+
+	// Setup and unserialize data
 	liquid.receiveInitialDataFromUpstream(data);
 	trace.demo && log("upstreamIdObjectMap");
 	trace.demo && log(liquid.upstreamIdObjectMap);
 	
+	
+	/*--------------------
+	*     Debugging
+	* -------------------*/
+
 	// Setup trace (after initial data is added)
 	// liquid.trace.incoming = 1; 
 	// liquid.trace.socket = 1; 
@@ -29,21 +34,17 @@
 	// liquid.trace.pulse = 1; 
 	// liquid.trace.liquid = 1; 
 	// liquid.trace.unserialize = 1; 
+
+	// Debugging
+	root.page = liquid.instancePage;
+
+	root.user = page.session.user;
 	
 	window.test = function() {
-		liquid.repeat(() => {
-			logGroup("<<<<< inside repeater >>>>>");
-			favourite.name = funny.name + " too"; 
-			logUngroup();
-		});
-		trace.set = 1;
-		funny.name = "X";
-		trace.set = 0;
+		// Manual test code here
 	}
-
 	
 	// Setup global variables. 
-	
 	function lowerCaseFirstLetter(string){
 		return string.substr(0, 1).toLowerCase() + string.slice(1);
 	}
@@ -60,10 +61,21 @@
 			}
 		}
 	}
-	
-	root.page = liquid.instancePage;
-		
-	// Setup socket io.
+
+	// Setup global variables for each local entity: TODO... for all in the server map only?
+	for (id in liquid.idObjectMap) {
+		var object = liquid.idObjectMap[id];
+		if (typeof(object.name) !== 'undefined') {
+			var name = object.name;
+			var variableName = nameToVariable(name);
+			root[variableName] = object;
+		}
+	}	
+
+	/*--------------------
+	*     Socket IO
+	* -------------------*/
+
 	(function () {
 		var socket = io('http://localhost:8080');
 
@@ -99,13 +111,11 @@
 			throw new Error("Unexpected dissconnect.");
 		});		
 	})();
-
-
-		// socket.on('pushChangesFromUpstream', function(changes){
-			// liquid.receiveChangesFromUpstream(changes);
-		// });
 	
-	// Setup global variables
+	/*-----------------------------
+	*     Setup global variables
+	* -----------------------------*/
+
 	// root.find = liquid.find;
 	root.liquid = liquid;
 	root.uponChangeDo = liquid.uponChangeDo;
@@ -115,14 +125,5 @@
 	root.page = liquid.instancePage;
 	root.pageService = liquid.instancePage.pageService;
 	
-	// Setup global variables for each local entity: TODO... for all in the server map only?
-	for (id in liquid.idObjectMap) {
-		var object = liquid.idObjectMap[id];
-		if (typeof(object.name) !== 'undefined') {
-			var name = object.name;
-			var variableName = nameToVariable(name);
-			root[variableName] = object;
-		}
-	}
 	
 }(this));

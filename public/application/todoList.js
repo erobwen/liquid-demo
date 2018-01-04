@@ -5,7 +5,7 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-		root.model = factory();
+		root.todoList = factory();
     }
 }(this, function () {
 	let liquid = require("../liquid/liquid.js")();

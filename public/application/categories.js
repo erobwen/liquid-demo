@@ -5,7 +5,7 @@
     } else if (typeof module === 'object' && module.exports) {
         module.exports = factory(); // Support NodeJS
     } else {
-		root.model = factory();
+		root.categories = factory();
 		// // Special behavior: Add all module names in global space
         // let module = factory(); 
 		// for (property in module) {
