@@ -35,7 +35,7 @@
 	// liquid.trace.liquid = 1; 
 	// liquid.trace.unserialize = 1; 
 
-	// Debugging
+	// Debugging 
 	root.page = liquid.instancePage;
 
 	root.user = page.session.user;
@@ -63,14 +63,14 @@
 	}
 
 	// Setup global variables for each local entity: TODO... for all in the server map only?
-	for (id in liquid.idObjectMap) {
-		var object = liquid.idObjectMap[id];
-		if (typeof(object.name) !== 'undefined') {
-			var name = object.name;
-			var variableName = nameToVariable(name);
-			root[variableName] = object;
-		}
-	}	
+	// for (id in liquid.idObjectMap) {
+		// var object = liquid.idObjectMap[id];
+		// if (typeof(object.name) !== 'undefined') {
+			// var name = object.name;
+			// var variableName = nameToVariable(name);
+			// root[variableName] = object;
+		// }
+	// }	
 
 	/*--------------------
 	*     Socket IO

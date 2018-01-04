@@ -48,13 +48,10 @@ window.LoginUI = React.createClass(liquidClassData({
 	},
 	
 	render : function() {
-		// trace.ui && log("render: LoginUI");
+		trace.render && log("render: LoginUI");
 		return invalidateUponLiquidChange("LoginUI", this, function() {
-			// trace.ui && log(this.props.page);
-			var page = this.props.page; // same as window.page'
-			// traceTags.repetition = true;
+			var page = this.props.page; // same as window.page
 			var user = page.getActiveUser();
-			// traceTags.repetition = false;
 			if (user === null) {
 				return (
 					<div style={{display: 'flex', flexDirection: 'column', border: '1px', margin: '1em', padding: '1em'}}>
@@ -96,34 +93,28 @@ window.PropertyField = React.createClass(liquidClassData({
 		this.props.object[this.props.propertyName] = event.target.value;
 	},	
 	render: function() {
-		// logGroup("render: PropertyField");
+		trace.render && logGroup("render: PropertyField");
 		let element = invalidateUponLiquidChange("PropertyField", this, function() {
-			// trace.ui && log("labelString...");
 			var labelString = (typeof(this.props.label) !== 'undefined' && this.props.label !== null) ? (this.props.label + ": ") : "";
 			if (this.state.focused) {
-				// trace.ui && log("focused...");
 				return (
-					<span onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
+					<span className="PropertyField" onClick={ this.clickOnField } style={{marginBottom: '1em'}}>
 						<span className="propertyContents">{ labelString }<input type="text" value={this.props.object[this.props.propertyName]} onChange={ this.propertyChanged } /></span>
 					</span>
 				);
 			} else {
-				// trace.ui && log("unfocused...");
 				return (
-					<span onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
+					<span className="PropertyField"  onClick={ this.clickOnName } style={{marginBottom: '1em'}}>
 						<span className="propertyContents">{ labelString }{this.props.object[this.props.propertyName]}</span>
 					</span>
 				);
 			}
 		}.bind(this));
-		// logUngroup();
+		trace.render && logUngroup();
 		return element;
 	}
 }));
 
-
-
-// "2168-0002  2107-0445"
 let draggedItem = null;
 let draggedHtml = null;
 let leftEdgeOffset = 0;
@@ -131,14 +122,9 @@ let leftEdgeOffset = 0;
 let currentDivider = null;
 let currentDividerIndex = null;
 
-
 window.SortableList = React.createClass(liquidClassData({
 	getInitialState: function() {
 		return { draggingOver: false };
-	},
-
-	componentDidMount: function() {
-		// this.clearAllDividers();
 	},
 
 	clearAllDividers : function() {
@@ -184,40 +170,22 @@ window.SortableList = React.createClass(liquidClassData({
 		divider.style.display = "none";
 		delete divider.style.height;
 		divider.innerHTML = "";
-		// setTimeout(function(){
-		// }.bind(this));		
 	},
 	
 	softCloseDivider : function(divider) {
 		trace.event && log("...soft close divider: " + currentDividerIndex);
 		divider.style.height = divider.clientHeight + "px";
 		divider.innerHTML = "";
-		// console.log(divider);
-		// setTimeout(function(){
-			// log("...initiate soft close...");
-			divider.style.height = "0px";
-		// }.bind(this));
-		// setTimeout(function(){
-			// log("...killing it after 500 ms");
-			// if (divider !== currentDivider) divider.style.display = "none";
-		// }.bind(this), 500);		
+		divider.style.height = "0px";		
 	},
 	
 	openDivider : function(divider) {
 		trace.event && log("...open divider... " + currentDividerIndex);
-		// log("...open divider: " + currentDividerIndex);
 		divider.style.display = "block";
 		divider.style.height = "0px";
-		// divider.innerHTML = "...preview... ";
-		// divider.innerHTML = "<div>...preview... </div>";
-		// TODO: 
-		// console.log(draggedHtml);
-		// window.div = draggedHtml;
 		divider.innerHTML = "";
 		divider.appendChild(draggedHtml);
-		// setTimeout(function(){
-			divider.style.height = divider.scrollHeight + "px";
-		// }.bind(this));
+		divider.style.height = divider.scrollHeight + "px";
 	},
 	
 	previewBefore : function(itemIndex) {
@@ -251,31 +219,19 @@ window.SortableList = React.createClass(liquidClassData({
 	},
 	
 	dropDraggedItem : function() {
-		// logGroup("drop dragged item");
-		// console.log(this.dividers);
-		// this.dividers.forEach(function(divider) {
-			// if (divider !== null) {
-				// divider.style.display = "none";				
-			// }
-		// });
-		// this.clearDivider(currentDivider);
-		
+		// Remember where to drop
 		let referenceIndex = currentDividerIndex - 1;
 		let referenceItem = this.props.list[currentDividerIndex - 1];
 		let item = draggedItem;
 		
+		// Clean all
 		this.clearAllDividers();	
-		// draggedItem = null;
-		// draggedHtml = null;
-		// leftEdgeOffset = 0;
-		
-		// currentDivider = null;
-		// currentDividerIndex = null;
+
+		// Drop
 		liquid.pulse(() => {
 			removeFromList(this.props.list, item);
 			addAfterInList(this.props.list, referenceItem, item);			
 		});
-		// logUngroup();
 	},
 
 
@@ -322,7 +278,6 @@ window.SortableList = React.createClass(liquidClassData({
 		return result;
 	},
 	
-	// { (this.state.draggingOver) ? <SortableListItem key = "dropPreview" item = { draggedItem } isPreview = { true }/> : null }
 	render: function() {
 		return invalidateUponLiquidChange("SortableList", this, function() {
 			trace.render && log("render: SortableList");
@@ -333,7 +288,6 @@ window.SortableList = React.createClass(liquidClassData({
 					{ (() => { return this.sortableListItems(); })() }
 				</div>
 			);
-			// console.log(this.dividers);
 			return result;
 		}.bind(this));
 	}
@@ -345,39 +299,22 @@ window.SortableListItem = React.createClass(liquidClassData({
 		return {}; 
 	},
 
-	getHeadPropertyField() {
-		if (typeof(this.itemHeadDiv) !== 'undefined') {
-			let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
-			return propertyContents[0];
-		} else {
-			// console.log(this.itemHeadDiv);
-			window.errorDiv = this.itemHeadDiv;
-			throw new Error("could not find property field... ");
-		}
-	},
-
-	// componentDidMount: function() {
-		// if (this.previewArea) {
-			// this.previewArea.addEventListener("transitionend", function() {
-				// // trace.ui && log("Finished transition");
-				// // trace.ui && log(subCategoriesDiv);
-				// // trace.ui && log(this);
-				// // trace.ui && log("Height: " + subCategoriesDiv.clientHeight);
-				// if (this.previewArea.clientHeight !== 0) {
-					// // trace.ui && log("Tree open");
-					// this.previewArea.style.height = this.previewArea.clientHeight + "px";
-					// // trace.ui && log(this);
-				// }
-			// }.bind(this), false);			
+	getItemViewElement() {
+		// if (typeof(this.itemHeadDiv) !== 'undefined') {
+			// let propertyContents = this.itemHeadDiv.getElementsByClassName('propertyContents');
+			// return propertyContents[0];
+		// } else {
+			// window.errorDiv = this.itemHeadDiv;
+			// throw new Error("could not find property field... ");
 		// }
-	// },
+	},
 	
 	/**
 	*  Dragging this todoItem
 	*/	
 	onDragStart: function(event) {
 		trace.event && logGroup("onDragStart:" + this.props.item.name);
-		// let headPropertyField = this.getHeadPropertyField();
+		// let headPropertyField = this.getItemViewElement();
 		// window.headPropertyField = headPropertyField;
 		// leftEdgeOffset = (event.screenX - headPropertyField.offsetLeft);
 		
@@ -392,21 +329,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 		draggedHtml = this.itemHeadDiv.cloneNode(true);
 		clearIds(draggedHtml);
 		draggedHtml.style.opacity = 0.5;
-		
-		// setTimeout(function(){
-		// }.bind(this));
-			// this.todoItem.style.transform = "translateX(-9999px)";
-		// setTimeout(function(){
-		// let a1 = this.todoItem.clientHeight;
-		// let a2 = this.todoItem.scrollHeight;
-		// let a3 = this.todoItem.offsetHeight;
-		// let a4 = this.todoItem.style.height;
-		// console.log(a1);
-		// console.log(a2);
-		// console.log(a3);
-		// console.log(a4);
-		// console.log(this.todoItem.style.transition);
-		// console.log(this.todoItem.style);
 		this.todoItem.style.height = this.todoItem.clientHeight + "px";
 		setTimeout(function(){
 			trace.event && logGroup("onDragStart:" + this.props.item.name + " , set height of dragged to 0... ");
@@ -415,7 +337,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 			trace.event && logUngroup();
 		}.bind(this));
 		trace.event && logUngroup();
-		// }.bind(this));
 	},
 
 	onDragEnd : function(event) {
@@ -448,10 +369,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 	onDragLeave: function(event) {
 		trace.event && logGroup("onDragLeave:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		// if (this.props.item !== draggedItem) {
-			// if (--this.dragEnterCounter === 0) {
-			// }
-		// }
 		trace.event && logUngroup();
 	},
 	
@@ -469,10 +386,7 @@ window.SortableListItem = React.createClass(liquidClassData({
 		event.preventDefault();
 		if (this.props.item !== draggedItem) {			
 			let yWithinField = event.pageY - this.todoItem.offsetTop;
-			// log("yWithinField: " + yWithinField);
-			// let leftEdgeXWithinField =  yWithinField - topEdgeOffset;
 			let mouseOverTopPart = yWithinField <= this.todoItem.scrollHeight / 2;
-			// log("mouseOverTopPart: " + mouseOverTopPart);
 			
 			if (mouseOverTopPart) {
 				this.props.previewBefore(this.props.itemIndex);
@@ -486,29 +400,8 @@ window.SortableListItem = React.createClass(liquidClassData({
 	onDrop: function(event) {
 		trace.event && logGroup("onDrop:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		// if (this.props.item !== draggedItem) {
-			this.dragEnterCounter = 0;
-			// Reset dragging
-			// draggedElement.removeAttribute("style"); // Needed as we cannot trust onDragEnd
-			// this.todoItem.style.transform = "translateX(0px)";
-			// this.todoItem.style.height = "auto";
-
-			this.props.dropDraggedItem();
-			
-			// if (this.previewArea) {
-				// this.previewArea.style.height = "0px";
-			// }
-			// setTimeout(function(){
-				// console.log(this);
-				// if (this.previewArea) {
-					// // console.log(this);
-					// this.previewArea.style.display = "none";
-				// }
-			// }.bind(this));
-			// this.setState({ 
-				// draggingOver : false
-			// });			
-		// }
+		this.dragEnterCounter = 0;
+		this.props.dropDraggedItem();
 		trace.event && logUngroup();
 	},
 
@@ -518,22 +411,7 @@ window.SortableListItem = React.createClass(liquidClassData({
 	render: function() {
 		return invalidateUponLiquidChange("SortableListItem", this, function() {
 			trace.render && log("render: SortableListItem");
-			// 
-			// if (this.props.isPreview) {			
-				// return (
-					// <div className="SortableListItem" 
-						// style = {{ color : "gray"}}
-						// ref= {(element) => { this.todoItem = element; }}>
-						// <span ref= {(element) => { this.itemHeadDiv = element; }}>
-							// <PropertyField label={"Todo"} object = { this.props.item} propertyName = "name"/>
-						// </span>				
-					// </div>
-				// );				
-			// } else {
 
-			// let preview = (this.state.draggingOver) ? <SortableListItem key = { draggedItem.const.id + "_dragged"} item = { draggedItem } isPreview = { true }/> : null;
-			// let preview = (this.state.draggingOver) ? <div>preview</div> : null;
-			// { preview }
 			let itemView = React.createElement(window[this.props.itemViewName], { item : this.props.item });
 			
 			return (
@@ -544,9 +422,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 						transition : 'height .5s',
 						height : 'auto',
 						overflow : 'hidden'
-						// , 
-						// transform : (this.state.isDragging ? "translateX(200px)" : "translateX(0px)"), 
-						// height: (this.state.isDragging ? "0" : "auto")
 					}}
 				
 					draggable = "true"						
@@ -563,9 +438,7 @@ window.SortableListItem = React.createClass(liquidClassData({
 					</span>				
 				</div>
 			);
-			// }
 		}.bind(this));
-		//
 	}
 }));
 
