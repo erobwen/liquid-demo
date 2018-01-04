@@ -147,8 +147,25 @@ window.SortableList = React.createClass(liquidClassData({
 		event.preventDefault();
 	},
 	
-	onDragOverDivider : function(event) {
+	onDragOverDivider: function(event) {
+		trace.event && logGroup("onDragOver (divider)");
+		// log("onDragOverDivider");
 		event.preventDefault();
+		// console.log(event.target);
+		// console.log(currentDivider);
+		// if (event.target === currentDivider) {
+			// Horizontal calculation
+			let xWithinField = event.screenX - currentDivider.offsetLeft;
+			// log(xWithinField);
+			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
+			let placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
+			// log(placeAsFollowingSibling);
+
+			if (this.props.childrenPropertyName) {
+				if (currentDivider !== null) currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+			}
+		// }
+		trace.event && logUngroup();
 	},
 	
 	onDragExitDivider : function(event) {
