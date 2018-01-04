@@ -118,6 +118,7 @@ window.PropertyField = React.createClass(liquidClassData({
 let draggedItem = null;
 let draggedHtml = null;
 let leftEdgeOffset = 0;
+let indentationPx = 10;
 
 let currentDivider = null;
 let currentDividerIndex = null;
@@ -188,25 +189,26 @@ window.SortableList = React.createClass(liquidClassData({
 		divider.style.height = divider.scrollHeight + "px";
 	},
 	
-	previewBefore : function(itemIndex) {
+	previewBefore : function(itemIndex, placeAsFollowingSibling) {
 		trace.event && log("...preview before" + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex); 
+		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling); 
 	}, 
 
-	previewAfter : function(itemIndex) {
+	previewAfter : function(itemIndex, placeAsFollowingSibling) {
 		trace.event && log("...preview after " + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex + 1;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex); 
+		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling); 
 	},
 
-	previewAtDivider(newDivider, newDividerIndex) {
+	previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling) {
 		if (currentDivider !== newDivider) {
 			trace.event && log("preview at index: " + newDividerIndex);			
 			if (currentDivider !== null) {
 				this.softCloseDivider(currentDivider);
+				currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
 			}
 			currentDividerIndex = newDividerIndex;
 			currentDivider = newDivider;
@@ -372,14 +374,22 @@ window.SortableListItem = React.createClass(liquidClassData({
 	onDragOver: function(event) {
 		trace.event && logGroup("onDragOver:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item !== draggedItem) {			
+		if (this.props.item !== draggedItem) {
+			// Vertical calculations
 			let yWithinField = event.pageY - this.todoItem.offsetTop;
 			let mouseOverTopPart = yWithinField <= this.todoItem.scrollHeight / 2;
 			
+			// Horizontal calculation
+			let xWithinField = event.screenX - this.itemViewWrapper.offsetLeft;
+			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;			
+			let placeAsFollowingSibling = leftEdgeXWithinField <= indentationPx;
+			placeAsFollowingSibling = true; // dissconnect
+
+			// Call parent
 			if (mouseOverTopPart) {
-				this.props.previewBefore(this.props.itemIndex);
+				this.props.previewBefore(this.props.itemIndex, placeAsFollowingSibling);
 			} else {
-				this.props.previewAfter(this.props.itemIndex);
+				this.props.previewAfter(this.props.itemIndex, placeAsFollowingSibling);
 			}
 		}
 		trace.event && logUngroup();
