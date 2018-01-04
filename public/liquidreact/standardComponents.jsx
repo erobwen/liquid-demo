@@ -194,25 +194,39 @@ window.SortableList = React.createClass(liquidClassData({
 		let newDividerIndex = itemIndex;
 		let newDivider = this.dividers[newDividerIndex];
 		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling); 
+		if (this.props.childrenPropertyName) {
+			if (currentDivider !== null) currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+		}
 	}, 
 
 	previewAfter : function(itemIndex, placeAsFollowingSibling) {
 		trace.event && log("...preview after " + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex + 1;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling); 
+		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling);
+		if (this.props.childrenPropertyName) {
+			if (currentDivider !== null) currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";			
+		}
 	},
 
 	previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling) {
+		if (typeof(placeAsFollowingSibling) === 'undefined') throw new Error("wtf...");
+ 		log("placeAsFollowingSibling:" + placeAsFollowingSibling);
 		if (currentDivider !== newDivider) {
 			trace.event && log("preview at index: " + newDividerIndex);			
 			if (currentDivider !== null) {
 				this.softCloseDivider(currentDivider);
-				currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
 			}
 			currentDividerIndex = newDividerIndex;
 			currentDivider = newDivider;
 			this.openDivider(currentDivider);
+
+			if (this.props.childrenPropertyName && currentDivider !== null) {
+				let currentTransition = currentDivider.style.transition;
+				currentDivider.style.transition = "";
+				currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+				currentDivider.style.transition = currentTransition;
+			} 
 		}		
 	},
 	
@@ -236,7 +250,8 @@ window.SortableList = React.createClass(liquidClassData({
 		});
 	},
 
-
+	// Notransitions: (use to temporarily disable animations).
+	// https://stackoverflow.com/questions/11131875/what-is-the-cleanest-way-to-disable-css-transition-effects-temporarily
 	sortableListItems : function() {
 		let list = this.props.list;
 		var result = [];
@@ -249,7 +264,7 @@ window.SortableList = React.createClass(liquidClassData({
 							onDrop = { this.onDropDivider }
 							ref = {(element) => { if (element !== null) this.dividers.push(element); }}
 							key = { this.dividersCount++ } 
-							style = {{display : "none", transition: "height .5s"}}>
+							style = {{display : "none", transition: "height .5s, margin-left .5s"}}>
 						</div>); 
 			let index = 0;
 			list.forEach(function(item) {
@@ -257,6 +272,7 @@ window.SortableList = React.createClass(liquidClassData({
 					<SortableListItem 
 						key = { "itemId" + item.const.id }
 						itemViewName = { this.props.itemViewName }
+						childrenPropertyName = { this.props.childrenPropertyName }
 						item = { item }
 						itemIndex = { index++ }
 						dropDraggedItem = { this.dropDraggedItem }
@@ -273,7 +289,7 @@ window.SortableList = React.createClass(liquidClassData({
 								onDrop = { this.onDropDivider }
 								ref= {(element) => { if (element !== null) this.dividers.push(element); }}
 								key = { this.dividersCount++ } 
-								style = {{display : "none", transition: "height .5s"}}>
+								style = {{display : "none", transition: "height .5s, margin-left .5s"}}>
 							</div>); 
 			}.bind(this));			
 		}
@@ -347,12 +363,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 	onDragEnter: function(event) {
 		trace.event && logGroup("onDragEnter:" + this.props.item.name + ", " + this.dragEnterCounter);
 		event.preventDefault();
-		if (this.props.item !== draggedItem) {				
-			let current = this.dragEnterCounter++;
-			if (current === 0) {
-				this.props.previewAfter(this.props.itemIndex);
-			}
-		}
 		trace.event && logUngroup();
 	},
 	
@@ -381,9 +391,9 @@ window.SortableListItem = React.createClass(liquidClassData({
 			
 			// Horizontal calculation
 			let xWithinField = event.screenX - this.itemViewWrapper.offsetLeft;
-			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;			
-			let placeAsFollowingSibling = leftEdgeXWithinField <= indentationPx;
-			placeAsFollowingSibling = true; // dissconnect
+			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
+			console.log(this.props.childrenPropertyName);
+			let placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
 
 			// Call parent
 			if (mouseOverTopPart) {
