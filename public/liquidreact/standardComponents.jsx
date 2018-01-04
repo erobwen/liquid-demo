@@ -211,21 +211,28 @@ window.SortableList = React.createClass(liquidClassData({
 
 	previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling) {
 		if (typeof(placeAsFollowingSibling) === 'undefined') throw new Error("wtf...");
- 		log("placeAsFollowingSibling:" + placeAsFollowingSibling);
-		if (currentDivider !== newDivider) {
+ 		if (currentDivider !== newDivider) {
 			trace.event && log("preview at index: " + newDividerIndex);			
 			if (currentDivider !== null) {
 				this.softCloseDivider(currentDivider);
 			}
 			currentDividerIndex = newDividerIndex;
 			currentDivider = newDivider;
+			
+			// Animated opening of divider
 			this.openDivider(currentDivider);
 
+			// Direct movement of margin
 			if (this.props.childrenPropertyName && currentDivider !== null) {
-				let currentTransition = currentDivider.style.transition;
-				currentDivider.style.transition = "";
+				function finalizeAndCleanUp(event) {
+					if (event.propertyName == 'transition') {
+						this.style.transition = "height .5s, margin-left .5s"
+						this.removeEventListener('transitionend', finalizeAndCleanUp)
+					}
+				}
+				currentDivider.addEventListener('transitionend', finalizeAndCleanUp)
+				currentDivider.style.transition = "height .5s";
 				currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
-				currentDivider.style.transition = currentTransition;
 			} 
 		}		
 	},
@@ -392,7 +399,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 			// Horizontal calculation
 			let xWithinField = event.screenX - this.itemViewWrapper.offsetLeft;
 			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			console.log(this.props.childrenPropertyName);
 			let placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
 
 			// Call parent
