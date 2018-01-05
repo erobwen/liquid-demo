@@ -162,7 +162,10 @@ window.SortableList = React.createClass(liquidClassData({
 			// log(placeAsFollowingSibling);
 
 			if (this.props.childrenPropertyName) {
-				if (currentDivider !== null) currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+				if (currentDivider !== null) {
+					currentDivider.style.transition = "height .5s, margin-left .5s";
+					currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";					
+				}
 			}
 		// }
 		trace.event && logUngroup();

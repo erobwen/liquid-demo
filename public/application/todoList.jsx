@@ -6,7 +6,16 @@ window.TodoApplication = React.createClass(liquidClassData({
 			return (
 				<div onClick={ function(event) { dropFocus(event);} }>
 					<LoginUI page = { page }/>
-					{ (page.session.user === null) ? null : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem" childrenPropertyName = "subtasks"/> }
+					<div style = {{ display: "flex", flexDirection: "horizontal"}}>
+						<div style = {{ width : "50%"}}>
+							<div>Tree view:</div>
+							{ (page.session.user === null) ? null : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem" childrenPropertyName = "subtasks"/> }
+						</div>
+						<div style = {{ width : "50%"}}>
+							<div>List view:</div>
+							{ (page.session.user === null) ? null : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem"/> }
+						</div>
+					</div>
 				</div>
 			);
 		}.bind(this));
