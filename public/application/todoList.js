@@ -21,7 +21,7 @@
 
 	class Page extends LiquidPage {
 		initialize(data) {
-			super.initialize(data);			
+			super.initialize(data);
 		}
 	}
 	

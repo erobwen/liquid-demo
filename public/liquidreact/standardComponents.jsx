@@ -118,7 +118,8 @@ window.PropertyField = React.createClass(liquidClassData({
 let draggedItem = null;
 let draggedHtml = null;
 let leftEdgeOffset = 0;
-let indentationPx = 10;
+let indentationPx = 20;
+let placeAsFollowingSibling = true;
 
 let currentDivider = null;
 let currentDividerIndex = null;
@@ -158,13 +159,16 @@ window.SortableList = React.createClass(liquidClassData({
 			let xWithinField = event.screenX - currentDivider.offsetLeft;
 			// log(xWithinField);
 			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			let placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
 			// log(placeAsFollowingSibling);
 
 			if (this.props.childrenPropertyName) {
 				if (currentDivider !== null) {
-					currentDivider.style.transition = "height .5s, margin-left .5s";
-					currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";					
+					let newPlaceAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
+					if (newPlaceAsFollowingSibling !== placeAsFollowingSibling) {
+						placeAsFollowingSibling = newPlaceAsFollowingSibling;
+						currentDivider.style.transition = "height .5s, padding-left .5s";
+						currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";											
+					}
 				}
 			}
 		// }
@@ -215,7 +219,7 @@ window.SortableList = React.createClass(liquidClassData({
 		let newDivider = this.dividers[newDividerIndex];
 		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling); 
 		if (this.props.childrenPropertyName) {
-			if (currentDivider !== null) currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+			if (currentDivider !== null) currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
 		}
 	}, 
 
@@ -225,7 +229,7 @@ window.SortableList = React.createClass(liquidClassData({
 		let newDivider = this.dividers[newDividerIndex];
 		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling);
 		if (this.props.childrenPropertyName) {
-			if (currentDivider !== null) currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";			
+			if (currentDivider !== null) currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";			
 		}
 	},
 
@@ -252,7 +256,7 @@ window.SortableList = React.createClass(liquidClassData({
 				}
 				currentDivider.addEventListener('transitionend', finalizeAndCleanUp)
 				currentDivider.style.transition = "height .5s";
-				currentDivider.style.marginLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+				currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
 			} 
 		}		
 	},
@@ -268,13 +272,26 @@ window.SortableList = React.createClass(liquidClassData({
 		let item = draggedItem;
 		
 		// Clean all
-		this.clearAllDividers();	
+		this.clearAllDividers();
 
-		// Drop
-		liquid.pulse(() => {
-			removeFromList(this.props.list, item);
-			addAfterInList(this.props.list, referenceItem, item);			
-		});
+		console.log("placeAsFollowingSibling" + placeAsFollowingSibling);
+		if (placeAsFollowingSibling) {
+			// Drop after
+			liquid.pulse(() => {
+				removeFromList(this.props.list, item);
+				addAfterInList(this.props.list, referenceItem, item);	
+			});			
+		} else {
+			// Drop as last child
+			liquid.pulse(() => {
+				removeFromList(this.props.list, item);
+				if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
+					referenceItem[this.props.childrenPropertyName] = create([]);
+				}
+				referenceItem[this.props.childrenPropertyName].push(item);			
+			});
+		}
+
 	},
 
 	// Notransitions: (use to temporarily disable animations).
@@ -291,7 +308,7 @@ window.SortableList = React.createClass(liquidClassData({
 							onDrop = { this.onDropDivider }
 							ref = {(element) => { if (element !== null) this.dividers.push(element); }}
 							key = { this.dividersCount++ } 
-							style = {{display : "none", transition: "height .5s, margin-left .5s"}}>
+							style = {{display : "none", transition: "height .5s, padding-left .5s"}}>
 						</div>); 
 			let index = 0;
 			list.forEach(function(item) {
@@ -316,7 +333,7 @@ window.SortableList = React.createClass(liquidClassData({
 								onDrop = { this.onDropDivider }
 								ref= {(element) => { if (element !== null) this.dividers.push(element); }}
 								key = { this.dividersCount++ } 
-								style = {{display : "none", transition: "height .5s, margin-left .5s"}}>
+								style = {{display : "none", transition: "height .5s, padding-left .5s"}}>
 							</div>); 
 			}.bind(this));			
 		}
@@ -419,7 +436,7 @@ window.SortableListItem = React.createClass(liquidClassData({
 			// Horizontal calculation
 			let xWithinField = event.screenX - this.itemViewWrapper.offsetLeft;
 			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			let placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
+			placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
 
 			// Call parent
 			if (mouseOverTopPart) {
@@ -443,10 +460,19 @@ window.SortableListItem = React.createClass(liquidClassData({
 	*  Render
 	*/
 	render: function() {
+		let item = this.props.item;
+		let childrenPropertyName = this.props.childrenPropertyName;
 		return invalidateUponLiquidChange("SortableListItem", this, function() {
 			trace.render && log("render: SortableListItem");
 
 			let itemView = React.createElement(window[this.props.itemViewName], { item : this.props.item });
+			
+			let childrenList; 
+			if (typeof(item[childrenPropertyName]) !== 'undefined' && item[childrenPropertyName].length > 0) {
+				childrenList = <div style = {{ marginLeft : indentationPx + "px" }}><SortableList list = { item[childrenPropertyName] } itemViewName = { this.props.itemViewName } childrenPropertyName = { childrenPropertyName }/></div>
+			} else {
+				childrenList = null;
+			}
 			
 			return (
 				<div className="SortableListItem" 
@@ -470,6 +496,7 @@ window.SortableListItem = React.createClass(liquidClassData({
 					<div className = "ItemViewWrapper" ref= {(element) => { this.itemViewWrapper = element; }} >
 						{ itemView }
 					</div>
+					{ childrenList }
 				</div>
 			);
 		}.bind(this));
