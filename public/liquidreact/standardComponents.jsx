@@ -120,7 +120,7 @@ let draggedHtml = null;
 let leftEdgeOffset = 0;
 let indentationPx = 20;
 let placeAsFollowingSibling = true;
-
+let currentList = null;
 let currentDivider = null;
 let currentDividerIndex = null;
 
@@ -131,6 +131,7 @@ window.SortableList = React.createClass(liquidClassData({
 
 	clearAllDividers : function() {
 		if (currentDivider) {
+			currentList = null;
 			currentDivider = null;
 			currentDividerIndex = null;			
 		}
@@ -240,6 +241,7 @@ window.SortableList = React.createClass(liquidClassData({
 			if (currentDivider !== null) {
 				this.softCloseDivider(currentDivider);
 			}
+			currentList = this.props.list;
 			currentDividerIndex = newDividerIndex;
 			currentDivider = newDivider;
 			
@@ -268,8 +270,9 @@ window.SortableList = React.createClass(liquidClassData({
 	dropDraggedItem : function() {
 		// Remember where to drop
 		let referenceIndex = currentDividerIndex - 1;
-		let referenceItem = this.props.list[currentDividerIndex - 1];
+		let referenceItem = currentList[currentDividerIndex - 1];
 		let item = draggedItem;
+		let lsit = currentList;
 		
 		// Clean all
 		this.clearAllDividers();
@@ -278,20 +281,19 @@ window.SortableList = React.createClass(liquidClassData({
 		if (placeAsFollowingSibling) {
 			// Drop after
 			liquid.pulse(() => {
-				removeFromList(this.props.list, item);
-				addAfterInList(this.props.list, referenceItem, item);	
+				removeFromList(lsit, item);
+				addAfterInList(lsit, referenceItem, item);	
 			});			
 		} else {
 			// Drop as last child
 			liquid.pulse(() => {
-				removeFromList(this.props.list, item);
+				removeFromList(lsit, item);
 				if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
 					referenceItem[this.props.childrenPropertyName] = create([]);
 				}
 				referenceItem[this.props.childrenPropertyName].push(item);			
 			});
 		}
-
 	},
 
 	// Notransitions: (use to temporarily disable animations).
@@ -376,7 +378,8 @@ window.SortableListItem = React.createClass(liquidClassData({
 		}
 		
 		draggedItem = this.props.item;
-		draggedHtml = this.itemViewWrapper.cloneNode(true);
+		// draggedHtml = this.itemViewWrapper.cloneNode(true);
+		draggedHtml = this.todoItem.cloneNode(true);
 		clearIds(draggedHtml);
 		draggedHtml.style.opacity = 0.5;
 		this.todoItem.style.height = this.todoItem.clientHeight + "px";
