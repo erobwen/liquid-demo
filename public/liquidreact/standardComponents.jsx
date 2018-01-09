@@ -127,7 +127,7 @@ let leftEdgeOffset = 0;
 let currentList = null;
 let currentDivider = null;
 let currentDividerIndex = null;
-let placeAsFollowingSibling = true;
+let placeAsChild = false;
 
 window.SortableList = React.createClass(liquidClassData({
 	getInitialState: function() {
@@ -160,22 +160,22 @@ window.SortableList = React.createClass(liquidClassData({
 		trace.event && logGroup("onDragOver (divider)");
 		// log("onDragOverDivider");
 		event.preventDefault();
-		// console.log(event.target);
-		// console.log(currentDivider);
+		// trace.event && log(event.target);
+		// trace.event && log(currentDivider);
 		// if (event.target === currentDivider) {
 			// Horizontal calculation
 			let xWithinField = event.screenX - currentDivider.offsetLeft;
 			// log(xWithinField);
 			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			// log(placeAsFollowingSibling);
+			// log(!placeAsChild);
 
 			if (this.props.childrenPropertyName) {
 				if (currentDivider !== null) {
-					let newPlaceAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
-					if (newPlaceAsFollowingSibling !== placeAsFollowingSibling) {
-						placeAsFollowingSibling = newPlaceAsFollowingSibling;
+					let newPlaceAsChild = !(this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true);
+					if (newPlaceAsChild !== placeAsChild) {
+						placeAsChild = newPlaceAsChild;
 						currentDivider.style.transition = "height .5s, padding-left .5s";
-						currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";											
+						currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";											
 					}
 				}
 			}
@@ -221,28 +221,28 @@ window.SortableList = React.createClass(liquidClassData({
 		divider.style.height = divider.scrollHeight + "px";
 	},
 	
-	previewBefore : function(itemIndex, placeAsFollowingSibling) {
+	previewBefore : function(itemIndex, placeAsChild) {
 		trace.event && log("...preview before" + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling); 
+		this.previewAtDivider(newDivider, newDividerIndex, placeAsChild); 
 		if (this.props.childrenPropertyName) {
-			if (currentDivider !== null) currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+			if (currentDivider !== null) currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";
 		}
 	}, 
 
-	previewAfter : function(itemIndex, placeAsFollowingSibling) {
+	previewAfter : function(itemIndex, placeAsChild) {
 		trace.event && log("...preview after " + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex + 1;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling);
+		this.previewAtDivider(newDivider, newDividerIndex, placeAsChild);
 		if (this.props.childrenPropertyName) {
-			if (currentDivider !== null) currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";			
+			if (currentDivider !== null) currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";			
 		}
 	},
 
-	previewAtDivider(newDivider, newDividerIndex, placeAsFollowingSibling) {
-		if (typeof(placeAsFollowingSibling) === 'undefined') throw new Error("wtf...");
+	previewAtDivider(newDivider, newDividerIndex, placeAsChild) {
+		if (typeof(!placeAsChild) === 'undefined') throw new Error("wtf...");
  		if (currentDivider !== newDivider) {
 			trace.event && log("preview at index: " + newDividerIndex);			
 			if (currentDivider !== null) {
@@ -265,7 +265,7 @@ window.SortableList = React.createClass(liquidClassData({
 				}
 				currentDivider.addEventListener('transitionend', finalizeAndCleanUp)
 				currentDivider.style.transition = "height .5s";
-				currentDivider.style.paddingLeft = placeAsFollowingSibling ? "0px" : indentationPx + "px";
+				currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";
 			} 
 		}		
 	},
@@ -295,13 +295,14 @@ window.SortableList = React.createClass(liquidClassData({
 			// Clean all
 			this.clearAllDividers();
 
-			console.log("placeAsFollowingSibling" + placeAsFollowingSibling);
-			if (placeAsFollowingSibling) {
+			trace.event && log("!placeAsChild" + !placeAsChild);
+			if (!placeAsChild) {
 				// Drop after
-				console.log("drop after");
+				trace.event && log("drop as sibling");
 				liquid.pulse(() => {
 					removeFromList(sList, item);
 					if (addFirst) {
+						trace.event && log("push");
 						targetList.push(item);
 					} else {
 						addAfterInList(targetList, referenceItem, item);						
@@ -309,7 +310,7 @@ window.SortableList = React.createClass(liquidClassData({
 				});			
 			} else {
 				// Drop as last child
-				console.log("drop as child");
+				trace.event && log("drop as child");
 				liquid.pulse(() => {
 					removeFromList(sList, item);
 					if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
@@ -469,13 +470,13 @@ window.SortableListItem = React.createClass(liquidClassData({
 			// Horizontal calculation
 			let xWithinField = event.screenX - this.itemViewWrapper.offsetLeft;
 			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			placeAsFollowingSibling = this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true;
+			placeAsChild = !(this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true);
 
 			// Call parent
 			if (mouseOverTopPart) {
-				this.props.previewBefore(this.props.itemIndex, placeAsFollowingSibling);
+				this.props.previewBefore(this.props.itemIndex, placeAsChild);
 			} else {
-				this.props.previewAfter(this.props.itemIndex, placeAsFollowingSibling);
+				this.props.previewAfter(this.props.itemIndex, placeAsChild);
 			}
 		}
 		trace.event && logUngroup();
