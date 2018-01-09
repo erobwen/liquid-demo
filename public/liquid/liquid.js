@@ -260,7 +260,7 @@
 					let object = value;
 					let className = getClassName(value);
 					if (forUpstream) {
-						if (object.const._upstreamId !== null) {
+						if (typeof(object.const._upstreamId) !== 'undefined') {
 							return type + ":" + className + ":id:" + object.const._upstreamId;
 						} else {
 							return type + ":" + className + ":downstreamId:" + object.const.id;
@@ -1213,9 +1213,9 @@
 				// log(events, 2);
 		
 				// Recursive search for objects to push upstream
-				var requiredObjects = {};
+				let requiredObjects = {};
 				function addRequiredCascade(object) {
-					if (object.const._upstreamId === null && typeof(requiredObjects[object.const.id]) === 'undefined') {
+					if (typeof(object.const._upstreamId) === 'undefined' && typeof(requiredObjects[object.const.id]) === 'undefined') {
 						requiredObjects[object.const.id] = object;
 						Object.keys(object).forEach(function(key) { // TODO: consider, for loop? How to avoid inherited... 
 							let value = object[key];
@@ -1228,10 +1228,10 @@
 		
 				// Scan events for refered objects that needs to be pushed uppstream
 				events.forEach(function(event) {
-					var eventIsFromUpstream = state.pushingChangesFromUpstream && !event.isConsequence;
+					let eventIsFromUpstream = state.pushingChangesFromUpstream && !event.isConsequence;
 					if (!eventIsFromUpstream) {
 						trace.liquid && log("processing event required objects");
-						if (event.object.const._upstreamId !== null && liquid.isObject(event.value) && event.value.const._upstreamId === null) {
+						if (typeof(event.object.const._upstreamId) === 'number' && liquid.isObject(event.value) && typeof(event.value.const._upstreamId) === 'undefined') {
 							if (event.type == 'set') {
 								addRequiredCascade(event.value);								
 							}
@@ -1240,10 +1240,11 @@
 				});
 		
 				// Serialize object
-				var serializedObjects = {};
+				let serializedObjects = {};
 				for(id in requiredObjects) {
-					var serializedObject = serializeObject(requiredObjects[id], true);
-					serializedObjects[serializedObject.const.id] = serializedObject;
+					let requiredObject = requiredObjects[id];
+					let serializedObject = serializeObject(requiredObject, true);
+					serializedObjects[requiredObject.const.id] = serializedObject;
 				}
 		
 				// Serialize events

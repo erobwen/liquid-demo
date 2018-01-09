@@ -39,8 +39,9 @@
 				liquid.addToSelection(selection, item.subtasks);
 				item.subtasks.forEach(function(subtask) {
 					this.selectTodo(selection, subtask);
-				});
+				}.bind(this));
 			}
+			trace.selection && logUngroup();
 		}
 		
 		selectBasics(selection) {
