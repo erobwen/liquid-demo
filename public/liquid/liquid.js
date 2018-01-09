@@ -218,12 +218,12 @@
 			if (typeof(event.value) !== 'undefined') {
 				serialized.value = serializeValue(event.value, forUpstream);
 			}
-			if (typeof(event.previousValue) !== 'undefined') {
-				serialized.previousValue = serializeValue(event.previousValue, forUpstream);
-			}
+			// if (typeof(event.previousValue) !== 'undefined') {
+				// serialized.previousValue = serializeValue(event.previousValue, forUpstream);
+			// }
 			if (typeof(event.added) !== 'undefined') {
 				if (event.added === null) {
-					serialized.added = [];
+					// No property
 				} else {
 					let serializedAdded = [];
 					event.added.forEach(function(added) {
@@ -234,13 +234,14 @@
 			}
 			if (typeof(event.removed) !== 'undefined') {
 				if (event.removed === null) {
-					serialized.removed = [];					
+					serialized.removedCount = 0;					
 				} else {
-					let serializedRemoved = [];
-					event.removed.forEach(function(removed) {
-						serializedRemoved.push(serializeValue(removed, forUpstream));					
-					});
-					serialized.removed = serializedRemoved;					
+					serialized.removedCount = event.removed.length;
+					// let serializedRemoved = [];
+					// event.removed.forEach(function(removed) {
+						// serializedRemoved.push(serializeValue(removed, forUpstream));					
+					// });
+					// serialized.removed = serializedRemoved;					
 				}
 			}
 			trace.serialize && log(serialized, 3);
@@ -404,6 +405,13 @@
 					} else if (event.type === 'delete') {
 						trace.unserialize && log("deleting " + event.property);
 						delete object[event.property];
+					} else if (event.type === 'splice'){
+						if (typeof(event.added) !== 'undefined') {
+							let added = unserializeJavascriptArrayOfValues(event.added, forUpstream);
+							object.splice(event.index, event.removedCount, added);							
+						} else {
+							object.splice(event.index, event.removedCount);							
+						}
 					} else {
 						// throw new Error("Event not supported yet for unserialize: " + event.type);
 					}
@@ -411,6 +419,14 @@
 			});			
 		}
 
+		
+		function unserializeJavascriptArrayOfValues(array, forUpstream) {
+			let result = [];
+			array.forEach(function(item) {
+				result.push(unserializeValue(item, forUpstream));
+			});
+			return result;
+		}
 		
 		function unserializeValue(value, forUpstream) {
 			let fragments = value.split(":");

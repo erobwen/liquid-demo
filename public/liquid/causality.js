@@ -1054,7 +1054,13 @@
 				let removed; 
 
 				if (state.incomingStructuresDisabled === 0) {
-					removedOrIncomingStructures = this.target.slice(index, removedCount);
+					log("asdf....")
+					log(index);
+					log(removedCount);
+					log(this.target)
+					removedOrIncomingStructures = this.target.splice(index, removedCount);
+					log("removedOrIncomingStructures:");
+					log(removedOrIncomingStructures);
 					state.incomingStructuresDisabled++;
 					addedOrIncomingStructures = createAndRemoveArrayIncomingRelations(this.const.object, index, removedOrIncomingStructures, added);
 					state.incomingStructuresDisabled--;
@@ -2211,7 +2217,7 @@
 
 		function postPulseCleanup() {
 			trace.pulse && logGroup("postPulseCleanup (" + state.pulseEvents.length + " events, " + configuration.name + ")");
-			// trace.pulse && log(state.pulseEvents, 2);
+			trace.pulse && log(state.pulseEvents, 2);
 			state.inPulse++; // block new pulses!			
 			state.inPostPulseProcess++;
 			
