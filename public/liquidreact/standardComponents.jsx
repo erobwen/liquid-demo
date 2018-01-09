@@ -115,14 +115,19 @@ window.PropertyField = React.createClass(liquidClassData({
 	}
 }));
 
+let indentationPx = 20;
+
+// Source
+let sourceList = null;
 let draggedItem = null;
 let draggedHtml = null;
 let leftEdgeOffset = 0;
-let indentationPx = 20;
-let placeAsFollowingSibling = true;
+
+// Target
 let currentList = null;
 let currentDivider = null;
 let currentDividerIndex = null;
+let placeAsFollowingSibling = true;
 
 window.SortableList = React.createClass(liquidClassData({
 	getInitialState: function() {
@@ -131,11 +136,13 @@ window.SortableList = React.createClass(liquidClassData({
 
 	clearAllDividers : function() {
 		if (currentDivider) {
+			this.clearDivider(currentDivider);
 			currentList = null;
 			currentDivider = null;
 			currentDividerIndex = null;			
 		}
 		if (draggedItem) {
+			sourceList = null;
 			draggedItem = null;
 			draggedHtml = null;
 			leftEdgeOffset = 0;
@@ -268,31 +275,50 @@ window.SortableList = React.createClass(liquidClassData({
 	},
 	
 	dropDraggedItem : function() {
-		// Remember where to drop
-		let referenceIndex = currentDividerIndex - 1;
-		let referenceItem = currentList[currentDividerIndex - 1];
-		let item = draggedItem;
-		let lsit = currentList;
-		
-		// Clean all
-		this.clearAllDividers();
+		if (draggedItem) {
+			// Remember where to drop
+			let addFirst;
+			let referenceIndex;
+			let referenceItem;
+			if (currentDividerIndex > 0) {
+				referenceIndex = currentDividerIndex - 1;
+				referenceItem = currentList[currentDividerIndex - 1];
+				addFirst = false;
+			} else {
+				addFirst = true;			
+			}
+			
+			let item = draggedItem;
+			let sList = sourceList;
+			let targetList = currentList;
+			
+			// Clean all
+			this.clearAllDividers();
 
-		console.log("placeAsFollowingSibling" + placeAsFollowingSibling);
-		if (placeAsFollowingSibling) {
-			// Drop after
-			liquid.pulse(() => {
-				removeFromList(lsit, item);
-				addAfterInList(lsit, referenceItem, item);	
-			});			
-		} else {
-			// Drop as last child
-			liquid.pulse(() => {
-				removeFromList(lsit, item);
-				if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
-					referenceItem[this.props.childrenPropertyName] = create([]);
-				}
-				referenceItem[this.props.childrenPropertyName].push(item);			
-			});
+			console.log("placeAsFollowingSibling" + placeAsFollowingSibling);
+			if (placeAsFollowingSibling) {
+				// Drop after
+				console.log("drop after");
+				liquid.pulse(() => {
+					removeFromList(sList, item);
+					if (addFirst) {
+						targetList.push(item);
+					} else {
+						addAfterInList(targetList, referenceItem, item);						
+					}
+				});			
+			} else {
+				// Drop as last child
+				console.log("drop as child");
+				liquid.pulse(() => {
+					removeFromList(sList, item);
+					if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
+						referenceItem[this.props.childrenPropertyName] = create([]);
+					}
+					referenceItem[this.props.childrenPropertyName].push(item);			
+				});
+			}
+			
 		}
 	},
 
@@ -321,6 +347,7 @@ window.SortableList = React.createClass(liquidClassData({
 						childrenPropertyName = { this.props.childrenPropertyName }
 						item = { item }
 						itemIndex = { index++ }
+						list = { this.props.list }
 						dropDraggedItem = { this.dropDraggedItem }
 						abortDragging = { this.abortDragging }
 						previewAfter = { this.previewAfter }
@@ -367,7 +394,8 @@ window.SortableListItem = React.createClass(liquidClassData({
 	*  Dragging this todoItem
 	*/	
 	onDragStart: function(event) {
-		trace.event && logGroup("onDragStart:" + this.props.item.name);
+		trace.event && logGroup("onDragStart: " + this.props.item.name + " bubbles: " + event.bubbles);
+		event.stopPropagation();
 		leftEdgeOffset = (event.screenX - this.itemViewWrapper.offsetLeft);
 		
 		function clearIds(html) {
@@ -377,6 +405,8 @@ window.SortableListItem = React.createClass(liquidClassData({
 			});
 		}
 		
+		sourceList = this.props.list;
+		if (sourceList === null) throw new Error("asssss...");
 		draggedItem = this.props.item;
 		// draggedHtml = this.itemViewWrapper.cloneNode(true);
 		draggedHtml = this.todoItem.cloneNode(true);
