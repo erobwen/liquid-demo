@@ -296,14 +296,14 @@ window.SortableList = React.createClass(liquidClassData({
 			this.clearAllDividers();
 
 			trace.event && log("!placeAsChild" + !placeAsChild);
-			if (!placeAsChild) {
+			if (!placeAsChild || addFirst) {
 				// Drop after
 				trace.event && log("drop as sibling");
 				liquid.pulse(() => {
 					removeFromList(sList, item);
 					if (addFirst) {
-						trace.event && log("push");
-						targetList.push(item);
+						trace.event && log("unshift");
+						targetList.unshift(item);
 					} else {
 						addAfterInList(targetList, referenceItem, item);						
 					}
