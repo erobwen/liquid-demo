@@ -32,6 +32,17 @@
 			this.setProperty("email", data, '');
 		}
 		
+		selectTodo(selection, item) {
+			trace.selection && logGroup("selectTodo: " + item.name);
+			liquid.addToSelection(selection, item);
+			if (typeof(item.subtasks) !== 'undefined') {
+				liquid.addToSelection(selection, item.subtasks);
+				item.subtasks.forEach(function(subtask) {
+					this.selectTodo(selection, subtask);
+				});
+			}
+		}
+		
 		selectBasics(selection) {
 			trace.selection && logGroup(this.const.id + ".selectBasics");
 
@@ -42,7 +53,8 @@
 			// Select TODO list
 			liquid.addToSelection(selection, this.todoList);
 			this.todoList.forEach((item) => {
-				liquid.addToSelection(selection, item);
+				// liquid.addToSelection(selection, item);
+				this.selectTodo(selection, item);
 			});
 			
 			trace.selection && logUngroup();

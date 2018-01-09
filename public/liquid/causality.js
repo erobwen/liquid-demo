@@ -1054,13 +1054,7 @@
 				let removed; 
 
 				if (state.incomingStructuresDisabled === 0) {
-					log("asdf....")
-					log(index);
-					log(removedCount);
-					log(this.target)
-					removedOrIncomingStructures = this.target.splice(index, removedCount);
-					log("removedOrIncomingStructures:");
-					log(removedOrIncomingStructures);
+					removedOrIncomingStructures = this.target.slice(index, index + removedCount);
 					state.incomingStructuresDisabled++;
 					addedOrIncomingStructures = createAndRemoveArrayIncomingRelations(this.const.object, index, removedOrIncomingStructures, added);
 					state.incomingStructuresDisabled--;
@@ -1076,9 +1070,9 @@
 
 				if (state.incomingStructuresDisabled === 0) {
 					if (configuration.incomingStructuresAsCausalityObjects) {
-						emitSpliceEvent(this, 0, removedOrIncomingStructures, addedOrIncomingStructures);
+						emitSpliceEvent(this, index, removedOrIncomingStructures, addedOrIncomingStructures);
 					} else {
-						emitSpliceEvent(this, 0, removed, added);
+						emitSpliceEvent(this, index, removed, added);
 					}
 				} else {
 					// emitSpliceEvent(this, 0, null, added);

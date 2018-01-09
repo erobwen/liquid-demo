@@ -221,8 +221,11 @@
 			// if (typeof(event.previousValue) !== 'undefined') {
 				// serialized.previousValue = serializeValue(event.previousValue, forUpstream);
 			// }
+			if (typeof(event.index) !== 'undefined') {
+				serialized.index = event.index;					
+			}
 			if (typeof(event.added) !== 'undefined') {
-				if (event.added === null) {
+				if (event.added === null || event.added.length === 0) {
 					// No property
 				} else {
 					let serializedAdded = [];
@@ -685,7 +688,7 @@
 			trace.liquid && logGroup("Send events to pages that has no change in subscription... ");
 			let pagesToNotifyWithNoChangeInSelection = {};
 			events.forEach(function(event) {
-				if (!event.incomingStructureEvent) {
+				if (!event.incomingStructureEvent && event.type !== 'creation') {
 					let serializedEvent;
 					for (id in event.object.const._observingPages) {
 						let observingPage = event.object.const._observingPages[id];
@@ -1248,7 +1251,7 @@
 				events.forEach(function(event) {
 					var eventIsForUpstream = !state.pushingChangesFromUpstream || event.isConsequence; 
 					if (eventIsForUpstream && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
-						if (event.object.const._upstreamId !== null) {
+						if (event.object.const._upstreamId !== null && event.type !== 'creation') {
 							serializedEvents.push(serializeEvent(event, true));
 						}
 					}
