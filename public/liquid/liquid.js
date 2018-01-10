@@ -267,7 +267,7 @@
 				} else if (value === null) {
 					return type + ":null";
 				} else {
-					trace.serialize && log(value, 2);
+					log(value, 2);
 					throw new Error("No support for streaming non-liquid objects.");
 				}
 			} else if (type === 'number' || type === 'string' || type === 'boolean') {
@@ -415,8 +415,11 @@
 						delete object[event.property];
 					} else if (event.type === 'splice'){
 						if (typeof(event.added) !== 'undefined') {
-							let added = unserializeJavascriptArrayOfValues(event.added, forUpstream);
-							object.splice(event.index, event.removedCount, added);							
+							let arguments = unserializeJavascriptArrayOfValues(event.added, forUpstream);
+							arguments.unshift(event.removedCount);
+							arguments.unshift(event.index);
+							object.splice.apply(object, arguments);
+							// object.splice(event.index, event.removedCount, ... added ...);							
 						} else {
 							object.splice(event.index, event.removedCount);							
 						}
@@ -735,8 +738,7 @@
 				if (Object.keys(update.serializedObjects).length > 0 ||
 					Object.keys(update.unsubscribedUpstreamIds).length > 0 ||
 					update.serializedEvents.length > 0 ||
-					Object.keys(update.idToUpstreamId).length > 0 ||
-					update.idsOfInstantlyHidden.length > 0) {
+					Object.keys(update.idToUpstreamId).length > 0) {
 					page.const._pendingUpdates.push(update);						
 				}
 
@@ -834,8 +836,8 @@
 			}
 
 			// Add id mapping information and adjust added
+			result.idToUpstreamId = {};
 			if (page === state.pushingChangesFromPage) {
-				result.idToUpstreamId = {};
 				if (typeof(page.const.idToDownstreamIdMap) !== 'undefined') {
 					
 					// Add mapping information
