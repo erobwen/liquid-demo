@@ -307,11 +307,6 @@
 	class LiquidEntity {
 		constructor() {
 			this.const = {};
-			// Client only (reactive) properties:
-			// if (liquid.configuration.isClient) { // TODO!!! 
-				// this.isPlaceholder = false;
-				// this.isLockedObject = false;			
-			// }
 		}
 
 		initialize(data) {
@@ -415,7 +410,7 @@
 			);
 		}
 		
-		isLoaded() {
+		// isLoaded() {
 			// if (liquid.onClient) {
 				// if (arguments.length == 1) {
 					// var selector = arguments[0];
@@ -430,7 +425,7 @@
 			// } else {
 				// return true;
 			// }
-		}
+		// }
 		
 		
 		select(selectionTag) {

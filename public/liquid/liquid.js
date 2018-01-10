@@ -165,8 +165,8 @@
 				serialized.id = object.const.id;
 			}
 			let omittedKeys = {
-				isPlaceholder : true,
-				isLockedObject : true,
+				isPlaceholder : true, // TODO: remove one of these
+				isLoaded : true,  // TODO: remove one of these
 				indexParent : true, 
 				indexParentRelation : true
 			}
@@ -304,6 +304,9 @@
 					}
 					page.const.idToDownstreamIdMap[newObject.const.id] = serialized.downstreamId;
 				} else {
+					liquid.state.emitEventPaused++;
+					newObject.isLoaded = true;
+					liquid.state.emitEventPaused--;
 					newObject.const._upstreamId = serialized.id;
 					upstreamIdObjectMap[serialized.id] = newObject;
 				}
@@ -833,21 +836,18 @@
 			// Add id mapping information and adjust added
 			if (page === state.pushingChangesFromPage) {
 				result.idToUpstreamId = {};
-				result.idsOfInstantlyHidden = []; // TODO: Remove and just have unsubscribedUpstreamIds????
 				if (typeof(page.const.idToDownstreamIdMap) !== 'undefined') {
 					
 					// Add mapping information
 					for(id in page.const.idToDownstreamIdMap) {
-						if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
+						// if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
 							result.idToUpstreamId[page.const.idToDownstreamIdMap[id]] = id;
-						} else {
-							result.idsOfInstantlyHidden[page.const.idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
-						}
+						// } 
 					}
 					
 					// Adjust added, remove just uploaded, no need to send them back... or really? Could there have been reactive changes to these?.
 					Object.keys(page.const.idToDownstreamIdMap).forEach((id) => {
-						delete addedAndRemovedIds.added;
+						delete addedAndRemovedIds.added[id];
 						addedAndRemovedIds.static[id] = true; // Set as static to get events instead
 					});
 					
@@ -857,9 +857,7 @@
 			}
 			
 			// Serialize
-			// liquid.state.pageSubject = page; // Why would I need this.... ?
 			result.serializedObjects = serializeSelection(addedAndRemovedIds.added, false);
-			// liquid.state.pageSubject = null;
 
 			result.unsubscribedUpstreamIds = addedAndRemovedIds.removed;
 
@@ -1100,17 +1098,26 @@
 				let upstreamId = parseInt(pulseData.idToUpstreamId[id]);
 				objectsBeeingPushedUpstream[id].const._upstreamId = upstreamId;
 				upstreamIdObjectMap[upstreamId] = objectsBeeingPushedUpstream[id];
-				delete objectsBeeingPushedUpstream[id];
 			}
 			
 			//foobar
-			//TODO: Do something with instantly hidden... 
-			// // and create an "originators copy" of the data for safekeeping. 
-				// for (upstreamId in changes.unsubscribedUpstreamIds) {
-					// var object = getUpstreamEntity(upstreamId);
-					// object.setIsLockedObject(true);
-				// }
-				// liquid.allUnlocked--;
+			for (upstreamId in pulseData.unsubscribedUpstreamIds) {
+				let object = upstreamIdObjectMap[upstreamId];
+				// TODO: create an "originators copy" of the data for safekeeping. 
+				if (typeof(objectsBeeingPushedUpstream[object.const.id]) !== 'undefined') {
+					// This object was instantly unsubscribed! Consider saving its data.
+				}
+				liquid.state.emitEventPaused++;  
+				object.isLoaded = false;  // TODO: what if this triggers change in model... signal error?
+				liquid.state.emitEventPaused--; 
+				delete upstreamIdObjectMap[upstreamId]; //Idea: Make them into zombies? 
+			}
+			
+			// Note objects not beeing pushed upstream anymore
+			for (let id in pulseData.idToUpstreamId) {
+				delete objectsBeeingPushedUpstream[id];
+			}
+			liquid.allUnlocked--;
 			// });
 			
 			// // Notify 
