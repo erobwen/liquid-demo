@@ -1096,6 +1096,14 @@
 				unserializeEvents(pulseData.serializedEvents, false);				
 			});
 
+			for (let id in pulseData.idToUpstreamId) {
+				let upstreamId = parseInt(pulseData.idToUpstreamId[id]);
+				objectsBeeingPushedUpstream[id].const._upstreamId = upstreamId;
+				upstreamIdObjectMap[upstreamId] = objectsBeeingPushedUpstream[id];
+				delete objectsBeeingPushedUpstream[id];
+			}
+			
+			//foobar
 			//TODO: Do something with instantly hidden... 
 			// // and create an "originators copy" of the data for safekeeping. 
 				// for (upstreamId in changes.unsubscribedUpstreamIds) {
@@ -1220,6 +1228,8 @@
 		 * idToUpstreamId
 		 * events  [{action: addingRelation, objectId:45, relationName: 'Foobar', relatedObjectId:45 }]
 		 */
+		let objectsBeeingPushedUpstream = {};
+		
 		function pushDataUpstream(events) {	
 			trace.liquid && log("state.pushingChangesFromUpstream: " + state.pushingChangesFromUpstream);
 			if (typeof(pushMessageUpstreamCallback) !== 'undefined') { // && !state.pushingChangesFromUpstream
@@ -1228,10 +1238,10 @@
 				// log(events, 2);
 		
 				// Recursive search for objects to push upstream
-				let requiredObjects = {};
+				objectsBeeingPushedUpstream;
 				function addRequiredCascade(object) {
-					if (typeof(object.const._upstreamId) === 'undefined' && typeof(requiredObjects[object.const.id]) === 'undefined') {
-						requiredObjects[object.const.id] = object;
+					if (typeof(object.const._upstreamId) === 'undefined' && typeof(objectsBeeingPushedUpstream[object.const.id]) === 'undefined') {
+						objectsBeeingPushedUpstream[object.const.id] = object;
 						Object.keys(object).forEach(function(key) { // TODO: consider, for loop? How to avoid inherited... 
 							let value = object[key];
 							if (liquid.isObject(value)) {
@@ -1256,8 +1266,8 @@
 		
 				// Serialize object
 				let serializedObjects = {};
-				for(id in requiredObjects) {
-					let requiredObject = requiredObjects[id];
+				for(id in objectsBeeingPushedUpstream) {
+					let requiredObject = objectsBeeingPushedUpstream[id];
 					let serializedObject = serializeObject(requiredObject, true);
 					serializedObjects[requiredObject.const.id] = serializedObject;
 				}
@@ -1267,7 +1277,9 @@
 				events.forEach(function(event) {
 					var eventIsForUpstream = !state.pushingChangesFromUpstream || event.isConsequence; 
 					if (eventIsForUpstream && event.property !== 'isPlaceholder' && event.property !== 'isLocked') { // TODO: filter out events on properties that are client only... 
-						if (event.object.const._upstreamId !== null && event.type !== 'creation') {
+						if (event.type !== 'creation' && 
+							(typeof(event.object.const._upstreamId) !== 'undefined' 
+							|| typeof(objectsBeeingPushedUpstream[event.object.const.id]) !== 'undefined')) {
 							serializedEvents.push(serializeEvent(event, true));
 						}
 					}
