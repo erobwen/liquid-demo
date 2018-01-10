@@ -160,11 +160,7 @@
 				values : {}
 			};
 			if (forUpstream) {
-				if (object.const._upstreamId !== null) {
-					serialized.id = object.const._upstreamId;
-				} else {
-					serialized.downstreamId = object.const.id;
-				}
+				serialized.downstreamId = object.const.id;
 			} else {
 				serialized.id = object.const.id;
 			}
@@ -301,7 +297,13 @@
 			for (id in serializedIdToSerializedMap) {
 				let serialized = serializedIdToSerializedMap[id];
 				var newObject = create(serialized.className);
-				if (!forUpstream) {
+				if (forUpstream) {
+					let page = state.pushingChangesFromPage;
+					if (typeof(page.const.idToDownstreamIdMap) === 'undefined') {
+						page.const.idToDownstreamIdMap = {};
+					}
+					page.const.idToDownstreamIdMap[newObject.const.id] = serialized.downstreamId;
+				} else {
 					newObject.const._upstreamId = serialized.id;
 					upstreamIdObjectMap[serialized.id] = newObject;
 				}
@@ -811,6 +813,7 @@
 				var addedObject = addedAndRemovedIds.added[id];
 				if (typeof(addedObject.const) === 'undefined') {
 					trace.liquid && log(addedObject, 3);
+					throw new Error("Added a non object");
 				}
 				if (typeof(addedObject.const._observingPages) === 'undefined') {
 					addedObject.const._observingPages = {};
@@ -827,6 +830,32 @@
 				// console.log(Object.keys(addedObject._observingPages));
 			}
 
+			// Add id mapping information and adjust added
+			if (page === state.pushingChangesFromPage) {
+				result.idToUpstreamId = {};
+				result.idsOfInstantlyHidden = []; // TODO: Remove and just have unsubscribedUpstreamIds????
+				if (typeof(page.const.idToDownstreamIdMap) !== 'undefined') {
+					
+					// Add mapping information
+					for(id in page.const.idToDownstreamIdMap) {
+						if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
+							result.idToUpstreamId[page.const.idToDownstreamIdMap[id]] = id;
+						} else {
+							result.idsOfInstantlyHidden[page.const.idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
+						}
+					}
+					
+					// Adjust added, remove just uploaded, no need to send them back... or really? Could there have been reactive changes to these?.
+					Object.keys(page.const.idToDownstreamIdMap).forEach((id) => {
+						delete addedAndRemovedIds.added;
+						addedAndRemovedIds.static[id] = true; // Set as static to get events instead
+					});
+					
+					// Clear 
+					delete page.const.idToDownstreamIdMap;
+				}				
+			}
+			
 			// Serialize
 			// liquid.state.pageSubject = page; // Why would I need this.... ?
 			result.serializedObjects = serializeSelection(addedAndRemovedIds.added, false);
@@ -845,20 +874,6 @@
 					}
 				}
 			});
-
-			// Add id mapping information
-			result.idToUpstreamId = {};
-			result.idsOfInstantlyHidden = []; // TODO: Remove and just have unsubscribedUpstreamIds????
-			if (page.const.idToDownstreamIdMap !== null) {
-				for(id in page.const.idToDownstreamIdMap) {
-					if (typeof(addedAndRemovedIds.added[id]) !== 'undefined') {
-						result.idToUpstreamId[page.const.idToDownstreamIdMap[id]] = id;
-					} else {
-						result.idsOfInstantlyHidden[page.const.idToDownstreamIdMap[id]]; // These objects were sent to the server, but did not become subscribed,
-					}
-				}
-				page.const.idToDownstreamIdMap = null;
-			}
 
 			// More like: 
 			// {
