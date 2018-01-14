@@ -312,7 +312,7 @@ window.SortableList = React.createClass(liquidClassData({
 			this.clearAllDividers();
 
 			trace.event && log("!placeAsChild" + !placeAsChild);
-			if (!placeAsChild || addFirst) {
+			if (typeof(this.props.childrenPropertyName) === 'undefined') {
 				// Drop after
 				trace.event && log("drop as sibling");
 				liquid.pulse(() => {
@@ -323,19 +323,30 @@ window.SortableList = React.createClass(liquidClassData({
 					} else {
 						addAfterInList(targetList, referenceItem, item);						
 					}
-				});			
+				});						
 			} else {
-				// Drop as last child
-				trace.event && log("drop as child");
-				liquid.pulse(() => {
-					removeFromList(sList, item);
-					if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
-						referenceItem[this.props.childrenPropertyName] = create([]);
-					}
-					referenceItem[this.props.childrenPropertyName].push(item);			
-				});
+				if (!placeAsChild || addFirst) {
+					liquid.pulse(() => {
+						removeFromList(sList, item);
+						if (addFirst) {
+							trace.event && log("unshift");
+							targetList.unshift(item);
+						} else {
+							addAfterInList(targetList, referenceItem, item);						
+						}
+					});	
+				} else {
+					// Drop as last child
+					trace.event && log("drop as child");
+					liquid.pulse(() => {
+						removeFromList(sList, item);
+						if (typeof(referenceItem[this.props.childrenPropertyName]) === 'undefined') {
+							referenceItem[this.props.childrenPropertyName] = create([]);
+						}
+						referenceItem[this.props.childrenPropertyName].push(item);			
+					});					
+				}
 			}
-			
 		}
 	},
 
