@@ -122,7 +122,6 @@ let sourceList = null;
 let draggedItem = null;
 let draggedHtml = null;
 let leftEdgeOffset = 0;
-let topEdgeOffset = 0;
 let heightOfDraggedItemWrapper = 0;
 
 // Target
@@ -150,6 +149,27 @@ function shouldPlaceAsChild(element, event){
 	return result;
 }
 
+function animatePadding(element, newPlaceAsChild) {
+	if (newPlaceAsChild !== placeAsChild) {
+		placeAsChild = newPlaceAsChild;
+		element.style.transition = "height .5s, padding-left .5s";
+		element.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";											
+	}
+}
+
+function snapPadding(element, newPlaceAsChild) {
+	if (newPlaceAsChild !== placeAsChild) {
+		function finalizeAndCleanUp(event) {
+			if (event.propertyName == 'transition') {
+				this.style.transition = "height .5s, margin-left .5s"
+				this.removeEventListener('transitionend', finalizeAndCleanUp)
+			}
+		}
+		currentDivider.addEventListener('transitionend', finalizeAndCleanUp)
+		currentDivider.style.transition = "height .5s";
+		currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";
+	}
+}
 
 window.SortableList = React.createClass(liquidClassData({
 	getInitialState: function() {
@@ -168,7 +188,6 @@ window.SortableList = React.createClass(liquidClassData({
 			draggedItem = null;
 			draggedHtml = null;
 			leftEdgeOffset = 0;
-			topEdgeOffset = 0;
 			heightOfDraggedItemWrapper = 0;
 		}	
 		this.dividers.forEach((divider) => {
@@ -184,12 +203,7 @@ window.SortableList = React.createClass(liquidClassData({
 		trace.event && logGroup("onDragOver (divider)");
 		event.preventDefault();
 		if (currentDivider !== null && this.props.childrenPropertyName) {
-			let newPlaceAsChild = shouldPlaceAsChild(currentDivider, event);
-			if (newPlaceAsChild !== placeAsChild) {
-				placeAsChild = newPlaceAsChild;
-				currentDivider.style.transition = "height .5s, padding-left .5s";
-				currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";											
-			}
+			animatePadding(currentDivider, shouldPlaceAsChild(currentDivider, event));
 		}
 		trace.event && logUngroup();
 	},
@@ -232,28 +246,22 @@ window.SortableList = React.createClass(liquidClassData({
 		divider.style.height = divider.scrollHeight + "px";
 	},
 	
-	previewBefore : function(itemIndex, placeAsChild) {
+	previewBefore : function(itemIndex, newPlaceAsChild) {
 		trace.event && log("...preview before" + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex, placeAsChild); 
-		if (this.props.childrenPropertyName) {
-			if (currentDivider !== null) currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";
-		}
+		this.previewAtDivider(newDivider, newDividerIndex, newPlaceAsChild); 
 	}, 
 
-	previewAfter : function(itemIndex, placeAsChild) {
+	previewAfter : function(itemIndex, newPlaceAsChild) {
 		trace.event && log("...preview after " + this.props.list[itemIndex].name);
 		let newDividerIndex = itemIndex + 1;
 		let newDivider = this.dividers[newDividerIndex];
-		this.previewAtDivider(newDivider, newDividerIndex, placeAsChild);
-		if (this.props.childrenPropertyName) {
-			if (currentDivider !== null) currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";			
-		}
+		this.previewAtDivider(newDivider, newDividerIndex, newPlaceAsChild);
 	},
 
-	previewAtDivider(newDivider, newDividerIndex, placeAsChild) {
-		if (typeof(!placeAsChild) === 'undefined') throw new Error("wtf...");
+	previewAtDivider(newDivider, newDividerIndex, newPlaceAsChild) {
+		// if (typeof(!placeAsChild) === 'undefined') throw new Error("wtf...");
  		if (currentDivider !== newDivider) {
 			trace.event && log("preview at index: " + newDividerIndex);			
 			if (currentDivider !== null) {
@@ -263,21 +271,18 @@ window.SortableList = React.createClass(liquidClassData({
 			currentDividerIndex = newDividerIndex;
 			currentDivider = newDivider;
 			
-			// Animated opening of divider
+			// Animated opening of divider placeAsChild
 			this.openDivider(currentDivider);
 
 			// Direct movement of margin
 			if (this.props.childrenPropertyName && currentDivider !== null) {
-				function finalizeAndCleanUp(event) {
-					if (event.propertyName == 'transition') {
-						this.style.transition = "height .5s, margin-left .5s"
-						this.removeEventListener('transitionend', finalizeAndCleanUp)
-					}
-				}
-				currentDivider.addEventListener('transitionend', finalizeAndCleanUp)
-				currentDivider.style.transition = "height .5s";
-				currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";
+				snapPadding(currentDivider, newPlaceAsChild);
 			} 
+		} else {				
+			// Animation of margin
+			if (this.props.childrenPropertyName && currentDivider !== null) {
+				animatePadding(currentDivider, newPlaceAsChild);
+			}
 		}		
 	},
 	
@@ -410,7 +415,6 @@ window.SortableListItem = React.createClass(liquidClassData({
 		event.stopPropagation();
 		heightOfDraggedItemWrapper = this.itemViewWrapper.clientHeight;
 		leftEdgeOffset = (event.pageX - this.itemViewWrapper.getBoundingClientRect().x);
-		topEdgeOffset = (event.pageY - this.itemViewWrapper.offsetTop);
 		
 		function clearIds(html) {
 			if (typeof(html.removeAttribute) === 'function') html.removeAttribute("data-reactid");
@@ -483,13 +487,13 @@ window.SortableListItem = React.createClass(liquidClassData({
 			// log("mouseOverTopPart" + mouseOverTopPart);
 			
 			// Place as child
-			placeAsChild = this.props.childrenPropertyName ? shouldPlaceAsChild(this.itemViewWrapper, event) : false
+			let newPlaceAsChild = this.props.childrenPropertyName ? shouldPlaceAsChild(this.itemViewWrapper, event) : false
 			
 			// Call parent
 			if (mouseOverTopPart) {
-				this.props.previewBefore(this.props.itemIndex, placeAsChild);
+				this.props.previewBefore(this.props.itemIndex, newPlaceAsChild);
 			} else {
-				this.props.previewAfter(this.props.itemIndex, placeAsChild);
+				this.props.previewAfter(this.props.itemIndex, newPlaceAsChild);
 			}
 		}
 		trace.event && logUngroup();
