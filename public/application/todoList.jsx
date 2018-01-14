@@ -8,11 +8,11 @@ window.TodoApplication = React.createClass(liquidClassData({
 					<LoginUI page = { page }/>
 					<div style = {{ display: "flex", flexDirection: "horizontal"}}>
 						<div style = {{ width : "50%"}}>
-							<span style = {{border : "1px solid #000"}}>Tree view:</span>
+							<span style = {{border : "1px solid #000"}}>Todo:</span>
 							{ (page.session.user === null) ? null : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem" childrenPropertyName = "subtasks"/> }
 						</div>
 						<div style = {{ width : "50%"}}>
-							<span style = {{border : "1px solid #000"}}>List view:</span>
+							<span style = {{border : "1px solid #000"}}>Todo: (plain list)</span>
 							{ (page.session.user === null) ? null : <SortableList list = { page.session.user.todoList } itemViewName = "TodoItem"/> }
 						</div>
 					</div>
@@ -24,6 +24,6 @@ window.TodoApplication = React.createClass(liquidClassData({
 	
 window.TodoItem = React.createClass(liquidClassData({
 	render: function() {
-		return <PropertyField label={"Todo"} object = { this.props.item } propertyName = "name"/>
+		return <PropertyField object = { this.props.item } propertyName = "name"/>
 	}
 }));

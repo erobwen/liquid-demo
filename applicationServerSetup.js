@@ -85,12 +85,12 @@ if (!liquid.persistent.demoInitialized) {
 		// Create user and add to index.
 		user = create('User', {name: "Walter", email: "some.person@gmail.com", password: "liquid"});
 		user.todoList = create([]);
-		user.todoList.push(create('TodoItem', {name : "Foo", done: false}));
-		user.todoList.push(create('TodoItem', {name : "Fie", done: false}));
-		user.todoList.push(create('TodoItem', {name : "Fum", done: false}));
-		user.todoList.push(create('TodoItem', {name : "Fum1", done: false}));
-		user.todoList.push(create('TodoItem', {name : "Fum2", done: false}));
-		user.todoList.push(create('TodoItem', {name : "Fum3", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Fix dinner", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Touch spaget!", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Buy spaget", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Repair stove", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Buy part", done: false}));
+		user.todoList.push(create('TodoItem', {name : "Read how to repair", done: false}));
 		liquid.persistent.users.add(user);
 	// });
 	// liquid.pulse(function() {
