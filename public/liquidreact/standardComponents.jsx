@@ -158,7 +158,8 @@ function animatePadding(element, newPlaceAsChild) {
 }
 
 function snapPadding(element, newPlaceAsChild) {
-	if (newPlaceAsChild !== placeAsChild) {
+	// if (newPlaceAsChild !== placeAsChild) {
+		placeAsChild = newPlaceAsChild;
 		function finalizeAndCleanUp(event) {
 			if (event.propertyName == 'transition') {
 				this.style.transition = "height .5s, margin-left .5s"
@@ -168,7 +169,7 @@ function snapPadding(element, newPlaceAsChild) {
 		currentDivider.addEventListener('transitionend', finalizeAndCleanUp)
 		currentDivider.style.transition = "height .5s";
 		currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";
-	}
+	// }
 }
 
 window.SortableList = React.createClass(liquidClassData({
@@ -299,6 +300,15 @@ window.SortableList = React.createClass(liquidClassData({
 			if (currentDividerIndex > 0) {
 				referenceIndex = currentDividerIndex - 1;
 				referenceItem = currentList[currentDividerIndex - 1];
+				if (referenceItem === draggedItem) {
+					if (currentDividerIndex - 2 >= 0) {
+						referenceIndex = currentDividerIndex - 2;
+						referenceItem = currentList[currentDividerIndex - 2];											
+					} else {		
+						this.abortDragging();
+						return;
+					}
+				}
 				addFirst = false;
 			} else {
 				addFirst = true;			
@@ -307,7 +317,7 @@ window.SortableList = React.createClass(liquidClassData({
 			let item = draggedItem;
 			let sList = sourceList;
 			let targetList = currentList;
-			
+						
 			// Clean all
 			this.clearAllDividers();
 
