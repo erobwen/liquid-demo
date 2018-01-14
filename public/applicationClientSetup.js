@@ -27,11 +27,11 @@
 
 	// Setup trace (after initial data is added)
 	// liquid.trace.incoming = 1; 
-	liquid.trace.socket = 1; 
+	// liquid.trace.socket = 1; 
 	// liquid.trace.render = 1; 
 	// liquid.trace.event = 1;
 	// liquid.trace.ui = 1; 
-	liquid.trace.pulse = 1; 
+	// liquid.trace.pulse = 1; 
 	// liquid.trace.liquid = 1; 
 	// liquid.trace.unserialize = 1; 
 

@@ -122,12 +122,34 @@ let sourceList = null;
 let draggedItem = null;
 let draggedHtml = null;
 let leftEdgeOffset = 0;
+let topEdgeOffset = 0;
+let heightOfDraggedItemWrapper = 0;
 
 // Target
 let currentList = null;
 let currentDivider = null;
 let currentDividerIndex = null;
 let placeAsChild = false;
+
+function shouldPlaceAsChild(element, event){
+	// // Horizontal calculation
+	// let xWithinField = event.screenX - currentDivider.offsetLeft;
+	// let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
+	// !(this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true);
+
+	// Horizontal calculation
+	// log("leftEdgeOffset:" + leftEdgeOffset);
+	// log("event.pageX: " + event.pageX);
+	// log("element.offsetLeft: " + element.offsetLeft);
+	// log("element.getBoundingClientRect().x: " + element.getBoundingClientRect().x);
+	let xWithinField = event.pageX - element.getBoundingClientRect().x;
+	// log("xWithinField: " + xWithinField);
+	let leftEdgeXWithinField = xWithinField - leftEdgeOffset;
+	let result = indentationPx <= leftEdgeXWithinField;
+	// log("shouldPlaceAsChild: " + result);
+	return result;
+}
+
 
 window.SortableList = React.createClass(liquidClassData({
 	getInitialState: function() {
@@ -146,6 +168,8 @@ window.SortableList = React.createClass(liquidClassData({
 			draggedItem = null;
 			draggedHtml = null;
 			leftEdgeOffset = 0;
+			topEdgeOffset = 0;
+			heightOfDraggedItemWrapper = 0;
 		}	
 		this.dividers.forEach((divider) => {
 			this.clearDivider(divider);
@@ -158,28 +182,15 @@ window.SortableList = React.createClass(liquidClassData({
 	
 	onDragOverDivider: function(event) {
 		trace.event && logGroup("onDragOver (divider)");
-		// log("onDragOverDivider");
 		event.preventDefault();
-		// trace.event && log(event.target);
-		// trace.event && log(currentDivider);
-		// if (event.target === currentDivider) {
-			// Horizontal calculation
-			let xWithinField = event.screenX - currentDivider.offsetLeft;
-			// log(xWithinField);
-			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			// log(!placeAsChild);
-
-			if (this.props.childrenPropertyName) {
-				if (currentDivider !== null) {
-					let newPlaceAsChild = !(this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true);
-					if (newPlaceAsChild !== placeAsChild) {
-						placeAsChild = newPlaceAsChild;
-						currentDivider.style.transition = "height .5s, padding-left .5s";
-						currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";											
-					}
-				}
+		if (currentDivider !== null && this.props.childrenPropertyName) {
+			let newPlaceAsChild = shouldPlaceAsChild(currentDivider, event);
+			if (newPlaceAsChild !== placeAsChild) {
+				placeAsChild = newPlaceAsChild;
+				currentDivider.style.transition = "height .5s, padding-left .5s";
+				currentDivider.style.paddingLeft = !placeAsChild ? "0px" : indentationPx + "px";											
 			}
-		// }
+		}
 		trace.event && logUngroup();
 	},
 	
@@ -397,7 +408,9 @@ window.SortableListItem = React.createClass(liquidClassData({
 	onDragStart: function(event) {
 		trace.event && logGroup("onDragStart: " + this.props.item.name + " bubbles: " + event.bubbles);
 		event.stopPropagation();
-		leftEdgeOffset = (event.screenX - this.itemViewWrapper.offsetLeft);
+		heightOfDraggedItemWrapper = this.itemViewWrapper.clientHeight;
+		leftEdgeOffset = (event.pageX - this.itemViewWrapper.getBoundingClientRect().x);
+		topEdgeOffset = (event.pageY - this.itemViewWrapper.offsetTop);
 		
 		function clearIds(html) {
 			if (typeof(html.removeAttribute) === 'function') html.removeAttribute("data-reactid");
@@ -464,14 +477,14 @@ window.SortableListItem = React.createClass(liquidClassData({
 		event.preventDefault();
 		if (this.props.item !== draggedItem) {
 			// Vertical calculations
-			let yWithinField = event.pageY - this.todoItem.offsetTop;
-			let mouseOverTopPart = yWithinField <= this.todoItem.scrollHeight / 2;
+			let yWithinField = event.pageY - this.todoItem.getBoundingClientRect().y;
+			// log("yWithinField" + yWithinField);
+			let mouseOverTopPart = yWithinField <= this.todoItem.getBoundingClientRect().height / 2;
+			// log("mouseOverTopPart" + mouseOverTopPart);
 			
-			// Horizontal calculation
-			let xWithinField = event.screenX - this.itemViewWrapper.offsetLeft;
-			let leftEdgeXWithinField =  xWithinField - leftEdgeOffset;
-			placeAsChild = !(this.props.childrenPropertyName ? leftEdgeXWithinField <= indentationPx : true);
-
+			// Place as child
+			placeAsChild = this.props.childrenPropertyName ? shouldPlaceAsChild(this.itemViewWrapper, event) : false
+			
 			// Call parent
 			if (mouseOverTopPart) {
 				this.props.previewBefore(this.props.itemIndex, placeAsChild);
@@ -516,18 +529,18 @@ window.SortableListItem = React.createClass(liquidClassData({
 						transition : 'height .5s',
 						height : 'auto',
 						overflow : 'hidden'
-					}}
-				
-					draggable = "true"						
-					onDragStart = { this.onDragStart }
-					onDragEnd = { this.onDragEnd }
-					
-					onDragEnter = { this.onDragEnter }
-					onDragOver = { this.onDragOver }
-					onDragExit = { this.onDragExit }
-					onDragLeave = { this.onDragLeave }
-					onDrop = { this.onDrop }>
-					<div className = "ItemViewWrapper" ref= {(element) => { this.itemViewWrapper = element; }} >
+					}}>
+					<div className = "ItemViewWrapper" 
+						ref= {(element) => { this.itemViewWrapper = element; }} 
+						draggable = "true"						
+						onDragStart = { this.onDragStart }
+						onDragEnd = { this.onDragEnd }
+						
+						onDragEnter = { this.onDragEnter }
+						onDragOver = { this.onDragOver }
+						onDragExit = { this.onDragExit }
+						onDragLeave = { this.onDragLeave }
+						onDrop = { this.onDrop }>
 						{ itemView }
 					</div>
 					{ childrenList }
