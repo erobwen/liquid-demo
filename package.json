@@ -6,7 +6,7 @@
   "dependencies": {
     "cookie-parser": "^1.4.1",
     "ejs": "^2.4.1",
-    "express": "^4.13.4",
+    "express": "^4.18.2",
     "express-session": "^1.13.0",
     "fibers": "^1.0.12",
     "material-ui": "^0.15.4",
